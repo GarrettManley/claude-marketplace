@@ -46,3 +46,7 @@ echo "[verify] OK"
 echo "[verify] check-notice"
 python3 "$ROOT/ci/check-notice.py"
 echo "[verify] OK"
+
+echo "[verify] check-doc-links"
+python3 "$ROOT/ci/check-doc-links.py"
+echo "[verify] OK"

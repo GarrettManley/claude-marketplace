@@ -77,3 +77,31 @@ jobs:
           done
           python -m coverage combine
           python -m coverage report --fail-under=90
+
+  # Authoritative manifest validation via the official `claude plugin validate`.
+  # Offline + deterministic (verified to run with an empty config dir, no auth), so it
+  # is safe in CI and complements the stdlib ci/validate-plugins.py gate. Verify-only.
+  validate-manifests:
+    name: claude plugin validate (--strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Claude Code CLI
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Validate marketplace + every plugin (strict)
+        env:
+          CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude-empty
+        run: |
+          set -euo pipefail
+          claude plugin validate . --strict
+          for d in plugins/*/; do
+            echo "::group::$d"
+            claude plugin validate "./$d" --strict
+            echo "::endgroup::"
+          done

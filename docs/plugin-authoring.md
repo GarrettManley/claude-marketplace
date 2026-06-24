@@ -124,6 +124,25 @@ sanity-bounded at 4096 chars). Description *quality* is deliberately out of scop
 python3 ci/lint-frontmatter.py
 ```
 
+## Component authoring conventions
+
+The linter enforces structure, not quality. These conventions keep the marketplace signal-dense
+rather than "AI-slop" noise — follow them for every new skill, agent, and command:
+
+- **Trigger-shaped descriptions.** Write each `description` in the third person as *what it does +
+  when to use it*, leading with a concrete trigger: `Use when …` / `Use PROACTIVELY when …`. Name
+  the specific artifacts, file types, or situations that should fire it. Vague descriptions
+  ("helps with documentation") don't get invoked at the right time.
+- **Model tiering (agents).** Subagent frontmatter accepts an optional `model` field. **Omit it**
+  for judgment work — reviewers, analysers, design/architecture agents — so they inherit the
+  session's (strong) model; pinning a judgment agent to a weaker model silently degrades it. Only
+  set `model: haiku` for genuinely mechanical agents (file inventories, grep-and-summarize, bulk
+  frontmatter/convention checks) whose output is cheaply verifiable. When unsure, omit.
+- **Progressive disclosure (skills).** Keep `SKILL.md` itself a navigable decision tree: when to
+  use it, the steps/interface, and links. Push deep material (large tables, long examples, full
+  reference text) into sibling files (`references/…`, `dimensions/…`) the skill points at, so the
+  always-loaded body stays small and the detail loads on demand.
+
 ## Wiring into `marketplace.json`
 
 `.claude-plugin/marketplace.json` lists every plugin. `plugin.json` is the single source of truth
