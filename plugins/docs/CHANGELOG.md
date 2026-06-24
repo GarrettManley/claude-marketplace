@@ -4,6 +4,12 @@ All notable changes to the **docs** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.1.0 — 2026-06-24
+
+- Added **adversarial-review-plan** skill: parallel review of implementation plans across 6 dimensions (clarity, completeness, feasibility, risk/rollback, scope-cut, value-justification), consolidated into CRITICAL / IMPORTANT / MINOR buckets.
+- Added three plan-reviewer agents — `plan-skeptic`, `plan-feasibility-auditor`, `plan-scope-cutter` — dispatched by the new skill.
+- Manifest enriched with `$schema`, `homepage`, `repository`, `license`, `keywords`, and category metadata.
+
 ## 1.0.0 — initial public release
 
 First public release. Six skills for documentation craft:

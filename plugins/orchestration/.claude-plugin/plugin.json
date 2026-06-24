@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "orchestration",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Local LLM tier handoff via llama-server: Reasoning + Tooling + General tier model defs, local-orchestrator skill (when to hand off to local), horizon-scanning skill (track SOTA <=14B models), and a SessionStart hook that injects the agent/Workflow orchestration defaults. Hardware-profile aware (~/.claude/context/hardware-profile.md).",
   "author": {
     "name": "Garrett Manley",

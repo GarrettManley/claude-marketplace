@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "stewardship",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Autonomous maintenance toolkit: drift-check runner against context-file verification commands, morning-briefing template, Windows Task Scheduler registration helper, auto-memory housekeeping for ~/.claude/projects/*/memory/.",
   "author": {
     "name": "Garrett Manley",
