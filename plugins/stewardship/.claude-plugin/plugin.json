@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "stewardship",
   "version": "1.0.0",
   "description": "Autonomous maintenance toolkit: drift-check runner against context-file verification commands, morning-briefing template, Windows Task Scheduler registration helper, auto-memory housekeeping for ~/.claude/projects/*/memory/.",
@@ -7,7 +8,15 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/stewardship",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["stewardship", "maintenance", "automation", "drift-check", "memory-housekeeping", "scheduler"]
+  "keywords": [
+    "stewardship",
+    "maintenance",
+    "automation",
+    "drift-check",
+    "memory-housekeeping",
+    "scheduler"
+  ]
 }

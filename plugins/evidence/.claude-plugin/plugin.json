@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "evidence",
   "version": "1.0.0",
   "description": "Evidence-discipline workflow: citation-seeker, truth-seeker, HMAC override token framework, scope-binding hook scaffold, secret-scan PreToolUse hook. Targets security research and any project where claims must be substantiated.",
@@ -7,7 +8,17 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/evidence",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["evidence", "citations", "verification", "security", "research", "scope", "secret-scan", "hmac"]
+  "keywords": [
+    "evidence",
+    "citations",
+    "verification",
+    "security",
+    "research",
+    "scope",
+    "secret-scan",
+    "hmac"
+  ]
 }

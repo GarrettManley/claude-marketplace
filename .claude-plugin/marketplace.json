@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-marketplace.json",
   "name": "garrettmanley",
   "owner": {
     "name": "Garrett Manley",
@@ -14,6 +15,7 @@
       "source": "./plugins/discipline",
       "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills.",
       "version": "1.0.0",
+      "category": "quality",
       "author": {
         "name": "Garrett Manley"
       },
@@ -31,6 +33,7 @@
       "source": "./plugins/evidence",
       "description": "Evidence-discipline workflow: citation-seeker, truth-seeker, HMAC override token framework, scope-binding hook scaffold, secret-scan PreToolUse hook. Targets security research and any project where claims must be substantiated.",
       "version": "1.0.0",
+      "category": "research",
       "author": {
         "name": "Garrett Manley"
       },
@@ -50,11 +53,12 @@
       "source": "./plugins/orchestration",
       "description": "Local LLM tier handoff: Reasoning + Tooling tier model defs (llama-server), local-orchestrator skill (when to hand off to local), horizon-scanning skill (track SOTA <=14B models), hardware-profile awareness via ~/.claude/context/hardware-profile.md.",
       "version": "1.0.0",
+      "category": "ai",
       "author": {
         "name": "Garrett Manley"
       },
       "keywords": [
-        "ollama",
+        "llama-server",
         "local-llm",
         "orchestration",
         "tiers",
@@ -68,6 +72,7 @@
       "source": "./plugins/windows",
       "description": "Windows + PowerShell helpers: copy-pasteable allowlist patterns for .claude/settings.local.json, PS5.1 vs PS7 routing decision tree, common Windows-isms (CRLF, BOM, $env:, path separators).",
       "version": "1.0.0",
+      "category": "tooling",
       "author": {
         "name": "Garrett Manley"
       },
@@ -84,6 +89,7 @@
       "source": "./plugins/stewardship",
       "description": "Autonomous maintenance toolkit: drift-check runner against context-file verification commands, morning-briefing template, Windows Task Scheduler registration helper, auto-memory housekeeping for ~/.claude/projects/*/memory/.",
       "version": "1.0.0",
+      "category": "automation",
       "author": {
         "name": "Garrett Manley"
       },
@@ -101,6 +107,7 @@
       "source": "./plugins/agentic",
       "description": "Opinionated meta-overlay for AI app development. Wires existing claude-api / agent-sdk-dev / mcp-server-dev plugins into a coherent starting point with opinionated defaults: latest model IDs, prompt-caching on by default, eval discipline, repo structure conventions.",
       "version": "1.0.0",
+      "category": "ai",
       "author": {
         "name": "Garrett Manley"
       },
@@ -119,6 +126,7 @@
       "source": "./plugins/aether",
       "description": "Aether Engine TTRPG/narrative framework support: domain-specific hooks (cd_core_guard, ledger truncation, classifier/harness/Rust-rebuild reminders), 6 skills (doc-cluster, edit-checklist, plan-writer, ledger-doctor, eval-run, value-justify), classifier-regression-checker agent. Hooks no-op outside Aether-shaped repos; safe to enable globally.",
       "version": "1.0.0",
+      "category": "narrative",
       "author": {
         "name": "Garrett Manley"
       },
@@ -138,6 +146,7 @@
       "source": "./plugins/docs",
       "description": "Documentation craft: tech-writing (universal prose rules from Google Tech Writing), mermaid-diagram (Mermaid authoring with a configurable brand palette and renderer-agnostic fencing), design-document (structured design-doc creation with a pluggable template).",
       "version": "1.0.0",
+      "category": "documentation",
       "author": {
         "name": "Garrett Manley"
       },
@@ -156,6 +165,7 @@
       "source": "./plugins/review",
       "description": "Multi-lens review: dispatch sub-agent reviewers against design docs, PRs, work items, wiki pages, or skill files using a library of reviewer archetypes (security, observability, data, operations, ecosystem, new-engineer, skill-craft). SessionStart hook nags about review-triggering artifacts that completed without a review token. Includes persona-stub template for adopters to add their own team.",
       "version": "1.0.0",
+      "category": "review",
       "author": {
         "name": "Garrett Manley"
       },
@@ -173,6 +183,7 @@
       "source": "./plugins/retrospective",
       "description": "Plan retrospective discipline: a self-contained cycle of marker-drop (exit plan mode), session-start nag, and a retro-authoring skill. Forces a pause after every approved plan to capture what worked, what surprised you, and concrete improvements.",
       "version": "1.0.0",
+      "category": "workflow",
       "author": {
         "name": "Garrett Manley"
       },
@@ -190,6 +201,7 @@
       "source": "./plugins/git",
       "description": "Git workflow: Conventional Commits formatting that resists the common CI-guard failure modes, and PR creation that detects the remote host (GitHub / Azure DevOps Repos / GitLab) instead of hardcoding one. Pairs with a project-local writing-style fork for tone.",
       "version": "1.0.0",
+      "category": "workflow",
       "author": {
         "name": "Garrett Manley"
       },
@@ -209,6 +221,7 @@
       "source": "./plugins/learning",
       "description": "Continuous-learning toolkit: atomic instinct storage plus project-scoped observation hooks (default-off) and an /analyze-observations review report. Adapted from affaan-m/everything-claude-code @ 4774946d.",
       "version": "1.0.0",
+      "category": "learning",
       "author": {
         "name": "Garrett Manley"
       },

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "discipline",
   "version": "1.0.0",
   "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills.",
@@ -7,7 +8,16 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/discipline",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["discipline", "hooks", "validation", "todo", "frontmatter", "drift", "plan-discipline"]
+  "keywords": [
+    "discipline",
+    "hooks",
+    "validation",
+    "todo",
+    "frontmatter",
+    "drift",
+    "plan-discipline"
+  ]
 }

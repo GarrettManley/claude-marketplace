@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "windows",
   "version": "1.0.0",
   "description": "Windows + PowerShell helpers: copy-pasteable allowlist patterns for .claude/settings.local.json, PS5.1 vs PS7 routing decision tree, common Windows-isms (CRLF, BOM, $env:, path separators).",
@@ -7,7 +8,14 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/windows",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["windows", "powershell", "pwsh", "tooling", "permissions"]
+  "keywords": [
+    "windows",
+    "powershell",
+    "pwsh",
+    "tooling",
+    "permissions"
+  ]
 }

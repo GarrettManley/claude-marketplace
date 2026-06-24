@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "retrospective",
   "version": "1.0.0",
   "description": "Plan retrospective discipline: a self-contained cycle of marker-drop (exit plan mode), session-start nag, and a retro-authoring skill. Forces a pause after every approved plan to capture what worked, what surprised you, and concrete improvements.",
@@ -7,7 +8,15 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/retrospective",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["retrospective", "retro", "plan", "discipline", "learning", "post-mortem"]
+  "keywords": [
+    "retrospective",
+    "retro",
+    "plan",
+    "discipline",
+    "learning",
+    "post-mortem"
+  ]
 }

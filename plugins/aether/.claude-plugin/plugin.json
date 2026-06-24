@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "aether",
   "version": "1.0.0",
   "description": "Aether Engine TTRPG/narrative framework support: domain-specific hooks (cd_core_guard, ledger truncation, classifier/harness/Rust-rebuild reminders), 6 skills (doc-cluster, edit-checklist, plan-writer, ledger-doctor, eval-run, value-justify), classifier-regression-checker agent. Hooks no-op outside Aether-shaped repos; safe to enable globally.",
@@ -7,7 +8,17 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/aether",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["aether", "ttrpg", "narrative", "ledger", "classifier", "ollama", "rust", "typescript"]
+  "keywords": [
+    "aether",
+    "ttrpg",
+    "narrative",
+    "ledger",
+    "classifier",
+    "ollama",
+    "rust",
+    "typescript"
+  ]
 }

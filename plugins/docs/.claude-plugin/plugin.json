@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "docs",
   "version": "1.0.0",
   "description": "Documentation craft: tech-writing (universal prose rules), mermaid-diagram, design-document, adversarial-review-doc (parallel dimension review for any markdown document), adversarial-review-pr (PR description accuracy + work item consistency), adversarial-review-code (coordination layer over pr-review-toolkit agents).",
@@ -7,7 +8,19 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/docs",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["documentation", "writing", "prose", "mermaid", "diagrams", "design-doc", "technical-writing", "adversarial-review", "code-review", "pr-review"]
+  "keywords": [
+    "documentation",
+    "writing",
+    "prose",
+    "mermaid",
+    "diagrams",
+    "design-doc",
+    "technical-writing",
+    "adversarial-review",
+    "code-review",
+    "pr-review"
+  ]
 }

@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "learning",
   "version": "1.0.0",
   "description": "Continuous-learning toolkit: atomic instinct storage plus project-scoped observation hooks (default-off) and an /analyze-observations review report. Adapted from affaan-m/everything-claude-code @ 4774946d.",
@@ -7,7 +8,13 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/learning",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["learning", "instincts", "observability", "continuous-learning"]
+  "keywords": [
+    "learning",
+    "instincts",
+    "observability",
+    "continuous-learning"
+  ]
 }

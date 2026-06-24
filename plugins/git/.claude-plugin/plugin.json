@@ -1,4 +1,5 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "git",
   "version": "1.0.0",
   "description": "Git workflow: Conventional Commits formatting that resists the common CI-guard failure modes, and PR creation that detects the remote host (GitHub / Azure DevOps Repos / GitLab) instead of hardcoding one. Pairs with a project-local writing-style fork for tone.",
@@ -7,7 +8,17 @@
     "email": "garrettmanley@gmail.com",
     "url": "https://garrettmanley.com"
   },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/git",
   "repository": "https://github.com/garrettmanley/claude-marketplace",
   "license": "MIT",
-  "keywords": ["git", "commits", "conventional-commits", "pr", "pull-request", "github", "azure-devops", "gitlab"]
+  "keywords": [
+    "git",
+    "commits",
+    "conventional-commits",
+    "pr",
+    "pull-request",
+    "github",
+    "azure-devops",
+    "gitlab"
+  ]
 }
