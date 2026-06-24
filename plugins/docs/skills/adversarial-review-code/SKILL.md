@@ -9,7 +9,7 @@ dependencies: ["pr-review-toolkit"]
 
 Running multiple code-review agents independently produces overlapping findings in different formats, making it hard to triage what to fix first and causing redundant fixer context-building.
 
-Coordination layer over `pr-review-toolkit` agents. Dispatches code-review, silent-failure-hunter, and (when applicable) type-design-analyzer in parallel, then consolidates their findings into a single severity-sorted file with deduplication. Adds no new review logic — it orchestrates existing agents and normalises their output into a consistent format.
+Coordination layer over `pr-review-toolkit` agents. Dispatches code-reviewer, silent-failure-hunter, and (when applicable) type-design-analyzer in parallel, then consolidates their findings into a single severity-sorted file with deduplication. Adds no new review logic — it orchestrates existing agents and normalises their output into a consistent format.
 
 This skill requires `pr-review-toolkit` from `claude-plugins-official`. Install it before use.
 

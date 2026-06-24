@@ -18,11 +18,10 @@ if [[ -f "$LOCAL_CONFIG" ]] && grep -qE '^inject-branch-state:\s*false\s*$' "$LO
   exit 0
 fi
 
-# Require gh and python3 on PATH; exit silently if either is missing (fail-soft).
+# Require gh on PATH; exit silently if missing (fail-soft). This script is pure
+# bash + git and does not invoke Python, so no interpreter check is needed
+# (a bare `python3` is absent on a stock Windows + Git Bash setup anyway).
 if ! command -v gh >/dev/null 2>&1; then
-  exit 0
-fi
-if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 

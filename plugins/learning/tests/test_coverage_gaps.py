@@ -222,31 +222,31 @@ class TestObserveMissingLines:
     """Lines 56, 59, 73, 81-82."""
 
     def test_detect_phase_uses_env_var_pretooluse(self, monkeypatch):
-        """Line 56-58 — no argv[1] → env var detection (PreToolUse)."""
+        """Env var fallback (PreToolUse) when event/argv carry no phase."""
         monkeypatch.setenv("CLAUDE_HOOK_EVENT_NAME", "PreToolUse")
-        phase = _detect_phase(["observe.py"])
+        phase = _detect_phase({}, ["observe.py"])
         assert phase == "pre"
 
     def test_detect_phase_uses_env_var_post(self, monkeypatch):
-        """Line 56-60 — no argv[1], env has 'post' → 'post'."""
+        """Env var fallback (PostToolUse) → 'post'."""
         monkeypatch.setenv("CLAUDE_HOOK_EVENT_NAME", "PostToolUse")
-        phase = _detect_phase(["observe.py"])
+        phase = _detect_phase({}, ["observe.py"])
         assert phase == "post"
 
     def test_detect_phase_defaults_to_post(self, monkeypatch):
-        """Line 59 — no argv[1], no matching env → 'post'."""
+        """No event phase, no argv[1], no matching env → 'post'."""
         monkeypatch.delenv("CLAUDE_HOOK_EVENT_NAME", raising=False)
-        phase = _detect_phase(["observe.py"])
+        phase = _detect_phase({}, ["observe.py"])
         assert phase == "post"
 
     def test_detect_phase_argv_pre(self, monkeypatch):
-        """Line 55 — argv[1] == 'pre'."""
-        phase = _detect_phase(["observe.py", "pre"])
+        """argv[1] == 'pre' fallback (no event phase)."""
+        phase = _detect_phase({}, ["observe.py", "pre"])
         assert phase == "pre"
 
     def test_detect_phase_argv_post(self):
-        """Line 55 — argv[1] == 'post'."""
-        phase = _detect_phase(["observe.py", "post"])
+        """argv[1] == 'post' fallback (no event phase)."""
+        phase = _detect_phase({}, ["observe.py", "post"])
         assert phase == "post"
 
     def test_main_non_dict_event_returns_0(self, tmp_data, monkeypatch):

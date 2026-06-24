@@ -273,6 +273,16 @@ class TestMain:
         out = capsys.readouterr().out
         assert "## Drift Check" in out
 
+    def test_markdown_flag_is_not_a_supported_option(self, tmp_path, monkeypatch):
+        # `--markdown` is intentionally NOT a flag: markdown is the implicit
+        # default when --json is absent. argparse must reject it with exit 2 so
+        # docs/skill examples never advertise a non-existent option again.
+        _ctx(tmp_path, "ctx.md", _front("exit 0"))
+        monkeypatch.setattr(sys, "argv", ["drift_check.py", "--dir", str(tmp_path), "--markdown"])
+        with pytest.raises(SystemExit) as exc:
+            main()
+        assert exc.value.code == 2
+
     def test_returns_1_on_failure(self, tmp_path, monkeypatch, capsys):
         _ctx(tmp_path, "bad.md", _front("exit 1"))
         monkeypatch.setattr(sys, "argv", ["drift_check.py", "--dir", str(tmp_path)])

@@ -188,7 +188,7 @@ manifest loaded; permissive mode")`. Scope enforcement is fully opt-in.
 | `python3` discovery | `init.sh` requires `python3` on `PATH` | `init.ps1` tries `python3`, `python`, then `py` in order |
 | Key path | `~/.claude/evidence-override-key` | `%USERPROFILE%\.claude\evidence-override-key` |
 | `chmod 600` equivalent | Built into `init.sh` | `icacls` built into `init.ps1`; run manually: `icacls $HOME\.claude\evidence-override-key /inheritance:r /grant:r "$env:USERNAME:(R,W)"` |
-| Secret-scan hook invocation | `python3 "${CLAUDE_PLUGIN_ROOT}/hooks/secret_scan.py"` | Same command — Claude Code resolves `CLAUDE_PLUGIN_ROOT` on both platforms |
+| Secret-scan hook invocation | `uv run --no-project "${CLAUDE_PLUGIN_ROOT}/hooks/secret_scan.py"` | Same command — Claude Code resolves `CLAUDE_PLUGIN_ROOT` on both platforms |
 
 ## Relationship to more opinionated project-level frameworks
 

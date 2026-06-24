@@ -24,12 +24,10 @@ Invoke `/plan-retrospective` as soon as the plan work is complete. A marker file
 2. Use the template below to write `retrospectives/done/<slug>.md` at the **workspace root** (see [Workspace-root discovery](#workspace-root-discovery) below).
 3. Delete `retrospectives/pending/<slug>.marker` once the done file is written.
 4. Stage and commit the retro file (standalone commit, message: `docs(retro): Add retrospective for <slug>`).
-5. If the workspace has a `.claude/commit-message-rules.yaml`, validate the retro commit:
-   ```bash
-   bash ~/.claude/plugins/cache/garrettmanley/git/<ver>/skills/commit-message/scripts/validate.sh HEAD \
-     --rules .claude/commit-message-rules.yaml
-   ```
-   Exit 0 = valid. Exit 1 = diagnostic printed; amend the commit before finishing.
+5. If the workspace has a `.claude/commit-message-rules.yaml` **and** the `git@garrettmanley` plugin
+   is installed, validate the retro commit with its `commit-message` validator (best-effort — skip
+   this step if the git plugin is not available). Exit 0 = valid; a non-zero exit prints a diagnostic,
+   so amend the commit before finishing.
 
 ## Template
 

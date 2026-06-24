@@ -11,6 +11,8 @@ Intended for developers running [llama-server (llama.cpp)](https://github.com/gg
 /plugin install orchestration@garrettmanley
 ```
 
+**Prerequisite:** [`uv`](https://docs.astral.sh/uv/) must be installed and on PATH. The SessionStart hook runs via `uv run --no-project` (see `hooks/hooks.json`), which bootstraps the Python runtime itself — you do not need a separate `python3` on PATH.
+
 ## Components
 
 | Component | Type | Description |
@@ -161,6 +163,6 @@ Created by init. The `always: true` frontmatter causes supporting `inject_contex
 | Init script | `scripts\init.ps1` (PowerShell 7+) — uses `$env:USERPROFILE\.claude\context\` | `scripts/init.sh` (Bash) — uses `~/.claude/context/` |
 | Binary name | `llama-server.exe` | `llama-server` (no extension) |
 | Model paths | Backslash separators in `tiers.local.json`; forward slashes also accepted by llama-server on Windows | Forward slashes standard |
-| Hook script | `inject_orchestration_context.py` runs via `python3` (configured in `hooks.json`) — ensure `python3` is on PATH | Same |
+| Hook script | `inject_orchestration_context.py` runs via `uv run --no-project` (configured in `hooks.json`) — ensure `uv` is installed and on PATH; `uv run --no-project` bootstraps Python | Same |
 
 The shipped `configs/tiers.json` uses generic `<path-to>/llama-server.exe` as the binary key. On macOS/Linux, update the key to `<path-to>/llama-server` in `tiers.local.json`.

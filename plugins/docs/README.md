@@ -24,7 +24,7 @@ No init scripts. No configuration files. Enable and use.
 |-------|-------------|
 | `tech-writing` | Universal prose rules grounded in [Google Technical Writing](https://developers.google.com/tech-writing). Active voice, strong verbs, pronoun distance, paragraph structure, self-check. |
 | `mermaid-diagram` | Mermaid diagrams with a semantic three-role color palette (Enforcement / Processing / Infrastructure), renderer-agnostic fencing, and a common-mistakes table. |
-| `design-document` | Structured design-doc skeleton with 17 numbered sections; 7 are required in early draft. Ships a starter template at `templates/generic-design-doc-template.md`. |
+| `design-document` | Structured design-doc skeleton with 17 numbered sections; 8 are required in early draft (sections 1-4, 7, 12, 16, 17). Ships a starter template at `templates/generic-design-doc-template.md`. |
 | `adversarial-review-doc` | Parallel dimension-agent review for any markdown document. Catches structural problems, broken cross-references, stale claims, terminology drift, and placeholder text. Optional `--fix` fixer dispatch. |
 | `adversarial-review-pr` | PR-level adversarial review: description accuracy vs. the actual diff, work item consistency, commit message alignment, and cross-document sync obligations. |
 | `adversarial-review-code` | Coordination layer over `pr-review-toolkit` agents. Dispatches `code-reviewer`, `silent-failure-hunter`, and (for TypeScript / C# diffs) `type-design-analyzer` in parallel, then consolidates and deduplicates findings. |

@@ -17,10 +17,12 @@ if [[ -f "$LOCAL_CONFIG" ]] && grep -qE '^inject-issues:\s*false\s*$' "$LOCAL_CO
   exit 0
 fi
 
-# Require python3 on PATH; exit silently if missing (fail-soft).
-if ! command -v python3 >/dev/null 2>&1; then
+# Require uv on PATH; exit silently if missing (fail-soft). uv resolves an
+# interpreter cross-platform, matching the rest of hooks.json (a system
+# interpreter is not guaranteed on a stock Windows + Git Bash setup).
+if ! command -v uv >/dev/null 2>&1; then
   exit 0
 fi
 
 dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-exec python3 "$dir/../scripts/_inject_issues.py"
+exec uv run --no-project "$dir/../scripts/_inject_issues.py"

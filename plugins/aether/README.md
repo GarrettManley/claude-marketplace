@@ -126,7 +126,7 @@ OLLAMA_CLASSIFIER_MODEL=qwen2.5:7b /aether:eval-run
 
 ## Cross-platform notes
 
-The hooks run under `python3` via `${CLAUDE_PLUGIN_ROOT}` resolution, which works on Windows, macOS, and Linux as long as Python 3 is on PATH. The Rust-rebuild reminder checks `core/target/release/core.exe` for staleness; on macOS/Linux the binary will be `core` (no `.exe`) and the staleness probe will hit an `OSError` and skip the stale-binary warning — the reminder message still fires. No other platform-specific behavior.
+The hooks run via `uv run --no-project` (see `hooks/hooks.json`), which works on Windows, macOS, and Linux as long as `uv` is installed and on PATH. `uv run` provisions its own Python interpreter, so a separate Python 3 install is not required. The Rust-rebuild reminder checks `core/target/release/core.exe` for staleness; on macOS/Linux the binary will be `core` (no `.exe`) and the staleness probe will hit an `OSError` and skip the stale-binary warning — the reminder message still fires. No other platform-specific behavior.
 
 The plugin ships no `init.sh` / `init.ps1` — no scaffolding step is required.
 

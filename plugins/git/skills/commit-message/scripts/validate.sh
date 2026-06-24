@@ -66,4 +66,7 @@ git log -1 --format="%B" "$REF" > "$TMP_MSG" 2>"$GIT_ERR" || {
   exit 2
 }
 
-uv run --no-project "${SCRIPT_DIR}/validate.py" "$REF" "$TMP_MSG" "${RULES_FILE:-}"
+# --with pyyaml provisions PyYAML into the isolated --no-project environment so
+# validate.py uses the real YAML parser; without it the bundled minimal parser
+# would always run (and warn) since --no-project cannot see system site-packages.
+uv run --no-project --with pyyaml "${SCRIPT_DIR}/validate.py" "$REF" "$TMP_MSG" "${RULES_FILE:-}"

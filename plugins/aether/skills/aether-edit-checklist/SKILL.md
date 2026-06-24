@@ -32,7 +32,7 @@ automatically on `src/*.ts` writes; verify the diff is staged.
 
 | Touched | Run |
 | --- | --- |
-| Classifier code (`src/llm/classifier_prompt.ts`, `gemini.ts`, `ollama.ts`, `verb_lexicon.ts`) | `npm run eval:classifier` (or invoke the `eval-run` skill) |
+| Classifier code (`src/llm/classifier_prompt.ts`, `gemini.ts`, `ollama.ts`, `schemas.ts`) | `npm run eval:classifier` (or invoke the `eval-run` skill) |
 | State-sync prompt or schema | `npm run eval:state-sync` |
 | Gameplay-affecting source (`src/dm.ts`, `src/llm/*`, `src/bus.ts`, `src/server.ts`, `src/actor.ts`, `src/roll-proposal.ts`, `src/state-sync.ts`) | `node scripts/run-gameplay-tests.mjs` (live Ollama; scenarios 01-03 baseline + area-specific) |
 | Anything else in `src/` or `core/src/` | `npm run check` |

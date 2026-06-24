@@ -25,7 +25,7 @@ No init scripts. No further setup required beyond the one-time `.gitignore` entr
 | `session-start-retro-nag.sh` | SessionStart hook | Lists outstanding pending markers at the start of every session. |
 | `plan-retrospective` | Skill | Authoring flow — reads the plan, writes `retrospectives/done/<slug>.md`, deletes the pending marker. |
 
-All three hooks are plain `bash` commands with a **5-second timeout** (see `hooks/hooks.json`).
+Both hooks are plain `bash` commands with a **5-second timeout** (see `hooks/hooks.json`).
 They do **not** honor `*_HOOK_PROFILE` env vars or other disable frameworks — enabling the plugin
 means the hooks are on. Failures are non-blocking; a hook error never interrupts the session.
 

@@ -43,8 +43,8 @@ Get-Content "$env:LOCALAPPDATA\stewardship-plugin\logs\nightly.log" -Tail 50
 ## When to use each piece on demand (no scheduler needed)
 
 ```bash
-# Drift-check the user-level context dir
-python <plugin>/scripts/drift_check.py --markdown
+# Drift-check the user-level context dir (markdown is the default output)
+python <plugin>/scripts/drift_check.py
 
 # Drift-check a project-specific context dir
 python <plugin>/scripts/drift_check.py --dir C:/Users/<username>/<workspace>/.ai/context --json

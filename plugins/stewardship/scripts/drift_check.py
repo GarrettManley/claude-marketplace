@@ -17,8 +17,9 @@ Pass = exit 0, Fail = anything else. Output is structured JSON suitable
 for piping to other tools or templating into a briefing.
 
 Usage:
-    python drift_check.py [--dir PATH] [--json | --markdown]
+    python drift_check.py [--dir PATH] [--json]
 
+Markdown is the default output; pass --json for machine-readable output.
 Default --dir is `~/.claude/context/`.
 """
 from __future__ import annotations

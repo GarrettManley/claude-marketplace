@@ -1,6 +1,6 @@
 ---
 name: eval-run
-description: Run the classifier golden eval suite against the local LLM classifier (Ollama or llama-server). Use after any edit to classifier_prompt.ts, gemini.ts, ollama.ts, or verb_lexicon.ts to catch regressions before committing.
+description: Run the classifier golden eval suite against the local LLM classifier (Ollama or llama-server). Use after any edit to classifier_prompt.ts, gemini.ts, ollama.ts, or schemas.ts to catch regressions before committing.
 version: 0.1.0
 dependencies: []
 ---
@@ -10,7 +10,7 @@ dependencies: []
 ## When to use
 
 Use after editing `classifier_prompt.ts`, `gemini.ts`, `ollama.ts`, or
-`verb_lexicon.ts`, before committing, to catch classifier regressions.
+`schemas.ts`, before committing, to catch classifier regressions.
 
 Run the classifier golden eval suite and report results.
 

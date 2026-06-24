@@ -15,8 +15,8 @@ Raise agent completion quality by improving harness configuration, not by rewrit
 ## Workflow
 
 1. **Inspect the surface.** Run a quick read-only audit:
-   - List enabled plugins: `cat ~/.claude/settings.json | python3 -c "import json,sys; d=json.load(sys.stdin); print('\n'.join(sorted(k for k,v in d.get('enabledPlugins',{}).items() if v)))"`
-   - List user-level hooks: `cat ~/.claude/settings.json | python3 -c "import json,sys; print(json.dumps(json.load(sys.stdin).get('hooks',{}),indent=2))"`
+   - List enabled plugins: `cat ~/.claude/settings.json | uv run --no-project python -c "import json,sys; d=json.load(sys.stdin); print('\n'.join(sorted(k for k,v in d.get('enabledPlugins',{}).items() if v)))"` (`uv` resolves a Python interpreter cross-platform; on Windows it avoids the `python3`-vs-`python`/`py` split)
+   - List user-level hooks: `cat ~/.claude/settings.json | uv run --no-project python -c "import json,sys; print(json.dumps(json.load(sys.stdin).get('hooks',{}),indent=2))"`
    - List MCP servers loaded: check `~/.claude/settings.json` MCP section + any plugin-level `.mcp.json` opt-outs (see `docs/plugin-schema-gotchas.md` in this marketplace).
    - Spot-check `plugins/*/.claude-plugin/plugin.json` files for compliance with the schema gotchas doc.
 2. **Identify the top 3 leverage areas.** Rank by `(impact × reversibility) ÷ effort`. Categories to check:

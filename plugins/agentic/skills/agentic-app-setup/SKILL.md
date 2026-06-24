@@ -33,13 +33,11 @@ Before writing the first SDK call, set these conventions:
 
 ### 1. Model IDs
 
-Default to the latest stable models. As of session knowledge cutoff:
+Default to the latest stable models. **The `claude-api` skill is the source of truth for current model IDs — always check it before committing one to code.** Model IDs cycle quarterly, so treat the values below as a starting point, not a pin:
 
-- **Reasoning + complex tasks**: `claude-opus-4-7` (1M context variant: `claude-opus-4-7[1m]`)
-- **Daily driver**: `claude-sonnet-4-6`
-- **Latency-sensitive / cost-sensitive**: `claude-haiku-4-5-20251001`
-
-Always check `claude-api` skill for the current latest before committing — model IDs cycle quarterly.
+- **Reasoning + complex tasks**: latest Opus (at time of writing, `claude-opus-4-8`; 1M context variant `claude-opus-4-8[1m]`)
+- **Daily driver**: latest Sonnet (`claude-sonnet-4-6`)
+- **Latency-sensitive / cost-sensitive**: latest Haiku (`claude-haiku-4-5`)
 
 ### 2. Prompt caching
 

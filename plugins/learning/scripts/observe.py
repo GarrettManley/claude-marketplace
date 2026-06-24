@@ -51,11 +51,22 @@ def _build_observation(event: dict[str, Any], phase: str) -> dict[str, Any]:
     return obs
 
 
-def _detect_phase(argv: list[str]) -> str:
+def _detect_phase(event: dict[str, Any], argv: list[str]) -> str:
+    # Canonical signal: Claude Code includes "hook_event_name" in the stdin JSON
+    # for PreToolUse / PostToolUse events. This is the only reliable source in
+    # production -- the wrapper (run_with_flags.py) imports observe and calls
+    # main() without setting sys.argv, and CLAUDE_HOOK_EVENT_NAME is not a CC
+    # env var, so the argv/env paths below only fire in direct-invocation tests.
+    name = str(event.get("hook_event_name") or "").lower()
+    if name.startswith("pretool"):
+        return "pre"
+    if name.startswith("posttool"):
+        return "post"
+    # Fallbacks for direct invocation (tests / manual runs).
     if len(argv) > 1 and argv[1] in ("pre", "post"):
         return argv[1]
-    name = (os.environ.get("CLAUDE_HOOK_EVENT_NAME") or "").lower()
-    if "pretooluse" in name or name == "pre":
+    env_name = (os.environ.get("CLAUDE_HOOK_EVENT_NAME") or "").lower()
+    if "pretooluse" in env_name or env_name == "pre":
         return "pre"
     return "post"
 
@@ -71,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if not isinstance(event, dict):
         return 0
-    phase = _detect_phase(argv)
+    phase = _detect_phase(event, argv)
     obs = _build_observation(event, phase)
     obs_file = get_observations_file(get_project_id())
     try:

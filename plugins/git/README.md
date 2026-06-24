@@ -153,7 +153,7 @@ the optional rule file scaffolded by init:
 
 | Symptom | Fix |
 |---------|-----|
-| `validate: warning: PyYAML not installed; using minimal fallback parser` | Install PyYAML (`pip install pyyaml`) for full YAML support. The stdlib fallback handles most rule files correctly; PyYAML is optional but recommended for complex patterns or multi-line strings. |
+| `validate: warning: PyYAML not installed; using minimal fallback parser` | `validate.sh` auto-provisions PyYAML via `uv run --with pyyaml`, so this warning should not appear on the normal path. It only fires if you run `validate.py` directly with a Python interpreter that lacks PyYAML — in that case install it (`pip install pyyaml`) or invoke through `validate.sh`. The stdlib fallback handles most rule files correctly regardless. |
 | `validate: cannot read commit message for '<ref>'` | The ref doesn't exist or `git log` failed. Confirm the SHA is reachable: `git log --oneline -5`. |
 | `gh pr create` fails with "no such remote" or auth error | The `gh` CLI needs to be authenticated against the correct host: `gh auth login`. This plugin does not handle auth. |
 | `az repos pr create` returns "no default organization" | Run `az devops configure --defaults organization=https://dev.azure.com/<org> project=<project>` once per machine. |
@@ -164,8 +164,8 @@ the optional rule file scaffolded by init:
 | Concern | Detail |
 |---------|--------|
 | Init script | `init.sh` requires Bash; `init.ps1` requires PowerShell 7+. Both produce identical output and the same scaffolded file. |
-| Validator | `validate.sh` delegates to `validate.py` (Python 3); `python3` must be on `PATH`. On Windows, `validate.sh` runs under Git Bash or WSL. A native PowerShell wrapper is not included — invoke via `bash` or `python3 validate.py` directly. |
-| PyYAML | Optional on all platforms. Install with `pip install pyyaml` or `uv pip install pyyaml`. Without it the stdlib fallback parser runs and emits a warning. |
+| Validator | `validate.sh` delegates to `validate.py` via `uv run` (no project virtualenv required); `uv` must be on `PATH`. On Windows, `validate.sh` runs under Git Bash or WSL. A native PowerShell wrapper is not included — invoke via `bash` or run `validate.py` with any Python 3 directly. |
+| PyYAML | Auto-provisioned by `validate.sh` (`uv run --with pyyaml`), so the real YAML parser is always used on the standard path. If you run `validate.py` directly without PyYAML installed, the stdlib fallback parser runs and emits a warning. |
 | Path separator | Rule file resolution uses `git rev-parse --show-toplevel`, which returns a POSIX path on all platforms when called from Bash / Git Bash. |
 
 ## What this plugin does NOT include

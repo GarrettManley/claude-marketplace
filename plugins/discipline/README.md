@@ -41,7 +41,7 @@ Generic dev hygiene for Claude Code: TODO+issue enforcement, frontmatter lint, p
 | `frontmatter_lint.py` | PostToolUse (Write/Edit/MultiEdit) | standard, strict | Validates YAML frontmatter fields on docs matching a configured pattern (off until `require-frontmatter-fields` is set). |
 | `spec_companion_check.py` | PostToolUse (Write only) | strict | On new spec docs, enforces issue refs and required sections (`## Goal`, `## Acceptance`); warns on missing companion docs (threat model, runbook, user guide) and missing companion plans. |
 | `pitfalls_pointer.py` | PostToolUse (Edit/Write/MultiEdit) | standard, strict | Prints a pointer to an area-specific pitfalls doc when you edit a file in a configured tracked area (off until `pitfalls-routes` is set). |
-| `gateguard.py` | PreToolUse (Edit/Write/MultiEdit + Bash) | standard, strict | Denies the first edit per code file per session until the agent presents investigation facts (importers, public API, schemas, current instruction quoted verbatim). Prose files exempt; `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` stay gated. Also gates destructive Bash (`rm -rf`, `git push --force`, `drop table`, `dd if=`). |
+| `gateguard.py` | PreToolUse (Edit/Write/MultiEdit + Bash) | edit gate: strict; bash gate: standard, strict | Denies the first edit per code file per session until the agent presents investigation facts (importers, public API, schemas, current instruction quoted verbatim). Prose files exempt; `CLAUDE.md`/`AGENTS.md`/`GEMINI.md` stay gated. Also gates destructive Bash (`rm -rf`, `git push --force`, `drop table`, `dd if=`). The edit gate is strict-only as of v0.7.1; the destructive-Bash gate fires under both `standard` and `strict`. |
 | `pre_compact_snapshot.py` | PreCompact | standard, strict | Writes a filesystem-state snapshot (branch, HEAD SHA, top-10 recently-modified files) before conversation compaction. |
 | `inject_issues.sh` | SessionStart | minimal, standard, strict | Injects open GitHub issues into `additionalContext` when `gh` is on PATH and `origin` resolves to a GitHub repo. |
 | `inject_branch_state.sh` | SessionStart | minimal, standard, strict | Warns about stale/unmerged/unpushed branches at session open. |
@@ -174,7 +174,7 @@ All config file settings have env var equivalents (highest priority):
 | `discipline:post-edit:memory-tracker-check` | | ✓ | ✓ |
 | `discipline:post-edit:frontmatter-lint` | | ✓ | ✓ |
 | `discipline:post-edit:pitfalls-pointer` | | ✓ | ✓ |
-| `discipline:pre-edit:gateguard-fact-force` | | ✓ | ✓ |
+| `discipline:pre-edit:gateguard-fact-force` | | | ✓ |
 | `discipline:pre-bash:gateguard-fact-force` | | ✓ | ✓ |
 | `discipline:pre-compact:snapshot` | | ✓ | ✓ |
 | `discipline:session-start:resume-context` | | ✓ | ✓ |
@@ -224,12 +224,12 @@ Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key
 | `todo_issue_hook.py` blocks a file type you don't want gated | Set `DISCIPLINE_SOURCE_EXTENSIONS` (or `source-extensions` in `.claude/discipline.local.md`) to only the extensions you care about. |
 | Gateguard fires on every `.md` edit | Prose files (`.md`, `.txt`, `.rst`) are exempt by default — check that the file doesn't have the `.md` extension on one of the behavior-bearing config trio (`CLAUDE.md`, `AGENTS.md`, `GEMINI.md`), which stay gated intentionally. |
 | Plan check fails with "no tracker id" on a file you didn't intend as a plan | The default plan pattern matches `docs/**/plans/YYYY-MM-DD-*.md` and `.claude/plans/**`. Set a narrower `plan-pattern` in `.claude/discipline.local.md` if your layout differs. |
-| `inject_issues.sh` produces nothing | Confirm `gh` is on PATH and authenticated (`gh auth status`), and that `git remote get-url origin` resolves to a GitHub repo. The hook is a no-op when either condition is false. |
+| `inject_issues.sh` produces nothing | Confirm `uv` and `gh` are on PATH, `gh` is authenticated (`gh auth status`), and `git remote get-url origin` resolves to a GitHub repo. The hook is a no-op when any condition is false (the Python helper runs via `uv run --no-project`, so missing `uv` silently disables it). |
 
 ## Cross-platform
 
 - `init.sh` requires Bash; `init.ps1` requires PowerShell 7+ (`pwsh`). Both are functionally equivalent — run whichever matches your shell.
-- `inject_issues.sh` and `inject_branch_state.sh` are Bash scripts. On Windows they run under Git Bash (bundled with Git for Windows) or WSL. No PowerShell equivalent is needed because Claude Code's hook runner invokes them via the system shell.
+- `inject_issues.sh` and `inject_branch_state.sh` are Bash scripts. On Windows they run under Git Bash (bundled with Git for Windows) or WSL. No PowerShell equivalent is needed because Claude Code's hook runner invokes them via the system shell. `inject_issues.sh` runs its Python helper through `uv run --no-project` (matching the rest of `hooks.json`), so it needs `uv` on PATH rather than a bare `python3` — the latter is absent on a stock Windows + Git Bash install. `inject_branch_state.sh` is pure Bash + git and needs only `gh`.
 - Gateguard worktree cleanup uses a PowerShell fallback (`Remove-Item -Recurse -Force`) when `git worktree remove` fails with a permission error on Windows.
 - Path separators in `.claude/discipline.local.md` values should use forward slashes; the config reader normalizes them on Windows.
 
@@ -237,11 +237,13 @@ Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key
 
 **0.1.0 → 0.2.0:** `spec-companion-check` moved to `strict` profile only. Set `DISCIPLINE_HOOK_PROFILE=strict` to restore the prior behavior.
 
-**0.2.0 → 0.3.0:** Adds `gateguard` (default-on under `standard`). To opt out: `DISCIPLINE_HOOK_PROFILE=minimal` or add both gateguard ids to `DISCIPLINE_DISABLED_HOOKS`.
+**0.2.0 → 0.3.0:** Adds `gateguard`. Originally default-on under `standard`; the edit gate was later narrowed to `strict` only (see the 0.7.0 → 0.7.1 note). To opt out entirely: `DISCIPLINE_HOOK_PROFILE=minimal` or add both gateguard ids to `DISCIPLINE_DISABLED_HOOKS`.
 
 **0.3.0 → 0.4.0:** Adds `pre-compact:snapshot` + `session-start:resume-context` (default-on under `standard`). Disable via `DISCIPLINE_HOOK_PROFILE=minimal` or the hook ids.
 
 **0.5.0 → 0.6.0:** Gateguard file gate narrowed to code files — prose (`.md`/`.txt`/`.rst`) is now exempt except `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`. Routine-Bash gate removed entirely. Destructive-Bash detection unchanged.
+
+**0.7.0 → 0.7.1:** Gateguard edit gate narrowed to the `strict` profile only (`discipline:pre-edit:gateguard-fact-force` no longer fires under `standard`). The destructive-Bash gate (`discipline:pre-bash:gateguard-fact-force`) still fires under both `standard` and `strict`. To restore the fact-forcing edit gate, run with `DISCIPLINE_HOOK_PROFILE=strict`.
 
 If you previously maintained these hooks at the project level:
 

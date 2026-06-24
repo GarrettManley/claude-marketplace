@@ -29,9 +29,9 @@ The skill loads these on demand; they are not injected at every session start.
 
 | Document | Contents |
 |----------|----------|
-| `references/WINDOWS_ISMS.md` | Catalog of Windows-specific traps (CRLF in multi-line edits, BOM/encoding table by tool, path separators, `$env:` vs `%NAME%`, `/tmp` absence, `find` disambiguation, file locks) with mitigations. |
-| `references/PS_VERSION_ROUTING.md` | Decision tree for `pwsh` (PS 7+) vs `powershell.exe` (PS 5.1): default to PS 7, drop to 5.1 for WMI process events, WinRT types, legacy COM, DSC v1, or scripts with multi-byte chars saved without BOM. |
-| `references/ALLOWLIST_PATTERNS.md` | Copy-pasteable `.claude/settings.local.json` `permissions.allow` entries organized by category: system inspection, process management, network/DNS, package managers, git, environment variable reads. |
+| `skills/windows-patterns/references/WINDOWS_ISMS.md` | Catalog of Windows-specific traps (CRLF in multi-line edits, BOM/encoding table by tool, path separators, `$env:` vs `%NAME%`, `/tmp` absence, `find` disambiguation, file locks) with mitigations. |
+| `skills/windows-patterns/references/PS_VERSION_ROUTING.md` | Decision tree for `pwsh` (PS 7+) vs `powershell.exe` (PS 5.1): default to PS 7, drop to 5.1 for WMI process events, WinRT types, legacy COM, DSC v1, or scripts with multi-byte chars saved without BOM. |
+| `skills/windows-patterns/references/ALLOWLIST_PATTERNS.md` | Copy-pasteable `.claude/settings.local.json` `permissions.allow` entries organized by category: system inspection, process management, network/DNS, package managers, git, environment variable reads. |
 
 ### Hooks
 
@@ -71,7 +71,7 @@ This plugin has no environment variable overrides and no `.local.md` config file
 reference docs only; there is no hook behavior to tune.
 
 To reduce permission prompts in a Windows project, copy the relevant entries from
-`references/ALLOWLIST_PATTERNS.md` into your project's `.claude/settings.local.json`:
+`skills/windows-patterns/references/ALLOWLIST_PATTERNS.md` into your project's `.claude/settings.local.json`:
 
 ```json
 {
@@ -92,10 +92,10 @@ patterns based on commands you have already approved repeatedly.
 
 | Symptom | Fix |
 |---------|-----|
-| `Edit` tool reports success but the file is unchanged | CRLF mismatch: `old_string` uses `\n` but the file has `\r\n`. Switch to single-line edits, or use `Write` to rewrite the whole file. See `references/WINDOWS_ISMS.md`. |
+| `Edit` tool reports success but the file is unchanged | CRLF mismatch: `old_string` uses `\n` but the file has `\r\n`. Switch to single-line edits, or use `Write` to rewrite the whole file. See `skills/windows-patterns/references/WINDOWS_ISMS.md`. |
 | PS 5.1 script outputs `â€"` instead of `—` (mojibake) | The file was saved as UTF-8 without BOM. In VS Code, bottom-right encoding → "Save with Encoding" → "UTF-8 with BOM". PS 7 doesn't have this requirement. |
-| `Register-WmiEvent` fires in test but silently no-ops in production | PS 7.6 drops WMI process-creation events. Run the WMI subscription with `powershell.exe` (PS 5.1). See `references/PS_VERSION_ROUTING.md`. |
-| Python code opens `/tmp/foo` and gets `FileNotFoundError` on Windows | `/tmp` does not exist on Windows outside of Git Bash. Use `tempfile.gettempdir()` or `os.environ['LOCALAPPDATA'] + r'\Temp'`. See `references/WINDOWS_ISMS.md`. |
+| `Register-WmiEvent` fires in test but silently no-ops in production | PS 7.6 drops WMI process-creation events. Run the WMI subscription with `powershell.exe` (PS 5.1). See `skills/windows-patterns/references/PS_VERSION_ROUTING.md`. |
+| Python code opens `/tmp/foo` and gets `FileNotFoundError` on Windows | `/tmp` does not exist on Windows outside of Git Bash. Use `tempfile.gettempdir()` or `os.environ['LOCALAPPDATA'] + r'\Temp'`. See `skills/windows-patterns/references/WINDOWS_ISMS.md`. |
 
 ## Cross-platform notes
 

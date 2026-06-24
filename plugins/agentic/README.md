@@ -15,9 +15,10 @@ documentation.
 /plugin enable agentic@garrettmanley
 ```
 
-The companion plugins (`claude-api`, `agent-sdk-dev`, `mcp-server-dev`, `plugin-dev`) must
-also be enabled for the routing targets to resolve. Enable them individually or as part of
-your standard plugin set.
+This plugin routes to the **official Anthropic plugins** `claude-api`, `agent-sdk-dev`,
+`mcp-server-dev`, and `plugin-dev`. They are not shipped in this marketplace — add them
+separately from their own source before the routing targets will resolve. Enable them
+individually or as part of your standard plugin set.
 
 ## Components
 
@@ -76,9 +77,9 @@ directly (`claude-api`, `agent-sdk-dev:new-sdk-app`, `mcp-server-dev:build-mcp-s
 
 | Default | Value |
 |---------|-------|
-| Reasoning / complex tasks | `claude-opus-4-7` (1M context: `claude-opus-4-7[1m]`) |
-| Daily driver | `claude-sonnet-4-6` |
-| Latency / cost-sensitive | `claude-haiku-4-5-20251001` |
+| Reasoning / complex tasks | latest Opus — at time of writing `claude-opus-4-8` (1M context: `claude-opus-4-8[1m]`) |
+| Daily driver | latest Sonnet — `claude-sonnet-4-6` |
+| Latency / cost-sensitive | latest Haiku — `claude-haiku-4-5` |
 | Prompt caching | ON for any reused content ≥ 1024 tokens |
 | Minimum golden test cases before v1 | 20 |
 | CI eval gate | Hard block on > 5% score regression from main |
@@ -125,7 +126,7 @@ defaults.
 
 | Symptom | Fix |
 |---------|-----|
-| Skill fires but the routing target ("use `agent-sdk-dev:new-sdk-app`") does nothing | The target plugin is not enabled. Run `/plugin enable agent-sdk-dev@garrettmanley` (or the relevant plugin) and retry. |
+| Skill fires but the routing target ("use `agent-sdk-dev:new-sdk-app`") does nothing | The target plugin is not enabled. These are official Anthropic plugins, not part of this marketplace — add the plugin from its own source, then run `/plugin enable agent-sdk-dev` (or the relevant plugin) and retry. |
 | Model IDs in the skill output look stale | Model IDs in `SKILL.md` reflect the knowledge cutoff. Run the `claude-api` skill directly to get the current latest before writing code. |
 | Prompt caching code example fails at runtime | Check that the SDK version in `pyproject.toml` / `package.json` supports `cache_control`. The 4-block pattern requires SDK ≥ the version that shipped `cache_control` on message blocks — see `references/PROMPT_CACHING.md` for the exact API shape. |
 | Eval runner template references `check_regression.py` but the file does not exist | The eval templates in `references/EVAL_DISCIPLINE.md` are starting-point scaffolds, not generated files. Copy the CI snippet and implement `check_regression.py` for your project's scoring shape. |
