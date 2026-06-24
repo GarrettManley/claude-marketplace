@@ -1,3 +1,18 @@
+<!--
+To add a new reviewer archetype, create `agents/<name>.agent.md` with this shape:
+
+  ---
+  name: <name>            # must equal the filename stem, e.g. `security-auditor`
+  description: |
+    Use when <triggering conditions>. Catches <the concrete patterns this archetype flags>.
+  tools: Read, Grep, Glob, Bash
+  ---
+
+…then the persona body below (the agent's system prompt IS the persona). Dispatch
+it from the reviewer-personas skill via `subagent_type: <name>`. Keep project-local
+additions under `.claude/agents/` rather than upstreaming.
+-->
+
 # <Persona Name> — <Short Tagline>
 
 <Optional: one-line note on whether this is a real person, an archetype, or grounded in specific historical feedback>

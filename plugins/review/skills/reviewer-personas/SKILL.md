@@ -7,43 +7,53 @@ dependencies: []
 
 # Reviewer Personas
 
-A library of reviewer archetypes for sub-agent-based document and PR review. Each archetype lives in `personas/<slug>.md`. This file is the index, selection table, dispatch protocol, and post-cycle update protocol.
+A library of reviewer archetypes for sub-agent-based document and PR review. Each archetype ships as an agent definition at `agents/<name>.agent.md` — that file **is** the persona. This skill is the index, selection table, dispatch protocol, and post-cycle update protocol.
 
 ## When to use
 
-Reach for this skill when an artifact warrants multi-lens scrutiny before it lands: a design document, a PR, an operational runbook, a work item, a wiki page, or a Claude Code skill file. Match the artifact to the selection table below, then dispatch the named archetypes as sub-agents and consolidate their findings into one report.
+Reach for this skill when an artifact warrants multi-lens scrutiny before it lands: a design document, a PR, an operational runbook, a work item, a wiki page, or a Claude Code skill file. Match the artifact to the selection table below, then dispatch the named archetype agents as sub-agents and consolidate their findings into one report.
 
-The shipped library has 7 archetype personas. To add real teammate personas (with their own pushback triggers grounded in feedback they actually gave), copy `templates/persona-stub.md` and fill in the blanks — keep those forks in your project-local `.claude/skills/reviewer-personas/personas/` rather than upstreaming.
+The shipped library has 16 archetype agents. To add a real teammate persona (with its own pushback triggers grounded in feedback they actually gave), create a new `agents/<name>.agent.md` using `templates/persona-stub.md` as the shape — keep those additions in your project-local `.claude/agents/` rather than upstreaming.
 
 ---
 
 ## Selection Table
 
-| Artifact | Default archetype set |
-|---|---|
-| Design documents (pre-implementation) | Security Auditor, Data Architect, New Engineer, Ecosystem Context Reviewer |
-| Design documents (post-implementation / live system) | Add Incident Commander, Observability Champion |
-| Operational docs / runbooks | Incident Commander, New Engineer |
-| Security-sensitive changes | Security Auditor |
-| Features introducing or depending on a new data model | Add Data Architect |
-| Features with auto-refresh / polling / ops surfaces | Add Incident Commander, Observability Champion |
-| PRs touching interfaces used by external systems | Add Ecosystem Context Reviewer |
-| Services with diagnosability gaps (limited logging/metrics) | Add Observability Champion |
-| Skill files (SKILL.md, REGRESSION.md, personas/*.md) | Skill-Craft Reviewer |
-| Onboarding / first-time-reader docs | New Engineer |
+Each cell names the plugin-scoped `subagent_type` — pass it verbatim. The bare `<name>` (e.g. `security-auditor`) also resolves when unambiguous per the Claude Code sub-agents docs, but the scoped `review:<name>` form is recommended: these archetype names are generic and can collide with other installed plugins' agents.
 
-To bias the selection for your team or domain, fork this skill into `.claude/skills/reviewer-personas/` and edit the table. Archetypes are starting points — they get sharper as you record real review-catches against them.
+| Artifact | Default archetype set (`subagent_type`) |
+|---|---|
+| Design documents (pre-implementation) | `review:architect`, `review:security-auditor`, `review:data-architect`, `review:new-engineer`, `review:ecosystem-context-reviewer` |
+| Design documents (post-implementation / live system) | Add `review:incident-commander`, `review:observability-champion` |
+| Operational docs / runbooks | `review:incident-commander`, `review:new-engineer` |
+| Security-sensitive changes | `review:security-auditor` |
+| Regulated data flows / audit trails / cert lifecycles | Add `review:compliance` |
+| Features introducing or depending on a new data model | Add `review:data-architect` |
+| Features with auto-refresh / polling / ops surfaces | Add `review:incident-commander`, `review:observability-champion` |
+| Migrations / rotation runbooks / slot swaps | `review:migration-safety`, `review:incident-commander` |
+| API endpoints / route or schema changes | Add `review:api-contract` |
+| Config defaults / identity-access / external contract surfaces | Add `review:contract-surface` |
+| Multi-step flows with external dependencies | Add `review:error-handling` |
+| Latency / throughput / cost claims | Add `review:performance-scalability` |
+| Test approach (explicit or implied) | Add `review:test-strategy` |
+| Interactive UI / layout / color / dynamic content | Add `review:accessibility` |
+| PRs touching interfaces used by external systems | Add `review:ecosystem-context-reviewer` |
+| Services with diagnosability gaps (limited logging/metrics) | Add `review:observability-champion` |
+| Skill files (SKILL.md, REGRESSION.md, agent/persona files) | `review:skill-craft-reviewer` |
+| Onboarding / first-time-reader docs | `review:new-engineer` |
+
+To bias the selection for your team or domain, fork this skill into `.claude/skills/reviewer-personas/` and edit the table, and add project-local archetypes under `.claude/agents/`. Archetypes are starting points — they get sharper as you record real review-catches against them.
 
 ---
 
 ## Dispatch Protocol
 
-1. **Selection.** Match artifact type to the selection table. Read only the targeted `personas/<slug>.md` files.
+1. **Selection.** Match artifact type to the selection table to get the set of `subagent_type` values.
 
-2. **Dispatch.** For each selected persona, call the `Agent` tool with:
-   - `subagent_type: general-purpose`
+2. **Dispatch.** For each selected archetype, call the `Agent` tool with:
+   - `subagent_type: review:<name>` — the plugin-scoped value from the selection table (e.g., `review:security-auditor`). The bare `<name>` also resolves when unambiguous, but the scoped form is collision-safe and recommended. **The agent definition is the persona** — its system prompt carries the full pushback triggers, NOT-covered boundary, and severity rubric, so do not paste any persona text into the prompt.
    - `description`: short persona label (e.g., "Security Auditor — Trust boundaries")
-   - `prompt`: the template below with the persona definition and artifact reference filled in
+   - `prompt`: the template below with only the artifact reference filled in
 
 3. **Parallelism.** Call up to 4 concurrent agents. Batch into waves for larger sets.
 
@@ -57,17 +67,16 @@ To bias the selection for your team or domain, fork this skill into `.claude/ski
 
 ### Dispatch prompt template
 
+The persona comes from the dispatched agent. The prompt only carries the artifact reference and the output contract:
+
 ```
-You are reviewing <artifact_ref> through the lens of <Persona Name>.
-
-PERSONA DEFINITION (verbatim — do not paraphrase):
-<paste full contents of personas/<slug>.md>
-
 ARTIFACT: <absolute path | gh pr diff <n> | wiki URL>
+
+Review the artifact through your archetype's lens. Stay silent on items outside your NOT-covered boundary.
 
 OUTPUT: YAML only. No prose outside the YAML block.
 
-persona: <name>
+persona: <your archetype name>
 findings:
   - severity: blocker|must_fix|nit|signal|praise
     location: <section / line / thread ref>
@@ -76,11 +85,9 @@ findings:
     trigger_ref: <which pushback trigger fired>
 ```
 
-Silence on items this persona does NOT cover.
-
 ### Fallback (sub-agents unavailable)
 
-Role-play personas inline **sequentially** and emit: `[REVIEW MODE: inline — sub-agent dispatch unavailable]`. Output format unchanged.
+When the `Agent` tool is unavailable, read the selected `agents/<name>.agent.md` files directly, role-play each archetype inline **sequentially**, and emit: `[REVIEW MODE: inline — sub-agent dispatch unavailable]`. Output format unchanged.
 
 ---
 
@@ -118,9 +125,9 @@ After each review cycle, before committing, run this for each participating pers
 3. **Hallucinated** — what did this persona flag that was inapplicable? Classify as Dismiss.
 4. **Update** — if missed or hallucinated findings were notable, adjust pushback triggers.
 
-Then: "Was there a class of issue this cycle that no current persona would catch? If so, draft a new persona using `templates/persona-stub.md`."
+Then: "Was there a class of issue this cycle that no current archetype would catch? If so, draft a new archetype as `agents/<name>.agent.md` using `templates/persona-stub.md` for the persona body."
 
-Update the relevant `personas/<slug>.md` file. Set the `Last updated` line with a one-line reason. Commit alongside the artifact you just reviewed.
+Update the relevant `agents/<name>.agent.md` file. Set the `Last updated` line with a one-line reason. Commit alongside the artifact you just reviewed.
 
 ---
 

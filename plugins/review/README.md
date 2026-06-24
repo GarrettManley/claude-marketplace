@@ -15,11 +15,11 @@ Multi-lens artifact review using a library of sub-agent reviewer archetypes. Han
 
 | Skill | Description |
 |-------|-------------|
-| `reviewer-personas` | Archetype selection table, sub-agent dispatch protocol, consolidated report format, and post-cycle update protocol for incremental persona improvement |
+| `reviewer-personas` | Archetype selection table that maps artifacts to the 16 archetype agents, sub-agent dispatch protocol (`subagent_type: review:<name>`), consolidated report format, and post-cycle update protocol for incremental archetype improvement |
 
 ### Agents
 
-Sixteen reviewer archetypes ship as `.agent.md` files. Each runs as a sub-agent dispatched by the `reviewer-personas` skill.
+Sixteen reviewer archetypes ship as `.agent.md` files under `agents/`. Each agent definition **is** the persona — its system prompt carries the pushback triggers, NOT-covered boundary, and severity rubric. The `reviewer-personas` skill selects the right archetypes for an artifact and dispatches them as sub-agents via the plugin-scoped `subagent_type: review:<name>` (e.g. `review:security-auditor`). The bare `<name>` also resolves when unambiguous, but the scoped form is collision-safe and recommended.
 
 | Agent | Scope |
 |-------|-------|
@@ -76,14 +76,14 @@ The consolidated report groups findings by severity (blocker / must_fix / nit / 
 | Features with polling / ops surfaces | Add Incident Commander, Observability Champion |
 | PRs touching external-system interfaces | Add Ecosystem Context Reviewer |
 | Services with diagnosability gaps | Add Observability Champion |
-| Skill files (`SKILL.md`, `personas/*.md`) | Skill-Craft Reviewer |
+| Skill files (`SKILL.md`, agent/persona files) | `skill-craft-reviewer` |
 | Onboarding / first-time-reader docs | New Engineer |
 
 Override the table for your team by forking the skill into `.claude/skills/reviewer-personas/` in your project and editing the selection table there.
 
 ### Post-cycle update protocol
 
-After each review, record what each persona caught, missed, or hallucinated. Update the relevant `personas/<slug>.md` with refined pushback triggers and commit it alongside the reviewed artifact. This is how the library sharpens over time.
+After each review, record what each archetype caught, missed, or hallucinated. Update the relevant `agents/<name>.agent.md` with refined pushback triggers and commit it alongside the reviewed artifact. This is how the library sharpens over time.
 
 ## Configuration
 
@@ -121,12 +121,11 @@ Keep `.claude/reviews/completed/` tracked — it is the audit trail showing revi
 
 The shipped library is archetypes only. To add personas grounded in actual teammate feedback:
 
-1. Fork this skill into `.claude/skills/reviewer-personas/` in your project.
-2. Copy `templates/persona-stub.md` into `personas/<teammate-slug>.md`.
-3. Fill in pushback triggers from real PR comments or review threads. The quote bank needs at least 3 verbatim quotes for grounding.
-4. Add a selection-table row in the forked `SKILL.md` naming the new persona for the artifact types they should review.
+1. Create `.claude/agents/<teammate-slug>.agent.md` in your project, using `templates/persona-stub.md` for the persona body and an agent frontmatter block (`name:` equal to the filename stem, a `description:`, and `tools:`).
+2. Fill in pushback triggers from real PR comments or review threads. The quote bank needs at least 3 verbatim quotes for grounding.
+3. Fork this skill into `.claude/skills/reviewer-personas/` and add a selection-table row naming the new agent for the artifact types they should review. Project-local agents under `.claude/agents/` are referenced by their bare `subagent_type: <teammate-slug>` (no plugin scope).
 
-Keep these forks in your project. The upstream library stays archetype-only.
+Keep these additions in your project. The upstream library stays archetype-only.
 
 ## Troubleshooting
 
@@ -135,7 +134,7 @@ Keep these forks in your project. The upstream library stays archetype-only.
 | Session-start nag fires for an artifact you don't intend to review | Move the marker to `.claude/reviews/skip/<slug>.marker` for a paper-trail bypass, or delete it if no audit trail is needed |
 | Nag fires but the pending directory looks empty | The hook uses `find -maxdepth 1 -name '*.marker'`; verify the file extension is exactly `.marker` and the file is directly in `.claude/reviews/pending/` (not a subdirectory) |
 | Sub-agents are unavailable (no `Agent` tool) | The skill falls back to inline sequential role-play and prepends `[REVIEW MODE: inline — sub-agent dispatch unavailable]` to the output; report format is unchanged |
-| A persona flags items outside its documented scope | Run the post-cycle update protocol: classify the finding as `Dismiss` (hallucinated), then narrow the persona's pushback triggers and update `Last updated` in `personas/<slug>.md` |
+| A persona flags items outside its documented scope | Run the post-cycle update protocol: classify the finding as `Dismiss` (hallucinated), then narrow the archetype's pushback triggers and update `Last updated` in `agents/<name>.agent.md` |
 
 ## Cross-platform
 
