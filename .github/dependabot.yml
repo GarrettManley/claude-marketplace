@@ -1,0 +1,12 @@
+# Keeps GitHub Actions pinned in .github/workflows/* current (e.g. actions/checkout,
+# actions/setup-python). Verify-only CI is unaffected: Dependabot opens PRs that run
+# through the same gate; it never tags or publishes.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions

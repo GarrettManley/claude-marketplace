@@ -18,6 +18,21 @@ Consumers point Claude Code at `garrettmanley/claude-marketplace` and self-heal 
 `/plugin marketplace update`, which re-reads `.claude-plugin/marketplace.json` at the
 new HEAD.
 
+## Changelogs: root and per-plugin
+
+The repo maintains **two** changelog surfaces:
+
+- **Root `CHANGELOG.md`** — hand-curated, [Keep a Changelog](https://keepachangelog.com/)
+  format, program-level. It aggregates cross-plugin work, repo tooling, and governance
+  changes, with an `## [Unreleased]` section contributors append to in their PRs. It is
+  **not** written by `ci/release.py`.
+- **Per-plugin `plugins/<name>/CHANGELOG.md`** — written by `ci/release.py` from
+  Conventional Commits, authoritative for each plugin's per-version release notes.
+
+These are complementary, not duplicative (see `docs/adr/0008-root-changelog.md`). When
+cutting a release, fold the relevant `## [Unreleased]` entries into a new versioned
+section in the root file by hand; `release.py` continues to own the per-plugin files.
+
 ## Version source of truth
 
 `plugins/<name>/.claude-plugin/plugin.json` is the **single source of truth** for a

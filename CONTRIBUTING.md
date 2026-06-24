@@ -52,6 +52,15 @@ plugin's version (the install cache keys off it). Its entry in
 Never hand-edit a version in marketplace.json — bump plugin.json (or let `release.py`
 do it) and run `--fix`.
 
+**Changelogs — both root and per-plugin.** The repo keeps a hand-curated root
+`CHANGELOG.md` ([Keep a Changelog](https://keepachangelog.com/) format) *and* per-plugin
+`plugins/<name>/CHANGELOG.md` files. They are complementary: the root file aggregates
+program-level changes (cross-plugin work, repo tooling, governance) with an
+`## [Unreleased]` section you append to in your PR; the per-plugin files are written by
+`ci/release.py` from Conventional Commits and are authoritative for per-plugin versions.
+Update whichever applies — both, when a change is both plugin-scoped and program-level.
+See `docs/adr/0008-root-changelog.md`.
+
 Tests for the version tooling: `python3 -m pytest ci/tests/`
 (or `uv run --with pytest python -m pytest ci/tests/`).
 

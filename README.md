@@ -1,5 +1,8 @@
 # garrettmanley/claude-marketplace
 
+[![CI](https://github.com/garrettmanley/claude-marketplace/actions/workflows/ci.yml/badge.svg)](https://github.com/garrettmanley/claude-marketplace/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A Claude Code plugin marketplace. Twelve capability-bundled plugins for cross-project use — dev hygiene, evidence-grounded research, local LLM orchestration, Windows tooling, autonomous maintenance, AI app development, documentation craft, multi-lens review, git workflow, continuous learning, and a TTRPG narrative framework.
 
 MIT licensed; portions adapted from [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) (see [NOTICE](NOTICE)).

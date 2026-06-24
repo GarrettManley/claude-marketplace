@@ -1,0 +1,84 @@
+name: Bug report
+description: Report a defect in a plugin, hook, skill, or CI tooling
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing a bug. Please be concrete — exact commands, exit codes, and
+        hook output help far more than a description of symptoms.
+  - type: dropdown
+    id: plugin
+    attributes:
+      label: Plugin / component
+      description: Which plugin or component is affected?
+      options:
+        - aether
+        - agentic
+        - discipline
+        - docs
+        - evidence
+        - git
+        - learning
+        - orchestration
+        - retrospective
+        - review
+        - stewardship
+        - windows
+        - CI / tooling (scripts/verify.sh, ci/*)
+        - other / not sure
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Exact commands or actions, numbered.
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What should have happened.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What happened instead. Include hook output, error messages, or exit codes where relevant.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS / shell
+      description: e.g. Windows 11 / PowerShell 7.6, Ubuntu 24.04 / bash, macOS 15 / zsh
+    validations:
+      required: true
+  - type: input
+    id: claude-code-version
+    attributes:
+      label: Claude Code version
+      description: Output of the Claude Code version command.
+    validations:
+      required: true
+  - type: input
+    id: uv-version
+    attributes:
+      label: uv version (if a hook or CI script is involved)
+      description: Output of `uv --version`, or the Python version if uv is not used.
+    validations:
+      required: false
+  - type: input
+    id: plugin-version
+    attributes:
+      label: Plugin version
+      description: The affected plugin's version from its `plugin.json`.
+    validations:
+      required: false

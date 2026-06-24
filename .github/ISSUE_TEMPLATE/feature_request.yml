@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a new hook, skill, plugin, or change to existing behavior
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Proposals land best when they start from a concrete workflow gap rather than a
+        solution. Describe the pain first, then the change.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow gap or pain point does this address? Be concrete.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change
+      description: What should be added or changed? Which plugin or component would it live in?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you evaluated and why you didn't prefer them.
+    validations:
+      required: false

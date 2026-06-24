@@ -1,0 +1,44 @@
+# CodeQL static analysis (Python) — analysis-only, consistent with the verify-only CI
+# policy: it scans and reports to the Security tab and never tags, releases, or publishes.
+# Code scanning alerts require a public repo (or GitHub Advanced Security), so this
+# workflow becomes effective once the repo is public.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "27 4 * * 1"
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (python)
+    # Code scanning needs a public repo (or GitHub Advanced Security). Skip on private
+    # so this workflow never reports a red run before the repo is flipped public.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+
+      # Python is not a compiled language; autobuild is a no-op and is skipped.
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
