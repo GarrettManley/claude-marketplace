@@ -7,7 +7,7 @@ diataxis: reference
 
 # docs@garrettmanley
 
-Six skills for documentation craft: writing rules for technical prose, consistent Mermaid diagram authoring, a structured design-document skeleton, and three adversarial review skills that find problems automated code review misses — in documents, PRs, and code diffs. Aimed at engineers who write design docs, run PR workflows, or want machine-speed coverage before sending work to human reviewers.
+Seven skills for documentation craft: writing rules for technical prose, consistent Mermaid diagram authoring, a structured design-document skeleton, and four adversarial review skills that find problems automated code review misses — in documents, PRs, code diffs, and pre-execution plans. Aimed at engineers who write design docs, run PR workflows, or want machine-speed coverage before sending work to human reviewers.
 
 ## Install
 
@@ -28,8 +28,21 @@ No init scripts. No configuration files. Enable and use.
 | `adversarial-review-doc` | Parallel dimension-agent review for any markdown document. Catches structural problems, broken cross-references, stale claims, terminology drift, and placeholder text. Optional `--fix` fixer dispatch. |
 | `adversarial-review-pr` | PR-level adversarial review: description accuracy vs. the actual diff, work item consistency, commit message alignment, and cross-document sync obligations. |
 | `adversarial-review-code` | Coordination layer over `pr-review-toolkit` agents. Dispatches `code-reviewer`, `silent-failure-hunter`, and (for TypeScript / C# diffs) `type-design-analyzer` in parallel, then consolidates and deduplicates findings. |
+| `adversarial-review-plan` | Pre-execution review for any implementation or work plan. Runs six dimension agents plus three plan-reviewer archetype agents (premise / feasibility / scope) in parallel, then consolidates and deduplicates findings. Optional `--fix` fixer dispatch. |
 
-This plugin ships no hooks, agents, or commands.
+This plugin ships three agents (the plan-reviewer archetypes used by `adversarial-review-plan`); see the Agents section below. It ships no hooks or commands.
+
+## Agents
+
+Three plan-reviewer archetype agents back `adversarial-review-plan`. Each is a markdown role-prompt under `agents/` and is dispatched by the skill via its plugin-scoped `subagent_type` (`docs:<name>`). They can also be dispatched directly for a single-lens pass.
+
+| Agent (`subagent_type`) | Role |
+|-------------------------|------|
+| `docs:plan-skeptic` | Argues the plan should not be done as written, that a materially simpler path exists, or that the premise is wrong. |
+| `docs:plan-feasibility-auditor` | Hunts hidden complexity, unrealistic effort and sequencing, missing dependencies, unverifiable steps, and untested assumptions. |
+| `docs:plan-scope-cutter` | Targets YAGNI, over-engineering, premature abstraction, and gold-plating — what to cut or defer. |
+
+The scoped `docs:<name>` form is collision-safe: these names are generic and could collide with other installed plugins' agents.
 
 ## Usage
 
@@ -154,16 +167,52 @@ If `--fix` is passed, a single fixer agent receives the entire consolidated find
 [CRITICAL | IMPORTANT | MINOR] — <file>:<line-or-symbol>: "<current behavior (≤20 words)>" → "<required fix>"
 ```
 
+### adversarial-review-plan
+
+```
+/adversarial-review-plan <plan-path>
+  [--dimensions dim1,dim2,...]   # default: all 6
+  [--fix]
+  [--output <path>]              # default: <plan-path>.review.md
+```
+
+Reviews an implementation or work plan **before** execution. The plan path is any markdown plan (e.g., `~/.claude/plans/*.md`, `docs/engineering/plans/*.md`, or an explicit path); if omitted, the most recently modified `~/.claude/plans/*.md` is used.
+
+Dispatches all of the following concurrently: one agent per active dimension, plus the three plan-reviewer archetype agents (`docs:plan-skeptic`, `docs:plan-feasibility-auditor`, `docs:plan-scope-cutter`) for adversarial depth. After all complete, findings are deduplicated (same step/section + current-text → one finding, highest severity kept), sorted CRITICAL → IMPORTANT → MINOR, and written to the output file.
+
+**Six built-in dimensions:**
+
+| Dimension | Focus |
+|-----------|-------|
+| `feasibility` | Hidden complexity, sequencing, missing dependencies, unverifiable steps, untested assumptions |
+| `value-justification` | Do-nothing baseline, named consumer, effort/value proportionality, problem-vs-solution framing |
+| `clarity` | Ambiguous instructions, undefined referents, implicit decisions, missing acceptance criteria |
+| `completeness` | Placeholders, missing lifecycle phases, untouched touchpoints, missing final verification |
+| `risk-rollback` | Irreversible steps, non-idempotency, blast radius, mid-flow failure handling, cutover windows |
+| `scope-cut` | YAGNI, premature abstraction, speculative flexibility, gold-plating, deferrable phases |
+
+**Custom dimensions** (extension point): drop `.md` files under `<workspace-root>/.claude/adversarial-dimensions/plan/`. A file with the same base name as a built-in dimension overrides it; a different name augments the set.
+
+If `--fix` is passed, a single fixer agent applies CRITICAL and IMPORTANT findings to the plan. MINOR findings remain in the output file. For ambiguous findings the fixer inserts `<!-- REVIEW: <finding> -->`; a premise-level CRITICAL is surfaced as a `<!-- BLOCKER: <finding> -->` comment rather than silently rewriting the plan's goal.
+
+**Standard findings format:**
+
+```
+[CRITICAL | IMPORTANT | MINOR] — <Step/section>: "<current text (≤20 words)>" → "<required fix>"
+```
+
 ## Skill composition
 
-The three adversarial-review skills and the three authoring skills are complementary, not overlapping:
+The four adversarial-review skills and the three authoring skills are complementary, not overlapping:
 
 | Goal | Skills to use |
 |------|--------------|
 | Write a new design doc | `design-document` → `tech-writing` → `mermaid-diagram` |
+| Review a plan before executing it | `adversarial-review-plan` |
 | Review a document before publishing | `adversarial-review-doc` |
 | Review a PR before merging | `adversarial-review-pr` + (if code changed) `adversarial-review-code` |
 | Full PR coverage | `adversarial-review-code` → `adversarial-review-pr` → `adversarial-review-doc` (for any docs in the diff) |
+| Plan-to-PR lifecycle | `adversarial-review-plan` (before) → execute → `adversarial-review-code` + `adversarial-review-pr` (after) |
 
 For persona-perspective review ("how would a team member react"), pair with `/reviewer-personas` from `review@garrettmanley` — it surfaces reader reactions rather than structural findings.
 

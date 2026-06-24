@@ -1,5 +1,5 @@
 {
-  "description": "retrospective plugin hooks: drop a marker when exiting plan mode; nag at SessionStart about outstanding retrospectives.",
+  "description": "retrospective plugin hooks: drop a marker when exiting plan mode; nag at SessionStart about outstanding retrospectives; soft completion-gate nag at SessionStart for pending plans that are not yet done.",
   "hooks": {
     "PostToolUse": [
       {
@@ -21,6 +21,11 @@
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start-retro-nag.sh\"",
             "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/plan_completion_check.py\"",
+            "timeout": 15
           }
         ]
       }

@@ -1,8 +1,9 @@
 # retrospective@garrettmanley
 
 Plan retrospective discipline: a self-contained cycle of marker-drop (on plan approval), session-start
-reminder, and a retro-authoring skill. Forces a structured pause after every approved plan to capture
-what worked, what surprised you, and concrete improvements — before the next plan starts.
+reminders, a plan-completion pre-check, and a retro-authoring skill. Forces a structured pause after
+every approved plan to capture what worked, what surprised you, and concrete improvements — before the
+next plan starts. A completion gate verifies a plan is *actually done* before you retrospect it.
 
 Intended for engineers who run Claude Code in plan mode and want learning to accumulate across plans
 rather than evaporate between sessions.
@@ -23,11 +24,16 @@ No init scripts. No further setup required beyond the one-time `.gitignore` entr
 |-----------|------|-------------------|
 | `exit-plan-mode-marker.sh` | PostToolUse hook (`ExitPlanMode`) | Drops a `.marker` file in `retrospectives/pending/` referencing the most recently approved plan. |
 | `session-start-retro-nag.sh` | SessionStart hook | Lists outstanding pending markers at the start of every session. |
+| `plan_completion_check.py` | SessionStart hook | Soft completion-gate nag: scans pending markers, runs completion checks against each plan, and lists any that are **not yet done**. Never blocks. |
+| `plan-completion` | Skill | Pre-check before retrospecting — verifies a plan is actually complete (filled-in retro section, no unchecked tasks, addressed verification, tracker reference) and reports COMPLETE or a blocker list. Does **not** write the retro. |
 | `plan-retrospective` | Skill | Authoring flow — reads the plan, writes `retrospectives/done/<slug>.md`, deletes the pending marker. |
 
-Both hooks are plain `bash` commands with a **5-second timeout** (see `hooks/hooks.json`).
-They do **not** honor `*_HOOK_PROFILE` env vars or other disable frameworks — enabling the plugin
-means the hooks are on. Failures are non-blocking; a hook error never interrupts the session.
+The plugin registers **three hooks**: two `bash` commands with a **5-second timeout** and one Python
+hook (`plan_completion_check.py`) invoked via `uv run --no-project` with a **15-second timeout** (see
+`hooks/hooks.json`). The Python hook requires [`uv`](https://github.com/astral-sh/uv) on `PATH`; it is
+pure stdlib otherwise. None of the hooks honor `*_HOOK_PROFILE` env vars or other disable frameworks —
+enabling the plugin means the hooks are on. Failures are non-blocking; a hook error never interrupts
+the session.
 
 ## Usage
 
@@ -49,9 +55,40 @@ ExitPlanMode → marker dropped in retrospectives/pending/<slug>.marker
    (work happens, commits land)
             ↓
 SessionStart → nag: "Outstanding retros: <slug>, ..."
+            → completion nag: pending plans NOT yet complete (soft)
+            ↓
+   /plan-completion → COMPLETE? ──no──► fix blockers, re-run
+            │ yes
             ↓
    /plan-retrospective → writes retrospectives/done/<slug>.md
                           deletes retrospectives/pending/<slug>.marker
+```
+
+### Verifying completion before retrospecting
+
+Run `/plan-completion` once you think a plan is finished — **before**
+`/plan-retrospective`:
+
+```
+/plan-completion [<plan-path>]
+```
+
+It pre-checks the plan (generic; works on any markdown plan) and reports either
+`COMPLETE -> run /plan-retrospective` or a concrete blocker list:
+
+1. A `## Retrospective` / `## Completion` section exists and is non-placeholder.
+2. No unchecked task checkboxes (`- [ ]`) remain.
+3. The `## Verification` section's criteria are addressed (no leftover TODO/TBD).
+4. At least one issue/tracker reference is present (`#123`, `hb-9yw.4`, `bd-abc1`).
+
+It **does not** write the retrospective or touch the marker — that stays
+`/plan-retrospective`'s job. The same checks run automatically as the SessionStart
+soft nag (`plan_completion_check.py`), which lists any pending plan that does not
+yet pass. The check logic lives in `hooks/plan_completion_check.py` and is also
+runnable directly:
+
+```
+uv run --no-project "${CLAUDE_PLUGIN_ROOT}/hooks/plan_completion_check.py" <plan-path>
 ```
 
 ### Running the skill

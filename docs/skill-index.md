@@ -4,7 +4,7 @@
 > `scripts/verify.sh` runs `--check` and fails when this file drifts from
 > the frontmatter it is generated from.
 
-## Skills (27)
+## Skills (29)
 
 | Plugin | Skill | Description |
 |---|---|---|
@@ -20,6 +20,7 @@
 | discipline | `session-handoff` | Write a thorough end-of-session handoff document using a structured 8-section schema (What We're Building / What WORKED / What Did NOT Work / What Has NOT… |
 | docs | `adversarial-review-code` | Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems. Dispatches pr-review-toolkit… |
 | docs | `adversarial-review-doc` | Use when you need to adversarially review any markdown document for structural problems, broken cross-references, stale claims, terminology drift, or… |
+| docs | `adversarial-review-plan` | Use when you need to adversarially review an implementation or work plan BEFORE executing it — to challenge its premise, test feasibility, and cut scope.… |
 | docs | `adversarial-review-pr` | Use when you need to adversarially review a pull request for description accuracy, work item consistency, commit message alignment, and cross-document sync… |
 | docs | `design-document` | Use when creating a new design document for a component, feature, or system. Provides a pluggable structure (intro, scope, system overview, design details,… |
 | docs | `mermaid-diagram` | Use when creating or editing Mermaid diagrams in documentation — wiki pages, design docs, architecture docs, READMEs. Provides a configurable brand palette,… |
@@ -30,18 +31,22 @@
 | git | `pr-create` | Use when the user asks to create a pull request, open a PR, or submit changes for review. Detects the remote host (GitHub, Azure DevOps Repos, GitLab) and… |
 | orchestration | `horizon-scanning` | Use periodically (monthly cadence) to identify SOTA local models 7B-14B and new MCP servers worth adopting. Prevents model lock-in by re-evaluating tier… |
 | orchestration | `local-orchestrator` | Use when a task requires multi-file searches (>10 files), high-volume log/history compaction, or multi-round reasoning loops that would burn cloud tokens… |
+| retrospective | `plan-completion` | Use when you think a plan is finished, BEFORE running /plan-retrospective, to verify it is actually complete — checks for a filled-in completion section, no… |
 | retrospective | `plan-retrospective` | Use after completing a plan to capture what worked, friction, and improvements. Writes retrospectives/done/<slug>.md and clears the pending marker at… |
 | review | `reviewer-personas` | Use when reviewing design documents, PRs, operational docs, work items, wiki pages, or skill files with sub-agent reviewer personas. Provides a reusable… |
 | stewardship | `marketplace-setup` | Use when setting up this marketplace on a new machine, when a plugin reports missing machine/user config, or when the user asks to… |
 | stewardship | `stewardship-overview` | Use when the user wants to set up automated maintenance — nightly drift checks against context files, auto-memory housekeeping, scheduled briefings. Walks… |
 | windows | `windows-patterns` | Use whenever working in a Windows + PowerShell environment and you need to make a tooling decision (which shell, what allowlist pattern, how to handle a… |
 
-## Agents (20)
+## Agents (23)
 
 | Plugin | Agent | Description |
 |---|---|---|
 | aether | `classifier-regression-checker` | Use this agent when reviewing changes that touch classifier files (src/llm/classifier_prompt.ts, src/llm/gemini.ts, src/llm/ollama.ts, src/llm/schemas.ts). It… |
 | discipline | `spec-code-drift-checker` | Audit a long-lived spec doc for drift between cited symbols and the current codebase. Use when reviewing a spec that has accumulated retrospective claims like… |
+| docs | `plan-feasibility-auditor` | Use when reviewing an implementation or work plan before execution to test whether it can actually be carried out. Hunts hidden complexity, unrealistic effort… |
+| docs | `plan-scope-cutter` | Use when reviewing an implementation or work plan before execution to find what to cut. Targets YAGNI violations, over-engineering, premature abstraction, and… |
+| docs | `plan-skeptic` | Use when reviewing an implementation or work plan before execution to challenge its premise. Argues the plan should not be done as written, that a materially… |
 | orchestration | `loop-operator` | Operate autonomous agent loops safely. Monitor progress checkpoints, detect stalls and retry storms, pause and reduce scope on repeated failure, resume only… |
 | review | `accessibility` | Use when reviewing UI design documents, ADO Features, or user stories that describe interactive components, screen layouts, color choices, or dynamic content… |
 | review | `api-contract` | Use when reviewing designs or features that introduce or modify API endpoints, route definitions, request/response schemas, or client-facing behavior. Catches… |
