@@ -37,6 +37,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements-dev.txt
+          # uv is the blessed hook launcher; install it so behavioral hook tests that
+          # invoke `uv run` (the production invocation) run in CI as they do locally.
+          python -m pip install uv
 
       # Portable gate set: lint-no-bare-python, ruff, check-versions, validate-plugins,
       # hook-runtime-controls, vendored-sync, frontmatter, skill-index, check-notice.
