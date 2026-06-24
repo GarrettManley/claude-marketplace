@@ -1,0 +1,13 @@
+{
+  "name": "discipline",
+  "version": "1.0.0",
+  "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["discipline", "hooks", "validation", "todo", "frontmatter", "drift", "plan-discipline"]
+}

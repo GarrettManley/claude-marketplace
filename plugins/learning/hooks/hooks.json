@@ -1,0 +1,29 @@
+{
+  "description": "learning plugin hooks: opt-in observation hooks (PreToolUse + PostToolUse). Gated to LEARNING_HOOK_PROFILE=strict by default. Set LEARNING_OBSERVE=on to enable actual writes.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/observe.py\" learning:pre-tool:observe strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/observe.py\" learning:post-tool:observe strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

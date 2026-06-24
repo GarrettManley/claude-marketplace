@@ -1,0 +1,16 @@
+{
+  "_comment": "Archetype template: research/security project. Drop into a project's .claude/settings.local.json (merge with existing keys) to get evidence-discipline + local LLM orchestration + Windows tooling on top of generic discipline gates. See marketplace README.md for the full template index.",
+  "_archetype": "research",
+  "_recommended_for": [
+    "security research engagements",
+    "vulnerability research",
+    "academic / scientific reproducibility work",
+    "any project where every claim must be substantiated"
+  ],
+  "enabledPlugins": {
+    "discipline@garrettmanley": true,
+    "evidence@garrettmanley": true,
+    "orchestration@garrettmanley": true,
+    "windows@garrettmanley": true
+  }
+}

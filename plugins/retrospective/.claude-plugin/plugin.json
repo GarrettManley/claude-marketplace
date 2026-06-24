@@ -1,0 +1,13 @@
+{
+  "name": "retrospective",
+  "version": "1.0.0",
+  "description": "Plan retrospective discipline: a self-contained cycle of marker-drop (exit plan mode), session-start nag, and a retro-authoring skill. Forces a pause after every approved plan to capture what worked, what surprised you, and concrete improvements.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["retrospective", "retro", "plan", "discipline", "learning", "post-mortem"]
+}

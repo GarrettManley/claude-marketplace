@@ -1,0 +1,30 @@
+# Hook log files (project-specific runtime artifacts)
+**/hooks/*.log
+**/hooks/__pycache__/
+
+# Python bytecode
+**/__pycache__/
+*.pyc
+
+# Editor / OS noise
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Local-only configs (per-machine, never committed)
+# Note: examples/discipline.local.md IS committed (it's documentation).
+# These rules catch any *real* .local.md created at the marketplace root by accident.
+/.local.md
+/.local.json
+
+# Coverage artifacts (the .coverage SQLite db embeds absolute checkout paths — never commit)
+.coverage
+**/.coverage
+coverage.xml
+htmlcov/
+
+# Per-machine local tier override (canonical copy lives at ~/.claude/context/, never in the repo)
+tiers.local.json

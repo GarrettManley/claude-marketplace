@@ -1,0 +1,13 @@
+{
+  "name": "agentic",
+  "version": "1.0.0",
+  "description": "Opinionated meta-overlay for AI app development. Wires existing claude-api / agent-sdk-dev / mcp-server-dev plugins into a coherent starting point with opinionated defaults: latest model IDs, prompt-caching on by default, eval discipline, repo structure conventions.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["anthropic", "sdk", "mcp", "agents", "prompt-caching", "ai-app", "eval"]
+}

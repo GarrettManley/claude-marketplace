@@ -1,0 +1,13 @@
+{
+  "name": "docs",
+  "version": "1.0.0",
+  "description": "Documentation craft: tech-writing (universal prose rules), mermaid-diagram, design-document, adversarial-review-doc (parallel dimension review for any markdown document), adversarial-review-pr (PR description accuracy + work item consistency), adversarial-review-code (coordination layer over pr-review-toolkit agents).",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["documentation", "writing", "prose", "mermaid", "diagrams", "design-doc", "technical-writing", "adversarial-review", "code-review", "pr-review"]
+}

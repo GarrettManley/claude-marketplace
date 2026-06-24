@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)" || {
+  echo "pre-commit: cannot determine repo root" >&2
+  exit 1
+}
+# Mirror the CI portable gate set exactly by running the same scripts/verify.sh that
+# ci.yml runs (lint-no-bare-python, ruff, check-versions, validate-plugins,
+# hook-runtime-controls, vendored-sync, frontmatter, skill-index, check-notice).
+# The pytest suite + cross-OS shellcheck/PSScriptAnalyzer run in CI only — they need
+# the dev toolchain and OS-specific linters that a committer may not have locally.
+exec bash "$ROOT/scripts/verify.sh"

@@ -1,0 +1,6 @@
+# Developer / CI tooling for the marketplace. Runtime plugins are stdlib-only;
+# these are only needed to run the test suite, coverage gate, and linters.
+pytest>=8.0
+coverage>=7.5
+ruff>=0.6
+PyYAML>=6.0          # optional accelerator for git:commit-message validate.py (graceful fallback if absent)

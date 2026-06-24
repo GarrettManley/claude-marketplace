@@ -1,0 +1,29 @@
+{
+  "description": "stewardship plugin hooks: edit accumulator (PostToolUse) + format/typecheck batch (Stop). Gated via STEWARDSHIP_HOOK_PROFILE + STEWARDSHIP_DISABLED_HOOKS.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/post_edit_accumulator.py\" stewardship:post-edit:accumulate standard,strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/stop_format_typecheck.py\" stewardship:stop:format-typecheck standard,strict",
+            "timeout": 300
+          }
+        ]
+      }
+    ]
+  }
+}

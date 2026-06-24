@@ -1,0 +1,79 @@
+# Verification-only CI: mirrors the local pre-merge gate (scripts/verify.sh) plus
+# the pytest suites + coverage gate, across a tri-OS matrix. Releases stay local via
+# ci/release.py — this workflow must never tag or publish (release flow is local-only).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    # ubuntu + windows are required; macOS proves portability without blocking on
+    # runner flakiness.
+    continue-on-error: ${{ matrix.os == 'macos-latest' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.12", "3.13"]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dev toolchain
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      # Portable gate set: lint-no-bare-python, ruff, check-versions, validate-plugins,
+      # hook-runtime-controls, vendored-sync, frontmatter, skill-index, check-notice.
+      - name: Pre-merge gate (scripts/verify.sh)
+        run: bash scripts/verify.sh
+
+      - name: shellcheck (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          find . -path ./.git -prune -o -name '*.sh' -print0 | xargs -0 -r shellcheck -S warning
+
+      - name: PSScriptAnalyzer (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Set-PSRepository PSGallery -InstallationPolicy Trusted
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          $files = Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { $_.FullName -notmatch '\\\.git\\' }
+          $r = $files | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Settings ./PSScriptAnalyzerSettings.psd1 }
+          if ($r) { $r | Format-Table -AutoSize | Out-String -Width 200 | Write-Output; exit 1 }
+          Write-Output "PSScriptAnalyzer: clean"
+
+      # Per-directory pytest: repo-root collection trips on duplicated test basenames
+      # across plugins, and per-plugin conftest.py files set up sys.path relative to
+      # their own directory. Coverage is combined per-OS and gated at >=90% (Python).
+      - name: Tests + coverage (>=90% gate)
+        run: |
+          set -euo pipefail
+          python -m coverage erase
+          python -m coverage run -p -m pytest ci/tests -q
+          for d in plugins/*/tests; do
+            if [ -d "$d" ]; then
+              echo "::group::$d"
+              python -m coverage run -p -m pytest "$d" -q
+              echo "::endgroup::"
+            fi
+          done
+          python -m coverage combine
+          python -m coverage report --fail-under=90

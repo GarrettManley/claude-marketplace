@@ -1,0 +1,14 @@
+{
+  "_comment": "Archetype template: web development project (frontend, full-stack, static site). Pairs generic discipline gates with the windows tooling reference. Use frontend-design plugin separately for UI work.",
+  "_archetype": "web-dev",
+  "_recommended_for": [
+    "Next.js / React / SvelteKit / Astro projects",
+    "Cloudflare Workers / Pages",
+    "static-site generators (Hugo, Eleventy)",
+    "any web frontend or full-stack JS/TS project"
+  ],
+  "enabledPlugins": {
+    "discipline@garrettmanley": true,
+    "windows@garrettmanley": true
+  }
+}

@@ -1,0 +1,28 @@
+# Ruff configuration for the marketplace's Python corpus.
+#
+# This file carries ONLY tooling config — there is no [build-system] table, so it
+# does not turn the repo into an installable package (the plugins ship as Claude
+# Code plugins, not a wheel). Runtime hooks are stdlib-only; see requirements-dev.txt
+# for the dev/CI toolchain.
+#
+# Lint gate (wired into scripts/verify.sh + ci.yml): pyflakes (F) + pycodestyle
+# errors/warnings (E/W) including line-length. Test files carry deliberate patterns
+# that are not defects — sys.path manipulation before imports (E402), modules loaded
+# by path for the import seam (F401), pytest fixture redefinition (F811), and long
+# literal assertions (E501) — so those are scoped out per-file rather than contorting
+# the tests to satisfy the linter.
+
+[tool.ruff]
+# 120 is a deliberate, enforced ceiling (not "off"): the stdlib-only hooks carry
+# descriptive user-facing messages and regex literals where wrapping at 88/100 hurts
+# readability more than it helps. Genuinely-egregious lines (>120) are still wrapped.
+line-length = 120
+target-version = "py312"
+extend-exclude = ["**/__pycache__", "**/node_modules", "**/.venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["E402", "F401", "F811", "F841", "E501", "E741"]
+"**/conftest.py" = ["E402", "F401"]

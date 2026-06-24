@@ -1,0 +1,24 @@
+# Example commit-message rule set for /commit-message --validate.
+# Copy to your project's .claude/commit-message-rules.yaml and adjust to match
+# your CI guard (e.g., .github/workflows/commit-message-guard.yml).
+#
+# All fields are optional. Missing fields mean "no rule for this aspect."
+
+header:
+  # Regex the full header line must match. Anchors are implicit (^...$).
+  pattern: "^(feat|fix|docs|style|refactor|perf|test|chore|ci|build)(\\([^)]+\\))?: [A-Z]"
+  max_length: 72  # chars including type+scope+summary
+
+body:
+  required: false  # set true to require at least one body line before trailers
+  min_lines_before_trailer: 0
+
+trailers:
+  # Trailer name: required and/or must contain specific sub-strings.
+  # Example for projects that require a Tested: block:
+  # Tested:
+  #   required: true
+  #   must_contain:
+  #     - "- How:"
+  #     - "- Hardware:"
+  #     - "- Test Equipment:"

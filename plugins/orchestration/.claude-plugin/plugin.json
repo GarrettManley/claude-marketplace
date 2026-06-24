@@ -1,0 +1,13 @@
+{
+  "name": "orchestration",
+  "version": "1.0.0",
+  "description": "Local LLM tier handoff via llama-server: Reasoning + Tooling + General tier model defs, local-orchestrator skill (when to hand off to local), horizon-scanning skill (track SOTA <=14B models), and a SessionStart hook that injects the agent/Workflow orchestration defaults. Hardware-profile aware (~/.claude/context/hardware-profile.md).",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["llama-server", "llama-cpp", "local-llm", "orchestration", "tiers", "handoff", "deepseek", "qwen", "context-injection"]
+}

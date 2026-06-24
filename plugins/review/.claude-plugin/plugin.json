@@ -1,0 +1,20 @@
+{
+  "name": "review",
+  "version": "1.0.0",
+  "description": "Multi-lens review: dispatch sub-agent reviewers against design docs, PRs, work items, wiki pages, or skill files using a library of reviewer archetypes (security, observability, data, operations, ecosystem, new-engineer, skill-craft, architect, contract-surface, performance-scalability, test-strategy, migration-safety, compliance, api-contract, error-handling, accessibility). SessionStart hook nags about review-triggering artifacts that completed without a review token. Includes persona-stub template for adopters to add their own team.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "review",
+    "personas",
+    "code-review",
+    "multi-lens",
+    "design-review",
+    "pr-review"
+  ]
+}

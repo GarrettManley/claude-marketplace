@@ -1,0 +1,15 @@
+{
+  "_comment": "Archetype template: PowerShell / Python utility scripts (no large codebase, no doc tree, no plan culture). Discipline runs in lite mode (TODO+issue still active, but no plan validation since there's likely no docs/plans/ tree).",
+  "_archetype": "scripting",
+  "_recommended_for": [
+    "ad-hoc PowerShell utilities",
+    "Python automation scripts",
+    "DDNS / monitoring / system-glue scripts",
+    "anything in C:/Users/<username>/scripts/ style"
+  ],
+  "enabledPlugins": {
+    "discipline@garrettmanley": true,
+    "windows@garrettmanley": true,
+    "stewardship@garrettmanley": true
+  }
+}

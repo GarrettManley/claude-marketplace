@@ -1,0 +1,103 @@
+{
+  "description": "discipline plugin hooks: TODO+issue enforcement, plan validation, frontmatter lint, spec companion check, pitfalls pointer, GitHub issues + branch state injection. Each hook is gated via DISCIPLINE_HOOK_PROFILE + DISCIPLINE_DISABLED_HOOKS.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_issues.sh\" discipline:session-start:inject-issues minimal,standard,strict",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_branch_state.sh\" discipline:session-start:inject-branch-state minimal,standard,strict",
+            "timeout": 15
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/session_resume_context.py\" discipline:session-start:resume-context standard,strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/pre_compact_snapshot.py\" discipline:pre-compact:snapshot standard,strict",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/todo_issue_hook.py\" discipline:pre-edit:todo-issue standard,strict",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/gateguard.py\" discipline:pre-edit:gateguard-fact-force strict",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/gateguard.py\" discipline:pre-bash:gateguard-fact-force standard,strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/plan_issue_check.py\" discipline:post-edit:plan-issue-check standard,strict",
+            "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/memory_tracker_check.py\" discipline:post-edit:memory-tracker-check standard,strict",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/frontmatter_lint.py\" discipline:post-edit:frontmatter-lint standard,strict",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/pitfalls_pointer.py\" discipline:post-edit:pitfalls-pointer standard,strict",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/spec_companion_check.py\" discipline:post-write:spec-companion-check strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

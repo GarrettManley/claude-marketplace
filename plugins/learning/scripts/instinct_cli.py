@@ -1,0 +1,218 @@
+"""Learning instinct CLI: status / import / export subcommands.
+
+Delegated to by `/instinct-status`, `/instinct-import`, `/instinct-export`
+slash commands. Phase 1 implements the read + manual-transfer surface.
+Phase 2 adds auto-creation; Phase 3 adds evolve/promote/prune.
+
+Adapted from affaan-m/everything-claude-code @ 4774946d,
+skills/continuous-learning-v2/scripts/instinct-cli.py (subset).
+"""
+from __future__ import annotations
+
+import argparse
+import sys
+from pathlib import Path
+
+_SCRIPTS_DIR = Path(__file__).parent
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+
+from instinct_schema import (  # noqa: E402
+    Instinct,
+    format_instinct,
+    parse_instinct,
+    parse_multi_instinct_file,
+)
+from storage import (  # noqa: E402
+    get_global_instincts_dir,
+    get_project_id,
+    get_project_instincts_dir,
+    list_instinct_files,
+)
+
+
+def _load_all_instincts(directory: Path) -> list[Instinct]:
+    out: list[Instinct] = []
+    for f in list_instinct_files(directory):
+        try:
+            out.append(parse_instinct(f.read_text(encoding="utf-8")))
+        except (ValueError, OSError) as e:
+            print(f"  [skip] {f.name}: {e}", file=sys.stderr)
+    return out
+
+
+def _scope_dirs(scope: str) -> list[Path]:
+    if scope == "global":
+        base = get_global_instincts_dir()
+        return [base / "personal", base / "inherited"]
+    base = get_project_instincts_dir(get_project_id())
+    return [base / "personal", base / "inherited"]
+
+
+def _print_by_domain(instincts: list[Instinct], *, scope: str) -> None:
+    by_domain: dict[str, list[Instinct]] = {}
+    for i in instincts:
+        by_domain.setdefault(i.domain, []).append(i)
+    for domain, items in sorted(by_domain.items()):
+        print(f"  ### {domain.upper()} ({len(items)})")
+        for inst in sorted(items, key=lambda x: -x.confidence):
+            bar_len = int(inst.confidence * 10)
+            bar = "█" * bar_len + "░" * (10 - bar_len)
+            print(f"    {bar}  {int(inst.confidence * 100)}%  {inst.id} [{scope}]")
+            print(f"              trigger: {inst.trigger}")
+
+
+def cmd_status() -> int:
+    project_instincts: list[Instinct] = []
+    for d in _scope_dirs("project"):
+        project_instincts.extend(_load_all_instincts(d))
+    global_instincts: list[Instinct] = []
+    for d in _scope_dirs("global"):
+        global_instincts.extend(_load_all_instincts(d))
+    total = len(project_instincts) + len(global_instincts)
+    print("=" * 60)
+    print(f"  INSTINCT STATUS - {total} total")
+    print("=" * 60)
+    print()
+    pid = get_project_id()
+    print(f"  Project: {pid}")
+    print(f"  Project instincts: {len(project_instincts)}")
+    print(f"  Global instincts:  {len(global_instincts)}")
+    print()
+    if not total:
+        print("  no instincts found yet. Phase 1 ships the schema + storage;")
+        print("  Phase 2 adds auto-creation from observations.")
+        return 0
+    if project_instincts:
+        print(f"## PROJECT-SCOPED ({pid})")
+        _print_by_domain(project_instincts, scope="project")
+    if global_instincts:
+        print()
+        print("## GLOBAL (apply to all projects)")
+        _print_by_domain(global_instincts, scope="global")
+    return 0
+
+
+def cmd_import(file_path: str, *, scope: str = "global") -> int:
+    src = Path(file_path)
+    if not src.is_file():
+        print(f"[import] file not found: {file_path}", file=sys.stderr)
+        return 1
+    try:
+        text = src.read_text(encoding="utf-8")
+        instincts = parse_multi_instinct_file(text)
+    except (ValueError, OSError) as e:
+        print(f"[import] parse failed: {e}", file=sys.stderr)
+        return 1
+    if scope == "global":
+        target_dir = get_global_instincts_dir() / "inherited"
+    else:
+        target_dir = get_project_instincts_dir(get_project_id()) / "inherited"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for inst in instincts:
+        out_file = target_dir / f"{inst.id}.yaml"
+        out_file.write_text(format_instinct(inst), encoding="utf-8")
+        print(f"[import] {inst.id} -> {out_file}")
+    print(f"[import] {len(instincts)} instinct(s) imported to {scope} scope")
+    return 0
+
+
+def cmd_export(file_path: str, *, scope: str = "global") -> int:
+    instincts: list[Instinct] = []
+    for d in _scope_dirs(scope):
+        instincts.extend(_load_all_instincts(d))
+    if not instincts:
+        print(f"[export] no {scope} instincts to export", file=sys.stderr)
+        return 1
+    out = Path(file_path)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    parts = [format_instinct(inst) for inst in instincts]
+    out.write_text("\n".join(parts), encoding="utf-8")
+    print(f"[export] {len(instincts)} instinct(s) -> {out}")
+    return 0
+
+
+def cmd_analyze() -> int:
+    """Report tool-use patterns from observations.jsonl.
+
+    Manual-review workflow: read the report, decide which patterns warrant
+    an instinct, then create the YAML file and import via /instinct-import.
+    Does not auto-create instincts.
+    """
+    from analyze import (
+        load_observations,
+        tool_frequency,
+        pre_post_sequences,
+        bash_command_prefixes,
+        file_hotspots,
+    )
+    records = load_observations()
+    print("=" * 60)
+    print(f"  OBSERVATION ANALYSIS - {len(records)} records")
+    print("=" * 60)
+    if not records:
+        print()
+        print("  no observations recorded yet. Enable with:")
+        print("    export LEARNING_HOOK_PROFILE=strict")
+        print("    export LEARNING_OBSERVE=on")
+        return 0
+
+    freq = tool_frequency(records)
+    print()
+    print("## Tool-use frequency (pre-phase)")
+    for name, count in sorted(freq.items(), key=lambda kv: -kv[1]):
+        print(f"  {count:>5}  {name}")
+
+    seqs = pre_post_sequences(records)
+    if seqs:
+        print()
+        print("## Tool-pair sequences (B fires within 30s after A, same session)")
+        top = sorted(seqs.items(), key=lambda kv: -kv[1])[:10]
+        for (a, b), count in top:
+            print(f"  {count:>5}  {a} -> {b}")
+
+    bash = bash_command_prefixes(records, top_n=10)
+    if bash:
+        print()
+        print("## Top Bash command prefixes")
+        for prefix, count in bash:
+            print(f"  {count:>5}  {prefix}")
+
+    hotspots = file_hotspots(records, top_n=10)
+    if hotspots:
+        print()
+        print("## File hotspots (Edit/Write/MultiEdit)")
+        for path, count in hotspots:
+            print(f"  {count:>5}  {path}")
+
+    print()
+    print("Convert noteworthy patterns to instincts by creating a YAML file")
+    print("and importing via `/instinct-import <file> [--scope=global|project]`.")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="instinct_cli")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("status", help="show all instincts")
+    p_import = sub.add_parser("import", help="import instincts from file")
+    p_import.add_argument("file", help="path to YAML instinct file")
+    p_import.add_argument("--scope", choices=["global", "project"], default="global")
+    p_export = sub.add_parser("export", help="export instincts to file")
+    p_export.add_argument("file", help="output path")
+    p_export.add_argument("--scope", choices=["global", "project"], default="global")
+    sub.add_parser("analyze", help="report tool-use patterns from observations.jsonl")
+    args = parser.parse_args(argv if argv is not None else sys.argv[1:])
+    if args.cmd == "status":
+        return cmd_status()
+    if args.cmd == "import":
+        return cmd_import(args.file, scope=args.scope)
+    if args.cmd == "export":
+        return cmd_export(args.file, scope=args.scope)
+    if args.cmd == "analyze":
+        return cmd_analyze()
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

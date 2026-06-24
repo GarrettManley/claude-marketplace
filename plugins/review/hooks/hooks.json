@@ -1,0 +1,17 @@
+{
+  "description": "review plugin hooks: nag at SessionStart about review-triggering artifacts that completed without a reviewer-personas review completion token.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session-start-review-nag.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "_comment": "Archetype template: narrative / TTRPG / story-engine project. Combines generic discipline + local LLM orchestration (Ollama tiers) + the Aether-specific plugin + Windows tooling. Drop into the project's .claude/settings.local.json.",
+  "_archetype": "narrative",
+  "_recommended_for": [
+    "Aether Engine TTRPG",
+    "any narrative/story-engine work that uses Ollama for prose generation",
+    "creative-writing tools where local LLM cost matters more than cloud SOTA"
+  ],
+  "enabledPlugins": {
+    "discipline@garrettmanley": true,
+    "orchestration@garrettmanley": true,
+    "aether@garrettmanley": true,
+    "windows@garrettmanley": true
+  }
+}

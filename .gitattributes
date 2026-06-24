@@ -1,0 +1,30 @@
+# Deterministic line endings across platforms.
+# Rationale and the .sh/.py rules come from the repo's own guidance:
+#   plugins/windows/references/WINDOWS_ISMS.md (CRLF section).
+# Default: treat text as text, normalize to LF in the repo and the working tree.
+* text=auto eol=lf
+
+# Scripts and data that MUST stay LF (shell heredocs break on CRLF; Python/JSON/YAML
+# parsing and cross-machine hash digests are stabler with LF).
+*.sh    text eol=lf
+*.bash  text eol=lf
+*.py    text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.toml  text eol=lf
+
+# PowerShell is Windows-native tooling; keep CRLF in the working tree.
+*.ps1   text eol=crlf
+*.psm1  text eol=crlf
+*.psd1  text eol=crlf
+
+# Never normalize binaries.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.gguf  binary

@@ -1,0 +1,50 @@
+{
+  "description": "Local LLM tier definitions for hardware-aware orchestration via llama-server (llama.cpp). Models picked for a <N> GB VRAM ceiling (<GPU model>). Edit the runtime/tier values to match your hardware.",
+  "runtime": {
+    "server": "llama-server (llama.cpp)",
+    "binary": "<path-to>/llama-server.exe",
+    "model_dir": "<path-to-models>/",
+    "endpoint": "http://localhost:8080/v1/chat/completions",
+    "health": "http://localhost:8080/health",
+    "one_model_per_process": true,
+    "note": "No per-request model swap: serialize model loads under the VRAM ceiling. An external launcher owns the process lifecycle; switching tiers means stopping one llama-server and starting another. Default port 8080 (set with --port).",
+    "launch_args": "--ctx-size 8192 --n-gpu-layers 99 --flash-attn on --cache-type-k q8_0 --cache-type-v q8_0 --seed 42"
+  },
+  "tiers": {
+    "reasoning": {
+      "gguf": "deepseek-r1-7b-Q4_K_M.gguf",
+      "purpose": "Multi-step Chain of Thought, strategic planning, adversarial code review, complex problem decomposition.",
+      "vram_gb": 4.4,
+      "capabilities": ["streaming", "thought_block", "long_context"],
+      "default_temperature": 0.6,
+      "use_when": [
+        "task requires multi-round reasoning loop",
+        "task requires architectural decomposition",
+        "task is an adversarial review (find what could be wrong)",
+        "task involves strategy / planning / critique"
+      ]
+    },
+    "tooling": {
+      "gguf": "qwen2.5-coder-7b-Q4_K_M.gguf",
+      "purpose": "High-accuracy tool calling, JSON formatting, code implementation, surgical multi-file search. Grammar-constrained JSON via response_format json_schema.",
+      "vram_gb": 4.4,
+      "capabilities": ["streaming", "tool_use", "structured_output_json"],
+      "default_temperature": 0.2,
+      "use_when": [
+        "task requires structured JSON output",
+        "task is implementation from a clear spec",
+        "task is high-volume code-fragment search across files",
+        "task requires precise tool calling"
+      ]
+    },
+    "general": {
+      "ggufs": ["llama3.1-8b-Q4_K_M.gguf", "gemma-4-E4B-it-Q4_K_M.gguf"],
+      "purpose": "General chat, summarization, classification — when neither reasoning nor tooling specialization is needed.",
+      "vram_gb": 4.6,
+      "capabilities": ["streaming", "long_context"],
+      "default_temperature": 0.7,
+      "note": "gemma-4-E4B is the strongest small model on structured tasks here; the older gemma3-4b-Q4_K_M.gguf may fail to load on some llama-server builds (missing hyperparameter key) — prefer gemma-4-E4B."
+    }
+  },
+  "stretch_warning": "Models >=14B partial-offload on a <N> GB VRAM ceiling. Inference drops to <5 t/s and risks OOM under VRAM contention (gaming, browser GPU). Avoid unless you've confirmed nothing else is using the GPU."
+}

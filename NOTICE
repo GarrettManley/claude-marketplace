@@ -1,0 +1,64 @@
+claude-marketplace
+Copyright (c) 2026 Garrett Manley
+
+This product is licensed under the MIT License (see the LICENSE file).
+
+-------------------------------------------------------------------------------
+Third-party attributions
+-------------------------------------------------------------------------------
+
+This product includes software adapted from:
+
+    everything-claude-code
+    Copyright (c) 2026 Affaan Mustafa
+    https://github.com/affaan-m/everything-claude-code
+    Licensed under the MIT License.
+
+The following files are adapted, in whole or in part, from
+affaan-m/everything-claude-code at commit 4774946d, and each retains an inline
+attribution. This list enumerates the primary adapted sources; additional files
+across the plugins carry the same inline upstream attribution (in varied
+phrasing) and are likewise covered by this notice:
+
+    plugins/discipline/scripts/gateguard.py
+    plugins/discipline/scripts/hook_flags.py
+    plugins/discipline/scripts/run_with_flags.py
+    plugins/learning/scripts/hook_flags.py
+    plugins/learning/scripts/instinct_cli.py
+    plugins/learning/scripts/instinct_schema.py
+    plugins/learning/scripts/observe.py
+    plugins/learning/scripts/run_with_flags.py
+    plugins/stewardship/scripts/hook_flags.py
+    plugins/stewardship/scripts/post_edit_accumulator.py
+    plugins/stewardship/scripts/run_with_flags.py
+    plugins/stewardship/scripts/stop_format_typecheck.py
+
+The adaptation is additionally referenced in the relevant plugin manifests and
+READMEs (.claude-plugin/marketplace.json, plugins/learning/.claude-plugin/
+plugin.json, plugins/learning/README.md).
+
+-------------------------------------------------------------------------------
+Upstream license grant (everything-claude-code)
+-------------------------------------------------------------------------------
+
+    MIT License
+
+    Copyright (c) 2026 Affaan Mustafa
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to deal
+    in the Software without restriction, including without limitation the rights
+    to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+    copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all
+    copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+    OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+    SOFTWARE.

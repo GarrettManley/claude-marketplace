@@ -1,0 +1,13 @@
+{
+  "name": "git",
+  "version": "1.0.0",
+  "description": "Git workflow: Conventional Commits formatting that resists the common CI-guard failure modes, and PR creation that detects the remote host (GitHub / Azure DevOps Repos / GitLab) instead of hardcoding one. Pairs with a project-local writing-style fork for tone.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": ["git", "commits", "conventional-commits", "pr", "pull-request", "github", "azure-devops", "gitlab"]
+}

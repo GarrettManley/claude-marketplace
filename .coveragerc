@@ -1,0 +1,36 @@
+# Coverage scope for the marketplace's Python corpus.
+# coverage.py is Python-only: bash/PowerShell are covered by behavioral (subprocess)
+# tests + shellcheck/PSScriptAnalyzer, NOT line-coverage. The >=90% gate is over Python.
+[run]
+branch = false
+source =
+    ci
+    plugins
+omit =
+    */tests/*
+    ci/tests/*
+    */__pycache__/*
+    */.venv/*
+    */node_modules/*
+# Platform-guarded branches (sys.platform checks) only run on their own OS; CI combines
+# ubuntu + windows runs (coverage combine) so both legs count toward the total.
+parallel = true
+
+[report]
+show_missing = true
+skip_covered = false
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    raise NotImplementedError
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+    @(abc\.)?abstractmethod
+
+[paths]
+# Map per-OS CI checkout paths so `coverage combine` merges ubuntu + windows runs.
+source =
+    ci
+    plugins
+    */ci
+    */plugins

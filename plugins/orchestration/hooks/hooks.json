@@ -1,0 +1,17 @@
+{
+  "description": "orchestration plugin hooks: inject the agent/Workflow orchestration defaults at session start.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_orchestration_context.py\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

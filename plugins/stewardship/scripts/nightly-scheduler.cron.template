@@ -1,0 +1,26 @@
+# stewardship nightly cron template
+#
+# Install:
+#   1. Set PLUGIN_PATH to the absolute path of the stewardship plugin dir
+#      (the directory that contains scripts/drift_check.py).
+#   2. Substitute the placeholder, then append the line to your crontab:
+#
+#       PLUGIN_PATH="$HOME/.claude/plugins/stewardship"
+#       LINE="0 3 * * * /usr/bin/env python3 \"$PLUGIN_PATH/scripts/drift_check.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/auto_memory_housekeep.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1"
+#       (crontab -l 2>/dev/null; echo "$LINE") | crontab -
+#
+# Remove:
+#   Filter the stewardship line back out:
+#       crontab -l | grep -v 'stewardship' | crontab -
+#
+# Notes:
+# - "0 3 * * *" runs at 03:00 local time daily (cron uses the system timezone
+#   configured in /etc/timezone or TZ= at the top of crontab).
+# - To pass --apply to auto_memory_housekeep, add it after the script path.
+# - To run drift_check on a custom context dir, add --dir /path/to/context.
+# - LOG_DIR is created by the script on first run if it does not exist; ensure
+#   the parent directory is writable.
+# - Use `crontab -e` to edit interactively, or `crontab -l` to verify.
+#
+# ─── Template line (replace PLUGIN_PATH and LOG_DIR before use) ────────────
+0 3 * * * /usr/bin/env python3 "PLUGIN_PATH/scripts/drift_check.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/auto_memory_housekeep.py" >> "LOG_DIR/nightly.log" 2>&1

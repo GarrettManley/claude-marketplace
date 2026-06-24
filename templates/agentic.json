@@ -1,0 +1,16 @@
+{
+  "_comment": "Archetype template: AI app development project (Claude API integration, MCP server, custom agent). Combines generic discipline + evidence (citations matter for AI app docs) + agentic overlay (model defaults, eval discipline) + windows tooling.",
+  "_archetype": "agentic",
+  "_recommended_for": [
+    "Anthropic SDK integrations (Python, TypeScript, Rust)",
+    "MCP servers (stdio, HTTP, MCPB, Apps SDK)",
+    "Custom Claude Code subagents and skills",
+    "Any AI-feature work where eval discipline matters"
+  ],
+  "enabledPlugins": {
+    "discipline@garrettmanley": true,
+    "evidence@garrettmanley": true,
+    "agentic@garrettmanley": true,
+    "windows@garrettmanley": true
+  }
+}
