@@ -186,8 +186,59 @@ def cmd_analyze() -> int:
             print(f"  {count:>5}  {path}")
 
     print()
-    print("Convert noteworthy patterns to instincts by creating a YAML file")
-    print("and importing via `/instinct-import <file> [--scope=global|project]`.")
+    print("Auto-create instincts from these patterns with `synthesize`, or write a")
+    print("YAML file by hand and load it via `/instinct-import`.")
+    return 0
+
+
+def cmd_synthesize(
+    *,
+    scope: str = "project",
+    min_support: int = 5,
+    min_consistency: float = 0.5,
+    write: bool = False,
+) -> int:
+    """Auto-create instincts from frequency patterns in observations.jsonl.
+
+    Dry-run by default (prints candidates, writes nothing). Pass write=True to
+    persist them to the scope's `personal/` directory. Phase 2b.
+    """
+    from analyze import load_observations
+    from synthesize import synthesize, get_target_dir, write_instincts
+
+    records = load_observations()
+    candidates = synthesize(
+        records, min_support=min_support, min_consistency=min_consistency
+    )
+    print("=" * 60)
+    print(f"  INSTINCT SYNTHESIS - {len(candidates)} candidate(s) "
+          f"from {len(records)} observation(s)")
+    print("=" * 60)
+    if not candidates:
+        print()
+        if not records:
+            print("  no observations recorded yet. Enable with:")
+            print("    export LEARNING_HOOK_PROFILE=strict")
+            print("    export LEARNING_OBSERVE=on")
+        else:
+            print(f"  no patterns met the thresholds "
+                  f"(min_support={min_support}, min_consistency={min_consistency}).")
+        return 0
+
+    print()
+    for inst in candidates:
+        print(f"  {int(inst.confidence * 100):>3}%  [{inst.domain}]  {inst.id}")
+        print(f"        {inst.title}")
+
+    target_dir = get_target_dir(scope)
+    counts = write_instincts(candidates, target_dir, dry_run=not write)
+    print()
+    if write:
+        print(f"[synthesize] {counts['written']} written, {counts['updated']} updated, "
+              f"{counts['skipped']} skipped -> {target_dir}")
+    else:
+        print(f"[synthesize] dry-run: {counts['written']} new, {counts['updated']} would update, "
+              f"{counts['skipped']} preserved. Re-run with --write to persist.")
     return 0
 
 
@@ -202,6 +253,11 @@ def main(argv: list[str] | None = None) -> int:
     p_export.add_argument("file", help="output path")
     p_export.add_argument("--scope", choices=["global", "project"], default="global")
     sub.add_parser("analyze", help="report tool-use patterns from observations.jsonl")
+    p_syn = sub.add_parser("synthesize", help="auto-create instincts from observation patterns")
+    p_syn.add_argument("--scope", choices=["global", "project"], default="project")
+    p_syn.add_argument("--min-support", type=int, default=5)
+    p_syn.add_argument("--min-consistency", type=float, default=0.5)
+    p_syn.add_argument("--write", action="store_true", help="persist (default: dry-run)")
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
     if args.cmd == "status":
         return cmd_status()
@@ -211,6 +267,13 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_export(args.file, scope=args.scope)
     if args.cmd == "analyze":
         return cmd_analyze()
+    if args.cmd == "synthesize":
+        return cmd_synthesize(
+            scope=args.scope,
+            min_support=args.min_support,
+            min_consistency=args.min_consistency,
+            write=args.write,
+        )
     return 2
 
 

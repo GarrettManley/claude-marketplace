@@ -7,7 +7,7 @@ description: Report tool-use patterns from learning's observations.jsonl
 
 Report tool-use frequency, common tool-pair sequences, top Bash command prefixes, and file hotspots from the current project's `observations.jsonl` (written by the opt-in `learning:pre-tool:observe` + `learning:post-tool:observe` hooks).
 
-This is a manual-review workflow: read the report, decide which patterns warrant an instinct, then create the YAML file and import via `/instinct-import`.
+This is the manual-review report. To turn these patterns into instincts automatically, use `/instinct-synthesize` (Phase 2b). For full hand control, read the report, decide which patterns warrant an instinct, then create the YAML file and import via `/instinct-import`.
 
 ## Implementation
 

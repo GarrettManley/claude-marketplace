@@ -133,3 +133,44 @@ def test_analyze_reports_frequency_and_hotspots(tmp_data, capsys):
     assert "Bash" in out
     assert "/a.py" in out
     assert "git status" in out
+
+
+# --- Phase 2b: cmd_synthesize ---
+
+from instinct_cli import cmd_synthesize
+
+
+def _seed_bash_observations(n: int = 6, command: str = "git status") -> None:
+    obs_file = get_observations_file(get_project_id())
+    obs_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(obs_file, "w", encoding="utf-8") as f:
+        for _ in range(n):
+            f.write(_json.dumps({
+                "timestamp": 1, "phase": "pre", "tool_name": "Bash",
+                "tool_input": {"command": command}, "session_id": "s",
+            }) + "\n")
+
+
+def test_synthesize_dry_run_writes_nothing(tmp_data, capsys):
+    _seed_bash_observations()
+    rc = cmd_synthesize(scope="project")  # dry-run is the default
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "auto-bash-git-status" in out
+    personal = get_project_instincts_dir(get_project_id()) / "personal"
+    assert not personal.exists() or list(personal.glob("*.yaml")) == []
+
+
+def test_synthesize_write_persists(tmp_data):
+    _seed_bash_observations()
+    rc = cmd_synthesize(scope="project", write=True)
+    assert rc == 0
+    personal = get_project_instincts_dir(get_project_id()) / "personal"
+    assert (personal / "auto-bash-git-status.yaml").exists()
+
+
+def test_synthesize_empty_observations(tmp_data, capsys):
+    rc = cmd_synthesize(scope="project")
+    assert rc == 0
+    out = capsys.readouterr().out.lower()
+    assert "0 candidate" in out or "no observation" in out

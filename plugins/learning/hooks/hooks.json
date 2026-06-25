@@ -1,6 +1,17 @@
 {
-  "description": "learning plugin hooks: opt-in observation hooks (PreToolUse + PostToolUse). Gated to LEARNING_HOOK_PROFILE=strict by default. Set LEARNING_OBSERVE=on to enable actual writes.",
+  "description": "learning plugin hooks: opt-in observation hooks (PreToolUse + PostToolUse, set LEARNING_OBSERVE=on) and an opt-in instinct-surfacing hook (SessionStart, set LEARNING_SURFACE=on). All gated to LEARNING_HOOK_PROFILE=strict by default.",
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/surface.py\" learning:session-start:surface strict",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "*",

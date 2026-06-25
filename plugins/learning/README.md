@@ -18,7 +18,9 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 | Component | Type | Trigger / Default state |
 |-----------|------|------------------------|
 | `scripts/observe.py` via `run_with_flags.py` | PreToolUse + PostToolUse hook | **Off** — requires `LEARNING_HOOK_PROFILE=strict` AND `LEARNING_OBSERVE=on` |
+| `scripts/surface.py` via `run_with_flags.py` | SessionStart hook | **Off** — requires `LEARNING_HOOK_PROFILE=strict` AND `LEARNING_SURFACE=on` |
 | `/analyze-observations` | Command | Available; reads `observations.jsonl` |
+| `/instinct-synthesize` | Command | Available; auto-creates instincts from observation patterns |
 | `/instinct-export` | Command | Available; takes `<output-path>` argument |
 | `/instinct-import` | Command | Available; takes `<file-path>` argument |
 | `/instinct-status` | Command | Available; no arguments |
@@ -28,6 +30,7 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 | Command | Description |
 |---------|-------------|
 | `/analyze-observations` | Report tool-use patterns from the current project's `observations.jsonl`; user decides which patterns to codify as instincts |
+| `/instinct-synthesize [--scope=global\|project] [--write]` | Auto-create instincts from frequency patterns in `observations.jsonl` (dry-run by default); writes to `personal/` |
 | `/instinct-export <output-path> [--scope=global\|project]` | Export the union of `personal/` and `inherited/` instincts to a single YAML file |
 | `/instinct-import <file-path> [--scope=global\|project]` | Import a YAML instinct file into the `inherited/` directory of a scope |
 | `/instinct-status` | Show all instincts grouped by domain, with confidence bars |
@@ -52,9 +55,9 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 /instinct-import ~/my-instincts.yaml --scope=global
 ```
 
-Imported instincts land in `inherited/`. The `personal/` directory is reserved for Phase 2 auto-creation.
+Imported instincts land in `inherited/`. The `personal/` directory holds auto-created instincts (see below).
 
-**Enable observation capture, then review patterns:**
+**Enable observation capture, then synthesize instincts:**
 
 ```bash
 export LEARNING_HOOK_PROFILE=strict
@@ -62,13 +65,22 @@ export LEARNING_OBSERVE=on
 # ... run your Claude Code session ...
 ```
 
-Then run:
+Then auto-create instincts from the captured patterns:
 
 ```
-/analyze-observations
+/instinct-synthesize            # dry-run: review candidates
+/instinct-synthesize --write    # persist to personal/
 ```
 
-Read the report, decide which patterns warrant an instinct, write the YAML file manually, and import it via `/instinct-import`.
+`/instinct-synthesize` turns frequency patterns into instincts automatically. For manual control instead, run `/analyze-observations`, read the report, and hand-write a YAML file to load via `/instinct-import`.
+
+**Surface high-confidence instincts into sessions:**
+
+```bash
+export LEARNING_SURFACE=on   # (with LEARNING_HOOK_PROFILE=strict)
+```
+
+A SessionStart hook then injects the highest-confidence project + global instincts into context at the start of each session.
 
 ## Storage layout
 
@@ -76,13 +88,13 @@ Read the report, decide which patterns warrant an instinct, write the YAML file 
 %LOCALAPPDATA%\claude-marketplace\learning\     (Windows)
 ~/.local/share/claude-marketplace/learning/     (POSIX)
 ├── instincts/
-│   ├── personal/      (auto-learned — Phase 2, not yet implemented)
+│   ├── personal/      (auto-learned via /instinct-synthesize --scope=global)
 │   └── inherited/     (manual /instinct-import)
 ├── evolved/           (Phase 3, not yet implemented)
 └── projects/
     └── <12-char-hash>/
         ├── instincts/
-        │   ├── personal/
+        │   ├── personal/   (auto-learned via /instinct-synthesize)
         │   └── inherited/
         └── observations.jsonl   (written when LEARNING_OBSERVE=on)
 ```
@@ -148,17 +160,19 @@ When observation is enabled, each tool invocation appends one JSON line to `obse
 
 | Variable | Values | Effect |
 |----------|--------|--------|
-| `LEARNING_HOOK_PROFILE` | `minimal` \| `standard` (default) \| `strict` | `strict` is required for observation hooks to fire |
+| `LEARNING_HOOK_PROFILE` | `minimal` \| `standard` (default) \| `strict` | `strict` is required for the observation and surfacing hooks to fire |
 | `LEARNING_OBSERVE` | `on` \| `1` \| `true` \| `yes` \| `enabled` | Must be set to actually write observations; no-op otherwise |
+| `LEARNING_SURFACE` | `on` \| `1` \| `true` \| `yes` \| `enabled` | Enables the SessionStart hook that injects high-confidence instincts into context; no-op otherwise |
+| `LEARNING_SURFACE_MIN_CONFIDENCE` | float `0.0`–`1.0` (default `0.6`) | Minimum confidence for an instinct to be surfaced |
 | `LEARNING_DISABLED_HOOKS` | comma-separated hook IDs | Silently disables named hooks regardless of profile |
 | `LEARNING_DATA_ROOT` | path | Override the default data directory |
 
-The observation hook is gated by two independent controls that must both be open:
+The observation and surfacing hooks are each gated by two independent controls that must both be open:
 
-1. `LEARNING_HOOK_PROFILE=strict` — allows the `run_with_flags.py` wrapper to invoke `observe.py`
-2. `LEARNING_OBSERVE=on` — tells `observe.py` to write records; without this it exits 0 immediately
+1. `LEARNING_HOOK_PROFILE=strict` — allows the `run_with_flags.py` wrapper to invoke the hook script
+2. `LEARNING_OBSERVE=on` / `LEARNING_SURFACE=on` — tells `observe.py` / `surface.py` to act; without it the script exits 0 immediately
 
-Either gate alone keeps the plugin completely silent.
+Either gate alone keeps the relevant hook completely silent.
 
 ### Disabling hooks individually
 
@@ -190,6 +204,7 @@ export LEARNING_OBSERVE=off
 
 ## What ships in future phases
 
-- **Phase 2b:** automated instinct creation from frequency-based patterns in `observations.jsonl`
 - **Phase 2c:** LLM-driven pattern detection (correction patterns, preference signals)
 - **Phase 3:** `/evolve` clustering, `/promote` (project→global), `/prune` (confidence-decay)
+
+(Phase 2b — automated instinct creation from frequency patterns — shipped in 1.2.0 via `/instinct-synthesize`.)

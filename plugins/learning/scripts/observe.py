@@ -22,13 +22,12 @@ _SCRIPTS_DIR = Path(__file__).parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from env_flags import is_on  # noqa: E402
 from storage import get_observations_file, get_project_id  # noqa: E402
-
-_ON_VALUES = frozenset({"1", "true", "on", "yes", "enabled"})
 
 
 def _is_enabled() -> bool:
-    return (os.environ.get("LEARNING_OBSERVE", "") or "").strip().lower() in _ON_VALUES
+    return is_on("LEARNING_OBSERVE")
 
 
 def _build_observation(event: dict[str, Any], phase: str) -> dict[str, Any]:
