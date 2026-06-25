@@ -10,6 +10,15 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+### Changed
+
+- `aether` plugin (1.1.1): migrated the `eval-run` skill and
+  `classifier-regression-checker` agent from the retired Ollama runtime to
+  llama-server (`npm run eval:classifier` / `scripts/eval-gate.mjs`, `gemma4:e4b`
+  via `LLAMACPP_CLASSIFIER_MODEL`, provider schema in `src/llm/llamacpp.ts`);
+  replaced the hardcoded eval test count with the eval-gate scorecard's dynamic
+  `passed/total/skipped`.
+
 ## [1.1.0]
 
 ### Added

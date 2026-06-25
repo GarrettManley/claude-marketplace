@@ -11,7 +11,7 @@
 | aether | `aether-doc-cluster` | Use before starting a substantial piece of work — new feature, subsystem, or rework — to determine which engineering documents must land in the same PR. Walks… |
 | aether | `aether-edit-checklist` | Use when finishing a logical chunk of edits and before declaring work done, or when the user asks "what should I check before committing?". Walks the per-edit… |
 | aether | `aether-plan-writer` | Use when writing a new plan file under docs/engineering/plans/ or when the user invokes /plan. Wraps the issue-citation, value-justification, and… |
-| aether | `eval-run` | Run the classifier golden eval suite against the local LLM classifier (Ollama or llama-server). Use after any edit to classifier_prompt.ts, gemini.ts,… |
+| aether | `eval-run` | Run the classifier golden eval suite against the local llama-server classifier. Use after any edit to classifier_prompt.ts, gemini.ts, llamacpp.ts, or… |
 | aether | `ledger-doctor` | Inspect a campaign ledger for hash-chain integrity errors, identify the first broken block, and guide safe truncation to the nearest prior snapshot. Use when… |
 | aether | `value-justify` | Generate the exact-format Value Justification block required by .claude/hooks/plan_issue_check.py. Use when writing a plan under docs/engineering/plans/ to… |
 | agentic | `agentic-app-setup` | Use when starting a new AI app project (Claude API integration, MCP server, custom agent) or when reviewing the foundations of an existing one. Routes to the… |
@@ -42,7 +42,7 @@
 
 | Plugin | Agent | Description |
 |---|---|---|
-| aether | `classifier-regression-checker` | Use this agent when reviewing changes that touch classifier files (src/llm/classifier_prompt.ts, src/llm/gemini.ts, src/llm/ollama.ts, src/llm/schemas.ts). It… |
+| aether | `classifier-regression-checker` | Use this agent when reviewing changes that touch classifier files (src/llm/classifier_prompt.ts, src/llm/gemini.ts, src/llm/llamacpp.ts, src/llm/schemas.ts).… |
 | discipline | `spec-code-drift-checker` | Audit a long-lived spec doc for drift between cited symbols and the current codebase. Use when reviewing a spec that has accumulated retrospective claims like… |
 | docs | `plan-feasibility-auditor` | Use when reviewing an implementation or work plan before execution to test whether it can actually be carried out. Hunts hidden complexity, unrealistic effort… |
 | docs | `plan-scope-cutter` | Use when reviewing an implementation or work plan before execution to find what to cut. Targets YAGNI violations, over-engineering, premature abstraction, and… |

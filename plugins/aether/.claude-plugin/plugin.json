@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "aether",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Aether Engine TTRPG/narrative framework support: domain-specific hooks (cd_core_guard, ledger truncation, classifier/harness/Rust-rebuild reminders), 6 skills (doc-cluster, edit-checklist, plan-writer, ledger-doctor, eval-run, value-justify), classifier-regression-checker agent. Hooks no-op outside Aether-shaped repos; safe to enable globally.",
   "author": {
     "name": "Garrett Manley",

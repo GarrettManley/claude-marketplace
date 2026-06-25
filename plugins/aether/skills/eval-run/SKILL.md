@@ -1,6 +1,6 @@
 ---
 name: eval-run
-description: Run the classifier golden eval suite against the local LLM classifier (Ollama or llama-server). Use after any edit to classifier_prompt.ts, gemini.ts, ollama.ts, or schemas.ts to catch regressions before committing.
+description: Run the classifier golden eval suite against the local llama-server classifier. Use after any edit to classifier_prompt.ts, gemini.ts, llamacpp.ts, or schemas.ts to catch regressions before committing.
 version: 0.1.0
 dependencies: []
 ---
@@ -9,52 +9,60 @@ dependencies: []
 
 ## When to use
 
-Use after editing `classifier_prompt.ts`, `gemini.ts`, `ollama.ts`, or
+Use after editing `classifier_prompt.ts`, `gemini.ts`, `llamacpp.ts`, or
 `schemas.ts`, before committing, to catch classifier regressions.
 
 Run the classifier golden eval suite and report results.
 
 ## Steps
 
-### 1. Preflight — verify Ollama is reachable
+### 1. Run the eval (gate mode)
 
 ```bash
-OLLAMA_URL="${OLLAMA_URL:-http://localhost:11434}"
-if ! curl -sf "${OLLAMA_URL}/api/tags" > /dev/null 2>&1; then
-  echo "ERROR: Ollama is not reachable at ${OLLAMA_URL}"
-  echo "Start Ollama with: ollama serve"
-  echo "Then ensure the classifier model is available: ollama list"
-  exit 1
-fi
-echo "Ollama is up at ${OLLAMA_URL}"
+EVAL_REQUIRE_LLM=1 npm run eval:classifier
 ```
 
-If Ollama is unreachable, **stop here and report the error**. Do NOT proceed — the eval silently reports all tests as passing when Ollama is down (see `tests/eval/classifier.eval.ts:41-56`). A green result without this preflight means nothing.
+`eval:classifier` runs `scripts/eval-gate.mjs`, which drives the vitest
+classifier suite (`vitest.classifier.config.ts`) against the local
+**llama-server** classifier (`LLAMACPP_CLASSIFIER_MODEL`, default `gemma4:e4b`,
+`LLAMACPP_SEED=42`). `EVAL_REQUIRE_LLM=1` makes the gate **fail on any skipped
+case** — without it the suite silently reports a green run when the model is
+unreachable (issue #158). Make sure llama-server is already serving `gemma4:e4b`.
 
-### 2. Run the eval
+If the gate fails with skips or a connection error, **stop and report it** — a
+green run without the LLM up means nothing.
 
-```bash
-OLLAMA_CLASSIFIER_MODEL=gemma3:4b npx vitest run \
-  --config vitest.classifier.config.ts \
-  --reporter=verbose
+### 2. Read the scorecard line
+
+`eval-gate.mjs` prints a one-line summary and appends it to
+`docs/engineering/model-eval/scorecards.jsonl`:
+
+```
+[eval-gate] <passed>/<total> passed, <failed> failed, <skipped> skipped (model=gemma4:e4b) → scorecard appended to …
 ```
 
-The standard suite contains **38 tests**. If fewer than 38 tests ran, report: "WARNING: Only N tests ran — possible silent-skip. Check that Ollama stayed responsive throughout the run."
+Do **not** assume a fixed test count — report the `total` / `passed` / `skipped`
+the gate actually emits. Under `EVAL_REQUIRE_LLM=1` any `skipped > 0` has already
+failed the gate.
 
 ### 3. Report
 
 State:
-- Tests run / 38
-- Passing count
-- Failing tests (name + received type + expected type)
-- Whether the silent-skip condition may have fired
 
-If all 38 pass: "Eval clean — no classifier regressions."
+- passed / total (from the scorecard line)
+- failing count, with each failing test name + received vs expected intent type
+- skipped count (must be 0 in gate mode)
+
+If clean: "Eval clean — no classifier regressions."
 If any fail: list regressions with their input text and misclassification.
 
 ## Context
 
-- Config: `vitest.classifier.config.ts`
-- Eval file: `tests/eval/classifier.eval.ts`
-- Default classifier model: `gemma3:4b` (overrideable via `OLLAMA_CLASSIFIER_MODEL` env)
-- Full multi-model eval: `npm run eval:run` (runs 5 classifier + 3 prose models, writes summaries to `docs/engineering/model-eval/`)
+- Command: `npm run eval:classifier` → `scripts/eval-gate.mjs` (gate mode:
+  `EVAL_REQUIRE_LLM=1 npm run eval:classifier`)
+- Suite config: `vitest.classifier.config.ts`
+- Runtime: local **llama-server** (Ollama was retired 2026-06-12)
+- Default classifier model: `gemma4:e4b` (override via `LLAMACPP_CLASSIFIER_MODEL`)
+- Scorecard trend: `docs/engineering/model-eval/scorecards.jsonl`
+- Full multi-model study: `node scripts/model-study/run-all.mjs` (manifest-driven
+  lifecycle across the classifier/prose model slate)
