@@ -72,3 +72,42 @@ def test_render_substitutes_all_tokens():
     sections = {"audit_status": "OK", "drift": "D", "housekeeping": "H", "horizon": "Z", "actions": "A"}
     out = rb.render(template, sections, "2026-06-25")
     assert "{{" not in out and "2026-06-25" in out and "OK" in out
+
+
+# --- Task 3: collection + main (subprocess) -----------------------------------
+
+from pathlib import Path  # noqa: E402
+
+
+def test_build_sections_degrades_on_error():
+    data = {"drift": {"error": "boom"}, "housekeeping": _HOUSE_EMPTY, "horizon": _HZ_OK}
+    s = rb.build_sections(data)
+    assert s["audit_status"] == "UNAVAILABLE" and "unavailable" in s["drift"].lower()
+    assert "No action needed" in s["actions"]  # derive_actions tolerates the error dict
+
+
+def test_run_json_handles_bad_script():
+    res = rb.run_json(Path(rb.__file__).parent, "does_not_exist.py")
+    assert "error" in res
+
+
+def test_main_writes_briefing(tmp_path):
+    ctx = tmp_path / "ctx"
+    ctx.mkdir()
+    (ctx / "a.md").write_text("---\ntopic: x\nverification_cmd: \"python --version\"\n---\n",
+                              encoding="utf-8")
+    out = tmp_path / "b.md"
+    rc = rb.main(["--context-dir", str(ctx), "--projects-dir", str(tmp_path / "proj"),
+                  "--state", str(tmp_path / "hz.json"), "--output", str(out), "--date", "2026-06-25"])
+    assert rc == 0
+    text = out.read_text(encoding="utf-8")
+    assert "Morning Briefing — 2026-06-25" in text and "{{" not in text
+    assert "## Horizon Scan" in text and "## Suggested Actions" in text
+
+
+def test_main_stdout(tmp_path, capsys):
+    rc = rb.main(["--context-dir", str(tmp_path / "noctx"), "--projects-dir", str(tmp_path / "noproj"),
+                  "--state", str(tmp_path / "s.json"), "--output", str(tmp_path / "b.md"),
+                  "--stdout", "--date", "2026-06-25"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "Morning Briefing — 2026-06-25" in out and "{{" not in out
