@@ -13,7 +13,24 @@ import re
 from dataclasses import dataclass
 
 INSTINCT_FRONTMATTER_FIELDS = ("id", "trigger", "confidence", "domain", "source")
-_OPTIONAL_FIELDS = ("source_repo",)
+_OPTIONAL_FIELDS = ("source_repo", "last_reinforced")
+
+# Confidence cap for Claude-detected (Phase 2c) instincts: above the frequency
+# band but below human-authored/validated. See is_machine_source().
+MAX_CONF_DETECTED = 0.80
+
+# Sources the machine owns: it may overwrite (reinforce) and decay/prune them.
+# Human-curated sources (manual, human-verified, import) are never auto-touched.
+_DETECTED_SOURCES = frozenset({"claude-detected", "llm-detected"})
+
+
+def is_machine_source(source: str) -> bool:
+    """True if an instinct's `source` is machine-derived (auto-* or *-detected).
+
+    The single source of truth for "may this instinct be auto-overwritten on
+    re-derivation, and decayed/pruned?" Human sources return False.
+    """
+    return source.startswith("auto-") or source in _DETECTED_SOURCES
 
 
 @dataclass
@@ -27,6 +44,7 @@ class Instinct:
     title: str
     action: str
     evidence: str
+    last_reinforced: float | None = None
 
 
 def _parse_frontmatter(block: str) -> dict[str, str]:
@@ -73,6 +91,11 @@ def parse_instinct(text: str) -> Instinct:
         raise ValueError(f"Confidence out of [0,1]: {confidence}")
     title_match = re.search(r"^#\s+(.+)$", body, re.MULTILINE)
     title = title_match.group(1).strip() if title_match else fields["id"]
+    last_reinforced_raw = fields.get("last_reinforced")
+    try:
+        last_reinforced = float(last_reinforced_raw) if last_reinforced_raw else None
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Invalid last_reinforced value: {last_reinforced_raw!r}") from e
     return Instinct(
         id=fields["id"],
         trigger=fields["trigger"],
@@ -83,6 +106,7 @@ def parse_instinct(text: str) -> Instinct:
         title=title,
         action=_extract_section(body, "Action"),
         evidence=_extract_section(body, "Evidence"),
+        last_reinforced=last_reinforced,
     )
 
 
@@ -97,6 +121,8 @@ def format_instinct(inst: Instinct) -> str:
     ]
     if inst.source_repo:
         fm_lines.append(f"source_repo: {inst.source_repo}")
+    if inst.last_reinforced is not None:
+        fm_lines.append(f"last_reinforced: {inst.last_reinforced}")
     return (
         "---\n"
         + "\n".join(fm_lines)

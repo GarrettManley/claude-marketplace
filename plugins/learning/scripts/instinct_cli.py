@@ -23,6 +23,10 @@ from instinct_schema import (  # noqa: E402
     parse_instinct,
     parse_multi_instinct_file,
 )
+from detect import cmd_detect  # noqa: E402
+from evolve import cmd_evolve  # noqa: E402
+from promote import cmd_promote  # noqa: E402
+from prune import cmd_prune  # noqa: E402
 from storage import (  # noqa: E402
     get_global_instincts_dir,
     get_project_id,
@@ -258,6 +262,29 @@ def main(argv: list[str] | None = None) -> int:
     p_syn.add_argument("--min-support", type=int, default=5)
     p_syn.add_argument("--min-consistency", type=float, default=0.5)
     p_syn.add_argument("--write", action="store_true", help="persist (default: dry-run)")
+
+    p_detect = sub.add_parser("detect", help="Claude-driven correction/preference detection (Phase 2c)")
+    p_detect.add_argument("--scope", choices=["global", "project"], default="project")
+    p_detect.add_argument("--dump-observations", action="store_true",
+                          help="emit a JSON observation summary for Claude to reason over")
+    p_detect.add_argument("--ingest", metavar="FILE", help="ingest Claude-authored candidate instincts")
+    p_detect.add_argument("--apply", action="store_true", help="persist (default: dry-run)")
+
+    p_prune = sub.add_parser("prune", help="decay-prune machine instincts below the floor (Phase 3)")
+    p_prune.add_argument("--scope", choices=["global", "project"], default="project")
+    p_prune.add_argument("--apply", action="store_true", help="delete (default: dry-run; snapshots first)")
+
+    p_promote = sub.add_parser("promote", help="promote a project instinct to the global store (Phase 3)")
+    p_promote.add_argument("id", nargs="?", help="instinct id to promote (omit when using --auto)")
+    p_promote.add_argument("--auto", action="store_true",
+                           help="auto-promote instincts widespread across projects with high confidence")
+    p_promote.add_argument("--scope", choices=["global", "project"], default="project")
+    p_promote.add_argument("--apply", action="store_true", help="apply (default: dry-run; snapshots first)")
+
+    p_evolve = sub.add_parser("evolve", help="cluster + merge near-duplicate instincts (Phase 3)")
+    p_evolve.add_argument("--scope", choices=["global", "project"], default="project")
+    p_evolve.add_argument("--apply", action="store_true", help="merge (default: dry-run; snapshots first)")
+
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
     if args.cmd == "status":
         return cmd_status()
@@ -274,6 +301,19 @@ def main(argv: list[str] | None = None) -> int:
             min_consistency=args.min_consistency,
             write=args.write,
         )
+    if args.cmd == "detect":
+        return cmd_detect(
+            scope=args.scope,
+            dump_observations=args.dump_observations,
+            ingest_path=args.ingest,
+            apply=args.apply,
+        )
+    if args.cmd == "prune":
+        return cmd_prune(scope=args.scope, apply=args.apply)
+    if args.cmd == "promote":
+        return cmd_promote(args.id, scope=args.scope, auto=args.auto, apply=args.apply)
+    if args.cmd == "evolve":
+        return cmd_evolve(scope=args.scope, apply=args.apply)
     return 2
 
 
