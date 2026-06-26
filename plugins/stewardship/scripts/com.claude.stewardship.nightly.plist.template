@@ -56,7 +56,8 @@
         <string>-c</string>
         <string>
             python3 "PLUGIN_PATH/scripts/drift_check.py" &amp;&amp;
-            python3 "PLUGIN_PATH/scripts/auto_memory_housekeep.py"
+            python3 "PLUGIN_PATH/scripts/auto_memory_housekeep.py" &amp;&amp;
+            python3 "PLUGIN_PATH/scripts/horizon_scan_schedule.py"
         </string>
     </array>
 

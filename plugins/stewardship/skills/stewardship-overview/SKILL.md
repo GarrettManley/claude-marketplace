@@ -62,12 +62,12 @@ This plugin is intentionally **convention over configuration**:
 
 - Drift check looks at `~/.claude/context/` by default. Override with `--dir`.
 - Memory housekeep looks at `~/.claude/projects/` by default. Override with `--projects-dir`.
-- Scheduler runs both. Edit the generated `run-nightly.ps1` wrapper to add custom steps (e.g., a horizon-scan, a cross-project sync).
+- Scheduler runs all three steps (drift check, memory housekeep, horizon-scan cadence check). Edit the generated `run-nightly.ps1` wrapper to add further custom steps (e.g., a cross-project sync).
 
 If you find yourself wanting more knobs, that's a signal to extend the plugin — open a TODO with `#NN` reference and track it.
 
 ## What this plugin deliberately doesn't do (yet)
 
 - **Persona evolution** — out of scope for this plugin (a project-specific `evolve_personas.py` would be too coupled to its persona-matrix format). If you adopt persona-evolution as a cross-project pattern, that's a future plugin or version.
-- **Horizon-scan automation** — the `orchestration:horizon-scanning` skill defines the protocol; automating it via this plugin is a future enhancement (would call out to the orchestration skill via the Claude Code CLI).
+- **Headless horizon-scan execution** — the nightly steward *reminds* (a deterministic `horizon_scan_schedule.py` cadence check that surfaces a DUE notice monthly), but it does **not** run the scan: `orchestration:horizon-scanning` needs an interactive session (web search, VRAM judgment, load tests). Completing a scan resets the clock via `horizon_scan_schedule.py --mark-done`. See `docs/adr/0010-horizon-scan-cadence-reminder.md`.
 - **Cross-machine sync** — separate concern; addressed by the marketplace itself being a git repo.

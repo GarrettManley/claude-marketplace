@@ -1,6 +1,6 @@
 ---
 name: horizon-scanning
-description: Use periodically (monthly cadence) to identify SOTA local models 7B-14B and new MCP servers worth adopting. Prevents model lock-in by re-evaluating tier assignments in `configs/tiers.json` against current benchmarks. Triggered manually or via the stewardship plugin's nightly steward when implemented.
+description: Use periodically (monthly cadence) to identify SOTA local models 7B-14B and new MCP servers worth adopting. Prevents model lock-in by re-evaluating tier assignments in `configs/tiers.json` against current benchmarks. Triggered manually, or surfaced as a DUE reminder by the stewardship plugin's nightly steward on a monthly cadence (it reminds; the scan itself stays interactive).
 version: 0.1.0
 dependencies: []
 ---
@@ -16,6 +16,7 @@ When triggered, you MUST:
 - Search for "State of the Art (SOTA) 7B-14B local models" for tool-calling and chain-of-thought.
 - Check the [MCP Server Gallery](https://github.com/modelcontextprotocol/servers) for new integrations worth adding.
 - Compare current tier model benchmarks (`configs/tiers.json`) against new entries.
+- After completing the sweep (whether or not a tier is swapped), reset the stewardship steward's cadence clock so its nightly DUE reminder clears: `python "$(claude plugin root stewardship@garrettmanley)/scripts/horizon_scan_schedule.py" --mark-done`. The steward only *reminds* on a monthly cadence — it cannot run this scan headless (see `docs/adr/0010-horizon-scan-cadence-reminder.md`).
 
 ## Re-evaluation Logic
 
