@@ -10,6 +10,20 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-06-25
+
+### Added
+
+- `learning` plugin (1.3.0): Phase 2c Claude-driven correction/preference
+  detection (`/instinct-detect`, Path A) and Phase 3 instinct lifecycle —
+  `/prune` (30-day half-life confidence decay), `/promote` (project→global,
+  `--auto` for cross-project high-confidence), `/evolve` (cluster + merge
+  near-duplicate instincts, archive to `evolved/`). Adds
+  `Instinct.last_reinforced` and `is_machine_source()`; machine-owned instincts
+  are now reinforced in place and written atomically. The headless llama-server
+  detection backend (Path B) is deferred until a concrete headless consumer
+  exists.
+
 ## [1.1.1] — 2026-06-25
 
 ### Changed
