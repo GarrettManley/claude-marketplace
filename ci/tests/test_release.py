@@ -481,7 +481,7 @@ def test_main_dry_run_prints_plan_writes_nothing(git_repo, capsys):
     assert pj.read_text(encoding="utf-8") == before  # nothing written
 
 
-def test_main_apply_writes_commits_and_tags(git_repo, monkeypatch, capsys):
+def test_main_apply_writes_commits_no_tag(git_repo, monkeypatch, capsys):
     _write_plugin(git_repo, "git", "1.0.0")
     _git_in(git_repo, "tag", "git-v1.0.0")
     _commit(git_repo, "feat(git): land the feature")
@@ -493,15 +493,72 @@ def test_main_apply_writes_commits_and_tags(git_repo, monkeypatch, capsys):
     rc = release.main(["release.py", "--apply"])
     out = capsys.readouterr().out
     assert rc == 0
-    assert "committed and tagged" in out and "git@1.1.0" in out
+    assert "git@1.1.0" in out
+    assert "--tag" in out  # apply now defers tagging to the post-merge --tag step
 
     # plugin.json bumped on disk.
     pj = git_repo / "plugins" / "git" / ".claude-plugin" / "plugin.json"
     assert json.loads(pj.read_text(encoding="utf-8"))["version"] == "1.1.0"
     # CHANGELOG.md created.
     assert (git_repo / "plugins" / "git" / "CHANGELOG.md").exists()
-    # A release commit and a new tag landed.
+    # A release commit landed, but NO tag was created on the branch.
     assert "chore(release): git@1.1.0" in _git_in(git_repo, "log", "--format=%s")
-    assert "git-v1.1.0" in _git_in(git_repo, "tag", "--list")
+    assert "git-v1.1.0" not in _git_in(git_repo, "tag", "--list")
     # Working tree is clean (everything was committed by main()).
     assert _git_in(git_repo, "status", "--porcelain").strip() == ""
+
+
+# --- D6: orphan guard + --tag mode --------------------------------------------
+
+def test_is_ancestor_true_and_false(git_repo):
+    _commit(git_repo, "chore: a")
+    _git_in(git_repo, "tag", "anchor")
+    _commit(git_repo, "chore: b")
+    assert release._is_ancestor("anchor") is True
+    head = _git_in(git_repo, "rev-parse", "HEAD").strip()
+    _git_in(git_repo, "reset", "--hard", "anchor")
+    _commit(git_repo, "chore: divergent")
+    assert release._is_ancestor(head) is False
+
+
+def test_main_refuses_orphaned_tag(git_repo, capsys):
+    _write_plugin(git_repo, "git", "1.0.0")
+    _commit(git_repo, "feat(git): shipped")
+    _git_in(git_repo, "tag", "git-v1.0.0")            # tag at this commit
+    _git_in(git_repo, "reset", "--hard", "HEAD~1")    # back before it
+    _commit(git_repo, "feat(git): divergent")         # tag no longer an ancestor
+    rc = release.main(["release.py", "--dry-run"])
+    err = capsys.readouterr().err
+    assert rc == 1 and "git-v1.0.0" in err and "ancestor" in err.lower()
+
+
+def test_main_tag_creates_untagged_at_head(git_repo, capsys):
+    _write_plugin(git_repo, "git", "1.1.0")
+    _commit(git_repo, "chore(release): git@1.1.0")
+    rc = release.main(["release.py", "--tag", "--no-push"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "git-v1.1.0" in out
+    assert "git-v1.1.0" in _git_in(git_repo, "tag", "--list")
+    head = _git_in(git_repo, "rev-parse", "HEAD").strip()
+    assert _git_in(git_repo, "rev-list", "-n1", "git-v1.1.0").strip() == head
+
+
+def test_main_tag_noop_when_all_tagged(git_repo, capsys):
+    _write_plugin(git_repo, "git", "1.1.0")
+    _git_in(git_repo, "tag", "git-v1.1.0")
+    rc = release.main(["release.py", "--tag", "--no-push"])
+    assert rc == 0 and "already tagged" in capsys.readouterr().out
+
+
+def test_main_tag_pushes_to_origin(git_repo, tmp_path):
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    _git_in(git_repo, "remote", "add", "origin", str(origin))
+    _git_in(git_repo, "push", "-q", "-u", "origin", "main")
+    _write_plugin(git_repo, "git", "1.1.0")
+    _commit(git_repo, "chore(release): git@1.1.0")
+    rc = release.main(["release.py", "--tag"])  # default: push
+    assert rc == 0
+    pushed = subprocess.run(
+        ["git", "-C", str(origin), "tag", "--list"], capture_output=True, text=True).stdout
+    assert "git-v1.1.0" in pushed

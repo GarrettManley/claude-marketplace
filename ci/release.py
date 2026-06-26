@@ -10,13 +10,19 @@ Per plugin <name>:
   2. commits = `git log since..HEAD` whose Conventional-Commit scope == <name>
   3. bump = breaking -> major | feat -> minor | (fix|perf) -> patch | else skip
   4. write plugin.json version, prepend CHANGELOG.md
-After all plugins: sync marketplace.json, one release commit, per-plugin tags.
+After all plugins: sync marketplace.json, one release commit (NO tag — tags are
+born on main post-merge to survive the squash; see docs/adr/0012-tag-after-merge.md).
 
   --dry-run  (default)  print the plan, write nothing
-  --apply               write files, commit, and tag
+  --apply               write files + one release commit (no tag)
+  --tag                 (run on main after the squash-merge) tag each plugin whose
+                        current version is untagged, at HEAD, and push [--no-push to skip]
+
+--dry-run/--apply refuse (exit 1) if a plugin's last tag is not an ancestor of HEAD
+(orphaned by a squash-merge), so a spurious bump is never proposed.
 
 Usage:
-    python3 ci/release.py [--dry-run|--apply]
+    python3 ci/release.py [--dry-run|--apply|--tag] [--no-push]
 """
 from __future__ import annotations
 
@@ -128,6 +134,49 @@ def _last_tag(name: str) -> Optional[str]:
     return out.splitlines()[0] if out else None
 
 
+def _is_ancestor(ref: str, of: str = "HEAD") -> bool:
+    """True if `ref` is an ancestor of `of` (exit 0 from `merge-base --is-ancestor`)."""
+    proc = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "merge-base", "--is-ancestor", ref, of],
+        capture_output=True, text=True,
+    )
+    return proc.returncode == 0
+
+
+def orphaned_tags() -> List[str]:
+    """Per-plugin last tags that are not ancestors of HEAD (orphaned by a squash-merge)."""
+    bad: List[str] = []
+    for name in _ondisk_plugins():
+        tag = _last_tag(name)
+        if tag and not _is_ancestor(tag):
+            bad.append(tag)
+    return bad
+
+
+def _tag_exists(tag: str) -> bool:
+    return bool(_git("tag", "--list", tag).strip())
+
+
+def untagged_releases() -> List[Tuple[str, str]]:
+    """[(name, version)] for plugins whose current plugin.json version has no tag."""
+    out: List[Tuple[str, str]] = []
+    for name in _ondisk_plugins():
+        v = _current_version(name)
+        if not _tag_exists(f"{name}-v{v}"):
+            out.append((name, v))
+    return out
+
+
+def tag_untagged() -> List[str]:
+    """Create a tag at HEAD for each untagged current version. Returns the created tags."""
+    created: List[str] = []
+    for name, v in untagged_releases():
+        tag = f"{name}-v{v}"
+        _git("tag", tag)
+        created.append(tag)
+    return created
+
+
 def _commits_for(name: str) -> List[Commit]:
     tag = _last_tag(name)
     rng = f"{tag}..HEAD" if tag else "HEAD"
@@ -187,10 +236,40 @@ def plan() -> List[Tuple[str, str, str, List[Commit]]]:
 
 
 def main(argv: List[str]) -> int:
-    mode = argv[1] if len(argv) > 1 else "--dry-run"
-    if mode not in ("--dry-run", "--apply"):
-        print(f"usage: {Path(argv[0]).name} [--dry-run|--apply]", file=sys.stderr)
+    args = argv[1:]
+    modes = [a for a in args if a in ("--dry-run", "--apply", "--tag")]
+    unknown = [a for a in args if a not in ("--dry-run", "--apply", "--tag", "--no-push")]
+    if unknown or len(modes) > 1:
+        print(f"usage: {Path(argv[0]).name} [--dry-run|--apply|--tag] [--no-push]", file=sys.stderr)
         return 2
+    mode = modes[0] if modes else "--dry-run"
+
+    # --tag: post-merge step on main. Tag each plugin whose current version is
+    # untagged, at HEAD (the merged commit), and push — so the tag is born on main
+    # and can never be orphaned by the squash. See docs/adr/0012-tag-after-merge.md.
+    if mode == "--tag":
+        created = tag_untagged()
+        if not created:
+            print("release: all current plugin versions already tagged (nothing to tag).")
+            return 0
+        if "--no-push" not in args:
+            _git("push", "origin", *created)
+        print(f"release: tagged {', '.join(created)}"
+              + ("" if "--no-push" in args else " and pushed to origin"))
+        return 0
+
+    # Guard: a last tag not on HEAD's history was orphaned by a squash-merge; the
+    # since-last-tag range would be wrong, so refuse rather than propose a spurious bump.
+    orphaned = orphaned_tags()
+    if orphaned:
+        print(
+            "release: refusing — these tags are not ancestors of HEAD (orphaned by a "
+            f"squash-merge): {', '.join(orphaned)}.\n"
+            "Re-point each before releasing, e.g.: "
+            "git tag -f <tag> <correct-commit> && git push --force origin <tag>.",
+            file=sys.stderr,
+        )
+        return 1
 
     releases = plan()
     if not releases:
@@ -213,9 +292,8 @@ def main(argv: List[str]) -> int:
     summary = ", ".join(f"{n}@{v}" for n, _o, v, _c in releases)
     _git("add", "-A")
     _git("commit", "-m", f"chore(release): {summary}")
-    for name, _old, new, _commits in releases:
-        _git("tag", f"{name}-v{new}")
-    print(f"release: committed and tagged {summary}")
+    print(f"release: committed {summary}. After the squash-merge lands on main, "
+          "run `release.py --tag` there to tag + push (tags are born on main).")
     return 0
 
 
