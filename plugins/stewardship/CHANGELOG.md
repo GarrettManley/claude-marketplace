@@ -1,3 +1,11 @@
+# stewardship changelog
+
+## 1.2.0
+
+### Features
+- Wire horizon-scan step into all nightly schedulers (Windows/cron/launchd)
+- Add horizon-scan cadence tracker
+
 # Changelog
 
 All notable changes to the **stewardship** plugin are documented here. The format is
