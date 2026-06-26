@@ -68,6 +68,10 @@ $pythonExe "$pluginRoot/scripts/drift_check.py" 2>&1 | Out-File -Append `$logFil
 "## auto_memory_housekeep" | Out-File -Append `$logFile
 $pythonExe "$pluginRoot/scripts/auto_memory_housekeep.py" $housekeepFlag 2>&1 | Out-File -Append `$logFile
 
+# 3. Horizon-scan cadence check (deterministic reminder; the scan itself is interactive)
+"## horizon_scan" | Out-File -Append `$logFile
+$pythonExe "$pluginRoot/scripts/horizon_scan_schedule.py" 2>&1 | Out-File -Append `$logFile
+
 "--- end ---`n" | Out-File -Append `$logFile
 "@
 
