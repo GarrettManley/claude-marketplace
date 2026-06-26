@@ -197,3 +197,10 @@ def test_main_promote_requires_id_or_auto(tmp_data):
 
 def test_main_evolve_dry_run(tmp_data):
     assert main(["evolve", "--scope", "project"]) == 0
+
+
+def test_main_synthesize_nightly_apply_writes_report(tmp_data):
+    _seed_bash_observations()  # seeds the fixture project's observations.jsonl
+    rc = main(["synthesize-nightly", "--apply"])
+    assert rc == 0
+    assert (tmp_data / "last_mine_report.json").is_file()

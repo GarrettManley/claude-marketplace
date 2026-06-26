@@ -68,10 +68,71 @@ def test_actions_derives_each_rule():
 
 def test_render_substitutes_all_tokens():
     template = ("date: {{DATE}}\n# {{DATE}}\n{{AUDIT_STATUS}}\n{{DRIFT_SECTION}}\n"
-                "{{HOUSEKEEPING_SECTION}}\n{{HORIZON_SCAN_SECTION}}\n{{ACTIONS_SECTION}}")
-    sections = {"audit_status": "OK", "drift": "D", "housekeeping": "H", "horizon": "Z", "actions": "A"}
+                "{{HOUSEKEEPING_SECTION}}\n{{HORIZON_SCAN_SECTION}}\n{{INSTINCT_SECTION}}\n{{ACTIONS_SECTION}}")
+    sections = {"audit_status": "OK", "drift": "D", "housekeeping": "H", "horizon": "Z",
+                "instinct": "I", "actions": "A"}
     out = rb.render(template, sections, "2026-06-25")
     assert "{{" not in out and "2026-06-25" in out and "OK" in out
+
+
+# --- Learned Instincts section (consumes the learning nightly report) ---
+
+_REPORT = {
+    "ran_at": 1719300000.0,
+    "totals": {"written": 3, "updated": 2, "skipped": 0},
+    "projects": [
+        {"id": "proj-aaa", "written": 2, "updated": 1, "skipped": 0,
+         "sample": [{"id": "auto-bash-git-status", "title": "Frequent command: git status",
+                     "confidence": 0.62}]},
+        {"id": "proj-bbb", "written": 1, "updated": 1, "skipped": 0,
+         "sample": [{"id": "auto-seq-grep-edit", "title": "Edit often follows Grep",
+                     "confidence": 0.7}]},
+    ],
+}
+
+
+def test_instinct_section_summarizes_report():
+    s = rb.render_instinct_section(_REPORT)
+    assert "3" in s  # total written
+    assert "Frequent command: git status" in s or "Edit often follows Grep" in s
+
+
+def test_instinct_section_none_is_graceful():
+    assert "no recent" in rb.render_instinct_section(None).lower()
+
+
+def test_actions_includes_instinct_review_when_written():
+    a = rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK, _REPORT)
+    assert "instinct" in a.lower()
+
+
+def test_actions_no_instinct_line_when_none():
+    assert "No action needed" in rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK, None)
+
+
+def test_read_instinct_report_missing_returns_none(tmp_path):
+    assert rb.read_instinct_report(tmp_path / "nope.json") is None
+
+
+def test_read_instinct_report_reads_file(tmp_path):
+    import json
+    p = tmp_path / "last_mine_report.json"
+    p.write_text(json.dumps(_REPORT), encoding="utf-8")
+    assert rb.read_instinct_report(p)["totals"]["written"] == 3
+
+
+def test_main_renders_instinct_section_from_report(tmp_path):
+    import json
+    report = tmp_path / "rep.json"
+    report.write_text(json.dumps(_REPORT), encoding="utf-8")
+    out = tmp_path / "b.md"
+    rc = rb.main(["--context-dir", str(tmp_path / "noctx"), "--projects-dir", str(tmp_path / "noproj"),
+                  "--state", str(tmp_path / "s.json"), "--instinct-report", str(report),
+                  "--output", str(out), "--date", "2026-06-25"])
+    assert rc == 0
+    text = out.read_text(encoding="utf-8")
+    assert "## Learned Instincts" in text
+    assert "Frequent command: git status" in text or "Edit often follows Grep" in text
 
 
 # --- Task 3: collection + main (subprocess) -----------------------------------
