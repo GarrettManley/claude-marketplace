@@ -103,3 +103,59 @@ def test_bare_evolve_usage(capsys):
     rc = review_cli.main(["evolve"])
     assert rc == 1
     assert "--ingest" in capsys.readouterr().out
+
+
+# --- #12: scaffold a new archetype persona ------------------------------------
+
+import persona  # noqa: E402  (conftest puts scripts/ on sys.path)
+
+
+def test_scaffold_dry_run_writes_nothing(tmp_path, capsys):
+    agents = tmp_path / "agents"
+    agents.mkdir()
+    rc = review_cli.main(["scaffold", "concurrency-reviewer", "--agents-dir", str(agents)])
+    out = capsys.readouterr().out
+    assert rc == 0 and "dry-run" in out
+    assert not (agents / "concurrency-reviewer.agent.md").exists()
+    assert "name: concurrency-reviewer" in out
+
+
+def test_scaffold_apply_writes_valid_persona(tmp_path):
+    agents = tmp_path / "agents"
+    agents.mkdir()
+    rc = review_cli.main(["scaffold", "concurrency-reviewer", "--agents-dir", str(agents), "--apply"])
+    assert rc == 0
+    f = agents / "concurrency-reviewer.agent.md"
+    assert f.exists()
+    assert persona.validate_persona(f.read_text(encoding="utf-8"), "concurrency-reviewer") == []
+
+
+def test_scaffold_rejects_existing_persona(tmp_path, capsys):
+    agents = tmp_path / "agents"
+    agents.mkdir()
+    (agents / "security-auditor.agent.md").write_text("existing", encoding="utf-8")
+    rc = review_cli.main(["scaffold", "security-auditor", "--agents-dir", str(agents), "--apply"])
+    out = capsys.readouterr().out
+    assert rc == 1 and "already exists" in out.lower()
+    assert (agents / "security-auditor.agent.md").read_text(encoding="utf-8") == "existing"
+
+
+def test_scaffold_rejects_bad_name(tmp_path, capsys):
+    agents = tmp_path / "agents"
+    agents.mkdir()
+    rc = review_cli.main(["scaffold", "Bad Name!", "--agents-dir", str(agents)])
+    assert rc == 1 and "name" in capsys.readouterr().out.lower()
+
+
+def test_scaffold_with_description(tmp_path, capsys):
+    agents = tmp_path / "agents"
+    agents.mkdir()
+    review_cli.main(["scaffold", "perf-reviewer", "--agents-dir", str(agents),
+                     "--description", "Use when reviewing latency claims."])
+    assert "Use when reviewing latency claims." in capsys.readouterr().out
+
+
+def test_skeleton_is_valid():
+    content = review_cli._PERSONA_SKELETON.format(
+        name="x-reviewer", title="X Reviewer", description="d")
+    assert persona.validate_persona(content, "x-reviewer") == []

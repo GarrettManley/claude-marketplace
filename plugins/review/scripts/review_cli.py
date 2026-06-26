@@ -16,6 +16,7 @@ with `git checkout`).
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -23,6 +24,39 @@ import persona
 
 _DEFAULT_AGENTS_DIR = Path(".claude/agents")
 _SUFFIX = ".agent.md"
+
+_NAME_RE = re.compile(r"^[a-z][a-z0-9-]*$")
+_DEFAULT_DESCRIPTION = ("Use when <triggering conditions>. Catches <the concrete patterns "
+                        "this archetype flags>.")
+_PERSONA_SKELETON = """\
+---
+name: {name}
+description: |
+  {description}
+tools: Read, Grep, Glob, Bash
+---
+
+# {title} — <short tagline>
+
+Archetype — <one-line note on what this reviewer is>.
+
+- **Cares about:** <the 1–2 things this reviewer prioritizes; the lens it reads everything through>
+- **Feedback style:** <how findings are phrased>
+- **Knowledge:** <domain knowledge this persona has, and what is out of its depth>
+- **Pushback triggers:**
+  - <Trigger 1 — specific enough that another reader can recognize when it fires>
+  - <Trigger 2>
+  - <Trigger 3>
+- **NOT covered:** <the lanes this reviewer stays out of — this boundary defines false positives. Mandatory.>
+- **Severity rubric:**
+  - `blocker` — <a finding that should stop a merge>
+  - `must_fix` — <a finding that must be addressed before publication>
+  - `nit` — <nice to fix, not a gate>
+  - `signal` — <a current non-issue that worsens under foreseeable change>
+  - `praise` — <a pattern to call out positively>
+- **Source:** Archetype — scaffolded; fill in pushback triggers from real review catches.
+- **Last updated:** <YYYY-MM-DD> — scaffolded skeleton.
+"""
 
 
 def _ingest(ingest_dir: Path, agents_dir: Path, apply: bool) -> int:
@@ -75,6 +109,38 @@ def cmd_evolve(*, ingest_dir: str | None, apply: bool, agents_dir: Path) -> int:
     return _ingest(Path(ingest_dir), agents_dir, apply)
 
 
+def cmd_scaffold(name, *, description, apply, agents_dir) -> int:
+    """Create a new archetype persona skeleton (valid-but-placeholdered) for the human to fill."""
+    if not _NAME_RE.match(name):
+        print(f"scaffold: invalid persona name {name!r} — use a lowercase slug "
+              "(e.g. concurrency-reviewer).")
+        return 1
+    target = Path(agents_dir) / f"{name}{_SUFFIX}"
+    if target.exists():
+        print(f"scaffold: persona {name!r} already exists at {target}; "
+              "use /review-evolve to refine it.")
+        return 1
+    content = _PERSONA_SKELETON.format(
+        name=name,
+        title=name.replace("-", " ").title(),
+        description=description or _DEFAULT_DESCRIPTION,
+    )
+    errors = persona.validate_persona(content, name)
+    if errors:  # pragma: no cover - the skeleton is pinned valid by test_skeleton_is_valid
+        print("scaffold: internal error — skeleton failed validation:")
+        for e in errors:
+            print(f"  - {e}")
+        return 1
+    if apply:
+        Path(agents_dir).mkdir(parents=True, exist_ok=True)
+        persona.atomic_write(target, content)
+        print(f"scaffolded {name} -> {target}. Fill its pushback triggers, then commit.")
+    else:
+        print(content)
+        print("dry-run: pass --apply to write.")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="review_cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
@@ -83,10 +149,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--apply", action="store_true", help="write (default: dry-run diff)")
     p.add_argument("--agents-dir", default=str(_DEFAULT_AGENTS_DIR),
                    help="target persona dir (default: .claude/agents; maintainer: plugins/review/agents)")
+
+    s = sub.add_parser("scaffold", help="create a new archetype persona skeleton")
+    s.add_argument("name", help="persona slug (== filename stem), e.g. concurrency-reviewer")
+    s.add_argument("--description", help="frontmatter description (default: a placeholder)")
+    s.add_argument("--apply", action="store_true", help="write (default: print the skeleton)")
+    s.add_argument("--agents-dir", default=str(_DEFAULT_AGENTS_DIR),
+                   help="target persona dir (default: .claude/agents; maintainer: plugins/review/agents)")
+
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
 
     if args.cmd == "evolve":
         return cmd_evolve(ingest_dir=args.ingest, apply=args.apply, agents_dir=Path(args.agents_dir))
+    if args.cmd == "scaffold":
+        return cmd_scaffold(args.name, description=args.description,
+                            apply=args.apply, agents_dir=Path(args.agents_dir))
     return 2  # pragma: no cover
 
 
