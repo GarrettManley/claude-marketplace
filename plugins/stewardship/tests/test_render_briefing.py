@@ -111,3 +111,24 @@ def test_main_stdout(tmp_path, capsys):
                   "--stdout", "--date", "2026-06-25"])
     out = capsys.readouterr().out
     assert rc == 0 and "Morning Briefing — 2026-06-25" in out and "{{" not in out
+
+
+def test_stdout_handles_non_ascii_under_cp1252(tmp_path):
+    # Regression: --stdout must not crash printing non-cp1252 chars (the `→` in a
+    # broken-pointer line) on a Windows-default console. Run as a subprocess with
+    # PYTHONIOENCODING=cp1252 to reproduce the real console encoding.
+    import os
+    import subprocess
+    import sys
+
+    mdir = tmp_path / "p" / "memory"
+    mdir.mkdir(parents=True)
+    (mdir / "MEMORY.md").write_text("- [gone](missing.md)\n", encoding="utf-8")  # broken pointer -> emits →
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    proc = subprocess.run(
+        [sys.executable, rb.__file__, "--stdout", "--date", "2026-06-25",
+         "--context-dir", str(tmp_path / "noctx"),
+         "--projects-dir", str(tmp_path), "--state", str(tmp_path / "s.json")],
+        capture_output=True, env=env)
+    assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+    assert "→".encode("utf-8") in proc.stdout

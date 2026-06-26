@@ -155,6 +155,15 @@ def build_sections(data: dict) -> dict:
 
 
 def main(argv=None) -> int:
+    # The briefing contains non-ASCII glyphs (→, em-dash). On a Windows console
+    # stdout defaults to cp1252, which can't encode them — force UTF-8 so
+    # `--stdout` (and the nightly pipe) never crash. No-op where stdout can't be
+    # reconfigured (e.g. pytest's capture buffer).
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):  # pragma: no cover - capture-buffer / non-tty
+        pass
+
     p = argparse.ArgumentParser(prog="render_briefing")
     p.add_argument("--template", default=str(_TEMPLATE))
     p.add_argument("--output", help="output path (default: ~/.claude/stewardship/briefing/<date>.md)")
