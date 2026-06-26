@@ -32,7 +32,7 @@
       "name": "evidence",
       "source": "./plugins/evidence",
       "description": "Evidence-discipline workflow: citation-seeker, truth-seeker, HMAC override token framework, scope-binding hook scaffold, secret-scan PreToolUse hook. Targets security research and any project where claims must be substantiated.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "research",
       "author": {
         "name": "Garrett Manley"
