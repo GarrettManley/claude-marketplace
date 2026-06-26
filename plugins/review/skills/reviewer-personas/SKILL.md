@@ -125,9 +125,9 @@ After each review cycle, before committing, run this for each participating pers
 3. **Hallucinated** — what did this persona flag that was inapplicable? Classify as Dismiss.
 4. **Update** — if missed or hallucinated findings were notable, adjust pushback triggers.
 
-Then: "Was there a class of issue this cycle that no current archetype would catch? If so, draft a new archetype as `agents/<name>.agent.md` using `templates/persona-stub.md` for the persona body."
+Then run **`/review-evolve <slug>`** — it reads the catches above from this cycle's report and turns the notable Missed/Hallucinated signals into refined `agents/<name>.agent.md` rewrites (dry-run, review, apply). This automates step 4's per-persona trigger updates.
 
-Update the relevant `agents/<name>.agent.md` file. Set the `Last updated` line with a one-line reason. Commit alongside the artifact you just reviewed.
+If a class of issue this cycle would escape **every** current archetype, that is a coverage gap, not a refinement: note it for a future new-archetype pass (`/review-evolve` refines existing personas only — new-archetype scaffolding is a deferred follow-up). Commit the refined personas alongside the artifact you just reviewed.
 
 ---
 
