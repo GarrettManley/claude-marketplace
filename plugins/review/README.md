@@ -57,7 +57,7 @@ Sixteen reviewer archetypes ship as `.agent.md` files under `agents/`. Each agen
 | Script | Role |
 |--------|------|
 | `persona.py` | Parse/validate/diff helpers for archetype persona files — frontmatter-key + required-section + name-match validation (stdlib regex, no PyYAML) and atomic writes |
-| `review_cli.py` | The `evolve --ingest <dir>` ingester backing `/review-evolve` — validates a batch of Claude-authored full-persona rewrites, renders a dry-run diff, and (`--apply`) atomic-writes them |
+| `review_cli.py` | Backs `/review-evolve`. `evolve --ingest <dir>` validates a batch of Claude-authored full-persona rewrites, renders a dry-run diff, and (`--apply`) atomic-writes them; `scaffold <name>` creates a structurally-valid new-archetype persona skeleton (dry-run by default, refuses to clobber) |
 
 ## Usage
 
@@ -104,7 +104,7 @@ After each review, record what each archetype caught, missed, or hallucinated, t
 
 **Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. The whole batch is rejected if any file is structurally invalid or targets a non-existent persona, so a typo cannot half-write.
 
-**Out of scope (deferred).** Scaffolding a *new* archetype when a coverage gap is found is not automated — `/review-evolve` only refines existing personas, and the ingester hard-rejects an unknown target.
+**New archetypes.** When a cycle surfaces a coverage gap — a class of issue no current archetype catches — scaffold a new one: `review_cli.py scaffold <name>` writes a structurally-valid `agents/<name>.agent.md` skeleton (real frontmatter + the required sections with `<placeholders>`), dry-run by default, refusing to clobber an existing persona. Fill its pushback triggers from the catch, then commit. The `evolve --ingest` path still hard-rejects an *unknown* target — refining and creating are separate operations. See `skills/reviewer-personas/templates/persona-stub.md` for the full "what makes a good persona" guidance.
 
 ## Configuration
 
