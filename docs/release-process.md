@@ -107,13 +107,26 @@ python3 ci/release.py --apply
 3. After all plugins are bumped, runs `sync()` to propagate the new versions into
    `.claude-plugin/marketplace.json`.
 4. Creates **one** release commit: `chore(release): <name>@<ver>, <name>@<ver>, …`.
-5. Creates a tag `<name>-v<version>` for each released plugin.
 
-Push the release commit and its tags once you've verified them locally:
+`--apply` does **not** tag. Push the branch (no tags yet) and open the PR:
 
 ```bash
-git push --follow-tags
+git push -u origin <branch>
 ```
+
+After the PR is **squash-merged**, tag on `main` — where the released commit actually
+lives, so the tag can never be orphaned by the squash (see
+`docs/adr/0012-tag-after-merge.md`):
+
+```bash
+git checkout main && git pull
+python3 ci/release.py --tag      # tags each untagged current version at HEAD + pushes
+```
+
+`--tag` is idempotent (a no-op once every current version is tagged); add `--no-push`
+to create the tags without pushing. If `release.py --dry-run`/`--apply` ever reports a
+tag is "not an ancestor of HEAD," a squash orphaned it — re-point it before releasing:
+`git tag -f <tag> <correct-commit> && git push --force origin <tag>`.
 
 ## The v1.0.0 tags are created by hand
 
