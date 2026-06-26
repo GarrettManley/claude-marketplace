@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 import sys
@@ -105,6 +106,28 @@ def find_broken_pointers(memory_dir: Path) -> list[BrokenPointer]:
     return broken
 
 
+def collect(projects_dir, days):
+    """Aggregate stale files + broken pointers across all project memory dirs."""
+    memory_dirs = find_memory_dirs(projects_dir)
+    stale: list[StaleFile] = []
+    broken: list[BrokenPointer] = []
+    for mdir in memory_dirs:
+        stale.extend(find_stale(mdir, days))
+        broken.extend(find_broken_pointers(mdir))
+    return memory_dirs, stale, broken
+
+
+def _json_report(memory_dirs, stale, broken, days):
+    return {
+        "stale": [{"path": str(s.path), "name": s.path.name, "age_days": s.age_days,
+                   "project_key": s.project_key} for s in stale],
+        "broken_pointers": [{"project_key": b.project_key, "target": b.target,
+                             "index_line": b.index_line} for b in broken],
+        "summary": {"stale_count": len(stale), "broken_count": len(broken),
+                    "memory_dirs": len(memory_dirs), "threshold_days": days},
+    }
+
+
 def archive_file(stale: StaleFile) -> Path:
     """Move a stale file into the project's _archive/ subdir."""
     archive_root = stale.path.parent / ARCHIVE_DIR
@@ -118,12 +141,22 @@ def archive_file(stale: StaleFile) -> Path:
     return dest
 
 
-def main() -> int:
+def main(argv=None) -> int:
     p = argparse.ArgumentParser(description="Rotate stale auto-memory files.")
     p.add_argument("--days", type=int, default=90, help="Stale threshold in days (default 90)")
     p.add_argument("--apply", action="store_true", help="Actually archive (default: dry-run)")
     p.add_argument("--projects-dir", type=Path, default=DEFAULT_PROJECTS_DIR)
-    args = p.parse_args()
+    p.add_argument("--json", action="store_true",
+                   help="emit structured JSON (report-only; ignores --apply)")
+    args = p.parse_args(argv)
+
+    if args.json:
+        if args.projects_dir.is_dir():
+            memory_dirs, stale, broken = collect(args.projects_dir, args.days)
+        else:
+            memory_dirs, stale, broken = [], [], []
+        print(json.dumps(_json_report(memory_dirs, stale, broken, args.days), indent=2))
+        return 0
 
     if not args.projects_dir.is_dir():
         print(f"projects-dir not found: {args.projects_dir}", file=sys.stderr)

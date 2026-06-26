@@ -346,3 +346,53 @@ class TestMain:
         out = capsys.readouterr().out
         # The project section header should NOT appear
         assert "clean-proj" not in out
+
+
+# --- D5: --json report mode ---------------------------------------------------
+
+import json  # noqa: E402
+
+import auto_memory_housekeep as amh  # noqa: E402
+
+
+def _seed_stale_dir(tmp_path, project="proj-a", name="old_topic.md", age_days=200):
+    import os
+    mdir = tmp_path / project / "memory"
+    mdir.mkdir(parents=True)
+    f = mdir / name
+    f.write_text("stale", encoding="utf-8")
+    old = time.time() - age_days * 86400
+    os.utime(f, (old, old))
+    return mdir, f
+
+
+def test_collect_finds_stale(tmp_path):
+    _seed_stale_dir(tmp_path)
+    dirs, stale, broken = amh.collect(tmp_path, 90)
+    assert len(dirs) == 1 and len(stale) == 1 and stale[0].age_days >= 90
+
+
+def test_json_report_shape(tmp_path):
+    _seed_stale_dir(tmp_path, name="old.md")
+    dirs, stale, broken = amh.collect(tmp_path, 90)
+    rep = amh._json_report(dirs, stale, broken, 90)
+    assert rep["summary"]["stale_count"] == 1 and rep["stale"][0]["name"] == "old.md"
+    assert rep["summary"]["threshold_days"] == 90
+
+
+def test_json_flag_emits_valid_json(tmp_path, capsys):
+    rc = amh.main(["--json", "--projects-dir", str(tmp_path)])
+    assert rc == 0
+    json.loads(capsys.readouterr().out)
+
+
+def test_json_missing_projects_dir_emits_empty(tmp_path, capsys):
+    rc = amh.main(["--json", "--projects-dir", str(tmp_path / "absent")])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0 and data["summary"]["stale_count"] == 0 and data["summary"]["memory_dirs"] == 0
+
+
+def test_json_does_not_archive(tmp_path):
+    mdir, f = _seed_stale_dir(tmp_path)
+    amh.main(["--json", "--apply", "--projects-dir", str(tmp_path)])
+    assert f.exists() and not (mdir / "_archive").exists()
