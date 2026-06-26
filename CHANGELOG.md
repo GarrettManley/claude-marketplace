@@ -35,6 +35,12 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
   `~/.claude/stewardship/briefing/<date>.md`. Delivered both on-demand and as the
   steward's 4th nightly step. See `docs/adr/0011-morning-briefing-renderer.md`.
 
+### Fixed
+
+- `stewardship` `render_briefing.py`: force UTF-8 stdout so `/morning-briefing`
+  (`--stdout`) no longer crashes printing non-ASCII glyphs (the `→` in
+  broken-pointer lines) on a Windows cp1252 console.
+
 ## [evidence 1.2.0] — 2026-06-25
 
 ### Added
