@@ -27,7 +27,7 @@ You'll receive an acknowledgement within 5 business days. If the vulnerability i
 
 ## What this repo ships
 
-The `evidence` plugin includes a `secret-scan` PreToolUse hook that detects credential patterns in writes before they hit disk, and a scope-binding gate that restricts agent writes to declared paths. These are defense-in-depth controls for Claude Code sessions, not a substitute for repository-level secret scanning (which should be configured separately on any repo that uses these plugins).
+The `evidence` plugin includes a `secret-scan` PreToolUse hook that detects credential patterns in writes before they hit disk, and an opt-in `scope_bind.py` PreToolUse hook (off unless `EVIDENCE_SCOPE_ENFORCE` is on and a `.claude/evidence-scope.yaml` manifest is loaded) that confines `WebFetch` and agent writes to declared hosts/paths, with a `scope_binding` override valve. These are defense-in-depth controls for Claude Code sessions, not a substitute for repository-level secret scanning (which should be configured separately on any repo that uses these plugins).
 
 The `discipline` plugin's `gateguard` hook gates destructive operations (`rm -rf`, force-pushes, DDL drops) until the agent presents investigation facts. It is not a security boundary — it is an agent-discipline gate.
 

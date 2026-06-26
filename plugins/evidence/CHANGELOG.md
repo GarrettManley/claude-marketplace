@@ -1,3 +1,11 @@
+# evidence changelog
+
+## 1.2.0
+
+### Features
+- env-gate scope-binding hook + register in hooks.json
+- opt-in scope-binding PreToolUse hook (scope_bind.py)
+
 # Changelog
 
 All notable changes to the **evidence** plugin are documented here. The format is

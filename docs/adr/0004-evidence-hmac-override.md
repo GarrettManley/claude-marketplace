@@ -66,3 +66,20 @@ The key is generated once per machine by `scripts/init.sh` (bash) or `scripts/in
   it knows about, so those gates must enforce the no-override invariant themselves.
 - Key rotation invalidates all outstanding tokens with no grace period. For long-running
   sessions that hold valid tokens, coordinate rotation to a session boundary.
+
+## Scope-binding gate (shipped 2026-06-25, opt-in)
+
+The `scope_binding` action is now backed by a ready-made hook,
+`plugins/evidence/hooks/scope_bind.py`. It relays `scope_binding.py`'s
+`check_url`/`check_path` verdicts to confine `WebFetch` (only when the manifest declares
+`hosts`) and `Edit`/`Write`/`MultiEdit` (only when it declares `path_prefixes`); Bash,
+WebSearch, and Read are intentionally not gated.
+
+Following the per-action token design above, a `secret_scan` token cannot bypass it and vice
+versa. The hook is **registered in the plugin's `hooks.json` but off by default** — it is a
+no-op unless `EVIDENCE_SCOPE_ENFORCE` is on **and** a manifest is loaded (the same env-gated
+opt-in the `learning` plugin uses). This keeps enabling the evidence plugin from imposing any
+enforcement, and prevents a stray `.claude/evidence-scope.yaml` from silently activating it.
+A pure project-`settings.json` opt-in was rejected: `${CLAUDE_PLUGIN_ROOT}` is not available
+outside a plugin's own hooks, the install path is version-pinned, and the hook depends on its
+`scripts/` siblings.

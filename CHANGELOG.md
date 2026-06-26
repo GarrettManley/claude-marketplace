@@ -10,6 +10,17 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+## [evidence 1.2.0] — 2026-06-25
+
+### Added
+
+- `evidence` plugin: opt-in scope-binding PreToolUse hook (`scope_bind.py`) —
+  confines `WebFetch` (when the manifest declares `hosts`) and
+  `Edit`/`Write`/`MultiEdit` (when it declares `path_prefixes`) to
+  `.claude/evidence-scope.yaml`, with a `scope_binding` HMAC override valve.
+  Registered but **off by default**: a no-op unless `EVIDENCE_SCOPE_ENFORCE` is
+  on and a manifest is loaded (the `learning`-plugin env-gated opt-in idiom).
+
 ## [1.3.0] — 2026-06-25
 
 ### Added
