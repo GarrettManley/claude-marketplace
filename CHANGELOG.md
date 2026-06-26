@@ -10,6 +10,14 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+### Changed
+
+- Release tooling (`ci/release.py`): tags are now created on `main` after the
+  squash-merge via a new `--tag` mode (`--apply` no longer tags on the branch),
+  so the squash can never orphan a release tag. A dry-run/apply guard refuses with
+  a re-point hint if a plugin's last tag is not an ancestor of HEAD. Runbook updated;
+  see `docs/adr/0012-tag-after-merge.md`.
+
 ### Added
 
 - `review` plugin: `/review-evolve` command automating the post-cycle update
