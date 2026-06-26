@@ -27,6 +27,9 @@ def scope_env(tmp_path, monkeypatch):
             monkeypatch.delenv(k, raising=False)
 
     def _set(text):
+        # Enforcement is off by default; tests opt in (the env-gate is exercised
+        # separately by test_disabled_unless_enforce_env_on).
+        monkeypatch.setenv("EVIDENCE_SCOPE_ENFORCE", "on")
         if text is None:
             # point at a nonexistent file so load_scope is deterministically "not loaded"
             monkeypatch.setenv("EVIDENCE_SCOPE_PATH", str(tmp_path / "absent.yaml"))
@@ -127,3 +130,11 @@ def test_wrong_action_token_does_not_override(scope_env, tmp_path, monkeypatch):
     token = issue_token("secret_scan", ttl_seconds=60, max_uses=1, key_path=key)
     monkeypatch.setenv("EVIDENCE_OVERRIDE_TOKEN", token)
     assert _run("WebFetch", {"url": "https://evil.com"}, monkeypatch) == 2
+
+
+def test_disabled_unless_enforce_env_on(scope_env, monkeypatch):
+    # Off by default: even with a manifest and an out-of-scope op, the hook is a
+    # no-op unless EVIDENCE_SCOPE_ENFORCE is on (learning-plugin env-gate idiom).
+    scope_env(HOSTS)
+    monkeypatch.delenv("EVIDENCE_SCOPE_ENFORCE", raising=False)
+    assert _run("WebFetch", {"url": "https://evil.com"}, monkeypatch) == 0

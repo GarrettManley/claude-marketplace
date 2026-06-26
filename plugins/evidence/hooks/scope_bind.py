@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """Opt-in PreToolUse hook: confine tool egress/writes to the loaded evidence scope.
 
-NOT registered in the plugin's hooks.json. A consuming project wires this into
-its own .claude/settings.json (see the evidence README) and drops a
-.claude/evidence-scope.yaml manifest.
+Registered in the plugin's hooks.json but **off by default** — it enforces only
+when `EVIDENCE_SCOPE_ENFORCE` is on AND a `.claude/evidence-scope.yaml` manifest
+is loaded (the same env-gated opt-in idiom the learning plugin uses). So enabling
+the evidence plugin imposes nothing until a project explicitly opts in.
 
 Gates structured tools whose URL/path is an explicit input field:
   - WebFetch              -> check_url(url)        [only when the manifest declares `hosts`]
   - Edit/Write/MultiEdit  -> check_path(file_path) [only restrictive when `path_prefixes` set]
 
-Returns 0 (allow) when no manifest is loaded, when the tool is not gated, or
-when an out-of-scope op carries a redeemed `scope_binding` override token
-(EVIDENCE_OVERRIDE_TOKEN). Out-of-scope ops are blocked with exit 2.
-Bash, WebSearch, and Read are intentionally not gated (see ADR-0004).
+Returns 0 (allow) when enforcement is off, when no manifest is loaded, when the
+tool is not gated, or when an out-of-scope op carries a redeemed `scope_binding`
+override token (EVIDENCE_OVERRIDE_TOKEN). Out-of-scope ops are blocked with
+exit 2. Bash, WebSearch, and Read are intentionally not gated (see ADR-0004).
 """
 from __future__ import annotations
 
@@ -26,6 +27,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 from scope_binding import check_path, check_url, load_scope  # noqa: E402
 
 _PATH_TOOLS = {"Edit", "Write", "MultiEdit"}
+_ON_VALUES = frozenset({"1", "true", "on", "yes", "enabled"})
+
+
+def _enforcement_enabled() -> bool:
+    """True when EVIDENCE_SCOPE_ENFORCE is set to a recognized on-value."""
+    return (os.environ.get("EVIDENCE_SCOPE_ENFORCE", "") or "").strip().lower() in _ON_VALUES
 
 
 def check_override() -> bool:
@@ -42,6 +49,9 @@ def check_override() -> bool:
 
 
 def main() -> int:
+    if not _enforcement_enabled():
+        return 0  # off by default
+
     try:
         payload = json.load(sys.stdin)
     except (json.JSONDecodeError, ValueError):

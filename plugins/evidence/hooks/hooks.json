@@ -1,5 +1,5 @@
 {
-  "description": "evidence plugin hooks: secret-scan PreToolUse defense-in-depth.",
+  "description": "evidence plugin hooks: secret-scan + scope-binding PreToolUse defense-in-depth.",
   "hooks": {
     "PreToolUse": [
       {
@@ -8,6 +8,16 @@
           {
             "type": "command",
             "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/secret_scan.py\"",
+            "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "WebFetch|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_bind.py\"",
             "timeout": 5
           }
         ]
