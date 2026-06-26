@@ -26,6 +26,11 @@ All notable changes to the **stewardship** plugin are documented here. The forma
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- **Learned Instincts briefing section.** `render_briefing.py` gains a 4th source: `render_instinct_section` reads the learning plugin's nightly report (`<learning-data-root>/last_mine_report.json`) and renders a `## Learned Instincts` section; `derive_actions` surfaces a "review N new instinct candidate(s)" action. The data-root path is resolved by replicating learning's convention (`learning_data_root()`) so stewardship needs no cross-plugin import — the contract is a JSON file, not a dependency. New `--instinct-report` flag overrides the path.
+- `register_nightly.ps1` gains `-LearningScript <path>` (an explicit path, since the learning plugin installs to its own versioned dir that this script cannot resolve) and runs headless synthesis as the step **before** the briefing render, so the briefing reads the report it just wrote.
+
 ## 1.1.0 — 2026-06-24
 
 - Dropped the unimplemented `--markdown` flag from `drift_check.py` (and its docs/usage) — markdown is the default output; pass `--json` for machine-readable output.

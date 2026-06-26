@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import date as date_cls
@@ -76,7 +77,62 @@ def render_horizon_section(horizon: dict) -> str:
     return horizon.get("message", "_(no horizon-scan status)_")
 
 
-def derive_actions(drift: dict, house: dict, horizon: dict) -> str:
+def learning_data_root() -> Path:
+    """Resolve the learning plugin's data-root the same way its `storage.py` does.
+
+    Deliberately replicated (not imported) so stewardship stays installable and
+    testable without the learning plugin present — the cross-plugin contract is a
+    JSON report at a conventional path, not a Python dependency.
+    """
+    explicit = os.environ.get("LEARNING_DATA_ROOT")
+    if explicit:
+        return Path(explicit)
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            return Path(local) / "claude-marketplace" / "learning"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return Path(xdg) / "claude-marketplace" / "learning"
+    return Path.home() / ".local" / "share" / "claude-marketplace" / "learning"
+
+
+def read_instinct_report(path=None) -> dict | None:
+    """Read the learning nightly report JSON; None if absent/unreadable.
+
+    The report lives at the data-root (project-independent), so the nightly task
+    and an interactive `/morning-briefing` resolve the same file.
+    """
+    p = Path(path) if path else (learning_data_root() / "last_mine_report.json")
+    if not p.is_file():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def render_instinct_section(report: dict | None) -> str:
+    if not report:
+        return "No recent instinct-synthesis run."
+    totals = report.get("totals", {})
+    written = totals.get("written", 0)
+    updated = totals.get("updated", 0)
+    projects = report.get("projects", [])
+    touched = len([p for p in projects if p.get("written") or p.get("updated")])
+    lines = [f"Synthesized **{written} new** + {updated} reinforced instinct(s) "
+             f"across {touched} project(s) overnight."]
+    samples = [s for p in projects for s in p.get("sample", [])]
+    if written and samples:
+        lines.append("")
+        lines.append("**Sampled instincts:**")
+        for s in samples[:8]:
+            conf = int(round(s.get("confidence", 0) * 100))
+            lines.append(f"- {s.get('title', '?')} ({conf}%)")
+    return "\n".join(lines)
+
+
+def derive_actions(drift: dict, house: dict, horizon: dict, instinct: dict | None = None) -> str:
     actions: list[str] = []
     fails = [c for c in drift.get("checks", []) if not c.get("passed")]
     if fails:
@@ -93,6 +149,10 @@ def derive_actions(drift: dict, house: dict, horizon: dict) -> str:
         actions.append(f"{hs['broken_count']} broken MEMORY.md pointer(s) — fix or remove.")
     if horizon.get("due"):
         actions.append("Horizon-scan DUE — run `/orchestration:horizon-scanning`, then `--mark-done`.")
+    written = (instinct or {}).get("totals", {}).get("written", 0)
+    if written:
+        actions.append(f"Review {written} new instinct candidate(s) in the Learned Instincts "
+                       "section — keep, promote, or let decay.")
     if not actions:
         return "No action needed — all checks green."
     return "\n".join(f"- {a}" for a in actions)
@@ -106,6 +166,7 @@ def render(template: str, sections: dict, date_str: str) -> str:
         "{{DRIFT_SECTION}}": sections["drift"],
         "{{HOUSEKEEPING_SECTION}}": sections["housekeeping"],
         "{{HORIZON_SCAN_SECTION}}": sections["horizon"],
+        "{{INSTINCT_SECTION}}": sections["instinct"],
         "{{ACTIONS_SECTION}}": sections["actions"],
     }.items():
         out = out.replace(token, value)
@@ -126,7 +187,7 @@ def run_json(scripts_dir, script, *args) -> dict:
 
 
 def collect(scripts_dir, *, context_dir=None, projects_dir=None, state=None,
-            max_age_days=None, interval_days=None) -> dict:
+            max_age_days=None, interval_days=None, instinct_report=None) -> dict:
     drift_args = (["--dir", str(context_dir)] if context_dir else []) \
         + (["--max-age-days", str(max_age_days)] if max_age_days is not None else [])
     house_args = ["--projects-dir", str(projects_dir)] if projects_dir else []
@@ -136,6 +197,9 @@ def collect(scripts_dir, *, context_dir=None, projects_dir=None, state=None,
         "drift": run_json(scripts_dir, "drift_check.py", *drift_args),
         "housekeeping": run_json(scripts_dir, "auto_memory_housekeep.py", *house_args),
         "horizon": run_json(scripts_dir, "horizon_scan_schedule.py", *hz_args),
+        # The learning report is a file read (the learning plugin writes it), not a
+        # subprocess like the three steward sources.
+        "instinct": read_instinct_report(instinct_report),
     }
 
 
@@ -150,7 +214,8 @@ def build_sections(data: dict) -> dict:
         "drift": _section(drift, render_drift_section, "drift check"),
         "housekeeping": _section(data["housekeeping"], render_housekeeping_section, "memory housekeeping"),
         "horizon": _section(data["horizon"], render_horizon_section, "horizon scan"),
-        "actions": derive_actions(drift, data["housekeeping"], data["horizon"]),
+        "instinct": render_instinct_section(data.get("instinct")),
+        "actions": derive_actions(drift, data["housekeeping"], data["horizon"], data.get("instinct")),
     }
 
 
@@ -175,11 +240,14 @@ def main(argv=None) -> int:
     p.add_argument("--state")
     p.add_argument("--max-age-days", type=int)
     p.add_argument("--interval-days", type=int)
+    p.add_argument("--instinct-report",
+                   help="path to the learning nightly report (default: <learning-data-root>/last_mine_report.json)")
     args = p.parse_args(argv)
 
     date_str = args.date or date_cls.today().isoformat()
     data = collect(args.scripts_dir, context_dir=args.context_dir, projects_dir=args.projects_dir,
-                   state=args.state, max_age_days=args.max_age_days, interval_days=args.interval_days)
+                   state=args.state, max_age_days=args.max_age_days, interval_days=args.interval_days,
+                   instinct_report=args.instinct_report)
     briefing = render(Path(args.template).read_text(encoding="utf-8"), build_sections(data), date_str)
 
     out_path = Path(args.output) if args.output else (_DEFAULT_OUT_DIR / f"{date_str}.md")
