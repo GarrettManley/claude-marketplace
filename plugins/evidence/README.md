@@ -3,9 +3,9 @@
 Evidence-discipline workflow for projects where claims must be substantiated. Provides two
 model-invoked skills (citation discipline, verification-trace discipline), a defense-in-depth
 `PreToolUse` hook that blocks tool inputs containing credential patterns, and an HMAC-signed
-override token framework for auditable exception handling. A reusable scope-binding scaffold
-is included for projects that need to constrain network and filesystem access to a defined
-engagement scope.
+override token framework for auditable exception handling. A reusable scope-binding scaffold —
+plus an opt-in `scope_bind.py` PreToolUse hook that enforces it — is included for projects that
+need to constrain network and filesystem access to a defined engagement scope.
 
 Designed for security research and any engineering context where undocumented claims,
 stale memory, and accidental secret leakage are real risks.
@@ -31,6 +31,7 @@ stale memory, and accidental secret leakage are real risks.
 | Hook | Event | Matcher | Active by default |
 |------|-------|---------|-------------------|
 | `secret_scan.py` | `PreToolUse` | `Bash\|Edit\|Write\|MultiEdit\|WebFetch` | Yes |
+| `scope_bind.py` | `PreToolUse` | `WebFetch\|Edit\|Write\|MultiEdit` | No — opt-in via `EVIDENCE_SCOPE_ENFORCE` |
 
 `secret_scan.py` scans tool inputs for 14 credential patterns: AWS access key IDs, AWS secrets,
 GitHub PATs (classic, OAuth, user, server, refresh), OpenAI API keys, Anthropic API keys, Stripe
@@ -38,6 +39,13 @@ live keys, Slack bot/user tokens, generic Bearer tokens, and PEM private key blo
 exits `2` (block) and prints which pattern matched, showing only the first 8 characters of each
 match. An HMAC override token bypasses the block when `EVIDENCE_OVERRIDE_TOKEN` is set and a
 valid token for action `secret_scan` is present.
+
+`scope_bind.py` enforces the scope manifest (see [Scope binding](#scope-binding)). It is **off by
+default** — a no-op unless `EVIDENCE_SCOPE_ENFORCE` is on **and** a `.claude/evidence-scope.yaml`
+manifest is loaded (the same env-gated opt-in the `learning` plugin uses, so enabling the plugin
+imposes nothing). When active it gates `WebFetch` (only when the manifest declares `hosts`) and
+`Edit`/`Write`/`MultiEdit` (only when it declares `path_prefixes`); out-of-scope ops exit `2` and
+can be bypassed with a valid `scope_binding` override token. Bash, WebSearch, and Read are not gated.
 
 ### Scripts / libraries
 
@@ -137,7 +145,24 @@ path_prefixes:
   - /opt/data/engagement-2026/
 ```
 
-Then in a custom hook or script:
+Then **enable the ready-made hook** by turning on its env gate (it is registered but off by
+default):
+
+```bash
+export EVIDENCE_SCOPE_ENFORCE=on
+```
+
+With both the manifest and the gate on, `scope_bind.py` blocks `WebFetch` to disallowed hosts
+(only when the manifest declares `hosts`) and `Edit`/`Write`/`MultiEdit` to disallowed paths (only
+when it declares `path_prefixes`). Out-of-scope ops exit `2`; bypass a specific one with a
+`scope_binding` override token (see [Override token mechanics](#override-token-mechanics)):
+
+```bash
+TOKEN=$(python "$(claude plugin root evidence@garrettmanley)/scripts/evidence_hmac.py" issue scope_binding --ttl 60 --uses 1)
+EVIDENCE_OVERRIDE_TOKEN=$TOKEN <your-command>
+```
+
+Or call the library directly from your own code instead of the hook:
 
 ```python
 from scope_binding import check_url, check_path
@@ -148,14 +173,17 @@ if not ok:
 ```
 
 When no manifest is present, both `check_url` and `check_path` return `(True, "no scope
-manifest loaded; permissive mode")`. Scope enforcement is fully opt-in.
+manifest loaded; permissive mode")`, and `scope_bind.py` is a no-op. Scope enforcement is fully
+opt-in. **Note:** `path_prefixes` must match the host OS path style — on Windows use
+`C:\Engagements\2026\`-style prefixes (prefix matching is done on resolved paths).
 
 ## Configuration
 
 | Env var | Default | Effect |
 |---------|---------|--------|
 | `EVIDENCE_OVERRIDE_KEY` | `~/.claude/evidence-override-key` | Path to the HMAC signing key file. Override to use a non-default location. |
-| `EVIDENCE_OVERRIDE_TOKEN` | _(unset)_ | When set, `secret_scan.py` attempts to redeem this token for action `secret_scan`. A valid, non-exhausted token bypasses the block. |
+| `EVIDENCE_OVERRIDE_TOKEN` | _(unset)_ | When set, `secret_scan.py` redeems it for action `secret_scan` and `scope_bind.py` for action `scope_binding`. A valid, non-exhausted token for the matching action bypasses that hook's block. |
+| `EVIDENCE_SCOPE_ENFORCE` | _(unset / off)_ | Opt-in switch for `scope_bind.py`. Set to `on`/`1`/`true`/`yes`/`enabled` to enforce the scope manifest; otherwise the hook is a no-op. |
 | `EVIDENCE_SCOPE_PATH` | _(auto-detect from git root)_ | Explicit path to the scope manifest. Overrides the default `<repo_root>/.claude/evidence-scope.yaml` search. |
 
 ### Override token mechanics
