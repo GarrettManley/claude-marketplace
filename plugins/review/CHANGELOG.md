@@ -1,5 +1,10 @@
 # review changelog
 
+## 1.3.0
+
+### Features
+- Add review_cli scaffold for new archetype personas
+
 ## 1.2.0
 
 ### Features
