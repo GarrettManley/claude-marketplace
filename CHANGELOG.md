@@ -19,6 +19,15 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
   project-local `.claude/agents/` target, git as the snapshot). Backed by the
   plugin's first `scripts/` (`persona.py`, `review_cli.py`) + `tests/`.
   New-archetype scaffolding is deferred. See `docs/adr/0009-review-persona-evolution.md`.
+- `stewardship` plugin: nightly steward now runs a third step,
+  `horizon_scan_schedule.py` — a deterministic cadence tracker that surfaces a
+  "horizon-scan DUE" reminder monthly (state in
+  `~/.claude/stewardship/horizon-scan-state.json`, `--interval-days`, `--mark-done`).
+  It reminds rather than executes: `orchestration:horizon-scanning` needs an
+  interactive session (web search, VRAM judgment, load tests) and cannot run
+  headless. Wired into the Windows/cron/launchd schedulers; adds a
+  `{{HORIZON_SCAN_SECTION}}` briefing token. See
+  `docs/adr/0010-horizon-scan-cadence-reminder.md`.
 
 ## [evidence 1.2.0] — 2026-06-25
 
