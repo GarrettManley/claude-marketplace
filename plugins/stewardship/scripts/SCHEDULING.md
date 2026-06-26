@@ -1,15 +1,16 @@
 # Stewardship Nightly Steward — Scheduler Wiring
 
-The nightly steward runs three cross-platform Python scripts in sequence:
+The nightly steward runs four cross-platform Python scripts in sequence:
 
 | Script | Purpose | Key flag |
 |---|---|---|
 | `scripts/drift_check.py` | Verify context-file `verification_cmd:` claims | `--dir PATH` to override context dir |
 | `scripts/auto_memory_housekeep.py` | Rotate stale auto-memory entries | `--apply` to actually archive (default is dry-run) |
 | `scripts/horizon_scan_schedule.py` | Surface a "horizon-scan DUE" reminder on a monthly cadence (a deterministic check — the scan itself stays interactive) | `--interval-days N` (default 30); `--mark-done` to reset after a scan |
+| `scripts/render_briefing.py` | Render `templates/morning-briefing.md` to `~/.claude/stewardship/briefing/<date>.md` from the other three scripts' `--json` output | `--stdout` to also print; `--date YYYY-MM-DD` to override |
 
-All three scripts are pure Python 3 and run identically on all platforms. Only the
-scheduler wiring differs per OS; each install line below sequences all three with `&&`.
+All four scripts are pure Python 3 and run identically on all platforms. Only the
+scheduler wiring differs per OS; each install line below sequences all four with `&&`.
 
 ---
 

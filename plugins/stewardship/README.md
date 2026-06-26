@@ -40,6 +40,12 @@ Enable from the `garrettmanley` marketplace:
 Both hooks are gated by `STEWARDSHIP_HOOK_PROFILE` and `STEWARDSHIP_DISABLED_HOOKS`.
 They fire under `standard` and `strict` profiles; they are off under `minimal`.
 
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/morning-briefing` | Renders today's briefing — drift-check, memory-housekeeping, and horizon-scan status plus rule-based suggested actions — from live data, writing `~/.claude/stewardship/briefing/<date>.md` |
+
 ### Scripts
 
 | Script | Purpose |
@@ -47,6 +53,7 @@ They fire under `standard` and `strict` profiles; they are off under `minimal`.
 | `scripts/drift_check.py` | Scans `~/.claude/context/` for `verification_cmd:` frontmatter; runs each command; reports pass/fail and staleness |
 | `scripts/auto_memory_housekeep.py` | Identifies stale entries (>90d by default) in `~/.claude/projects/*/memory/`; optionally archives them; flags broken `MEMORY.md` pointers |
 | `scripts/horizon_scan_schedule.py` | Deterministic cadence tracker — surfaces a "horizon-scan DUE" reminder when the monthly interval elapses. Reminds only; the scan itself (`/orchestration:horizon-scanning`) needs an interactive session |
+| `scripts/render_briefing.py` | Fills `templates/morning-briefing.md` from the three sources' `--json` output (status + rule-based actions). Backs `/morning-briefing` and the 4th nightly step |
 | `scripts/register_nightly.ps1` | Windows Task Scheduler helper — registers, updates, or removes the `stewardship-nightly-steward` task |
 | `scripts/post_edit_accumulator.py` | Backing store for the `PostToolUse` hook |
 | `scripts/stop_format_typecheck.py` | Backing store for the `Stop` hook |
@@ -55,7 +62,7 @@ They fire under `standard` and `strict` profiles; they are off under `minimal`.
 
 | Template | Purpose |
 |----------|---------|
-| `templates/morning-briefing.md` | Skeleton for a generated daily briefing using `{{TOKEN}}` placeholders; fill tokens with drift-check and housekeep output |
+| `templates/morning-briefing.md` | Daily-briefing template with `{{TOKEN}}` placeholders, filled by `render_briefing.py` (`/morning-briefing` + the nightly steward) from drift-check, housekeep, and horizon-scan data |
 
 ## Init / Setup
 
@@ -133,6 +140,9 @@ python <plugin>/scripts/auto_memory_housekeep.py --apply
 
 # Custom threshold and projects directory
 python <plugin>/scripts/auto_memory_housekeep.py --apply --days 60 --projects-dir /custom/path
+
+# Structured JSON report (report-only; ignores --apply) — consumed by the briefing renderer
+python <plugin>/scripts/auto_memory_housekeep.py --json
 ```
 
 ### Check the horizon-scan cadence on demand
@@ -154,6 +164,20 @@ python <plugin>/scripts/horizon_scan_schedule.py --mark-done
 ```
 
 State lives at `~/.claude/stewardship/horizon-scan-state.json` (a `last_scan` timestamp). A missing or unreadable state file is treated as never-scanned → DUE. The nightly run logs a `## horizon_scan` section to `nightly.log`, and the `{{HORIZON_SCAN_SECTION}}` token in `templates/morning-briefing.md` gives a briefing renderer a slot to surface it. See `docs/adr/0010-horizon-scan-cadence-reminder.md` for why the steward reminds rather than executes.
+
+### Generate the morning briefing on demand
+
+`render_briefing.py` fills `templates/morning-briefing.md` from live data: it invokes the three source scripts with `--json`, derives the status line + rule-based suggested actions, and substitutes the six `{{TOKEN}}` placeholders. The same subprocess `--json` contract is each script's single source of truth for its structured output — the renderer is a thin composer (see `docs/adr/0011-morning-briefing-renderer.md`). A source whose subprocess fails degrades to an `_(… unavailable)_` section rather than crashing the briefing.
+
+```bash
+# Render today's briefing to ~/.claude/stewardship/briefing/<date>.md and print it
+python <plugin>/scripts/render_briefing.py --stdout
+
+# Tune the drift / horizon thresholds, or point at non-default dirs (test-injection seams)
+python <plugin>/scripts/render_briefing.py --max-age-days 30 --interval-days 45
+```
+
+The nightly steward also pre-renders one at 03:00 (its 4th step). When the nightly runs with `-ApplyHousekeep`, step 2 archives stale memory *before* the briefing re-scans, so the briefing reflects the post-archival state ("what still needs attention").
 
 ### Register the nightly task (Windows, manual)
 

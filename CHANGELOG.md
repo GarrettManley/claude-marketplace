@@ -28,6 +28,12 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
   headless. Wired into the Windows/cron/launchd schedulers; adds a
   `{{HORIZON_SCAN_SECTION}}` briefing token. See
   `docs/adr/0010-horizon-scan-cadence-reminder.md`.
+- `stewardship` plugin: `/morning-briefing` command + `render_briefing.py` fill
+  `templates/morning-briefing.md` from live data — invoking the three source
+  scripts via `--json` (added `--json` to `auto_memory_housekeep.py` for parity),
+  deriving a status line + rule-based suggested actions, and writing
+  `~/.claude/stewardship/briefing/<date>.md`. Delivered both on-demand and as the
+  steward's 4th nightly step. See `docs/adr/0011-morning-briefing-renderer.md`.
 
 ## [evidence 1.2.0] — 2026-06-25
 

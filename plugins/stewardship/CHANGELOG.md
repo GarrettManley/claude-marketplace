@@ -1,5 +1,14 @@
 # stewardship changelog
 
+## 1.3.0
+
+### Features
+- Wire briefing render as the 4th nightly step
+- Add /morning-briefing command
+- Add briefing integration tests; render-clean template intro
+- Add briefing render/derive pure functions
+- Add --json report mode to auto_memory_housekeep
+
 ## 1.2.0
 
 ### Features
