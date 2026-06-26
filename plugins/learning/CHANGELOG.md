@@ -1,3 +1,10 @@
+# learning changelog
+
+## 1.3.0
+
+### Features
+- add Phase 2c detection + Phase 3 evolve/promote/prune
+
 # Changelog
 
 All notable changes to the **learning** plugin are documented here. The format is
