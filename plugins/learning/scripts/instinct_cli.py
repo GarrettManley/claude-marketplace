@@ -24,6 +24,7 @@ from instinct_schema import (  # noqa: E402
     parse_multi_instinct_file,
 )
 from detect import cmd_detect  # noqa: E402
+from retro_mine import cmd_retro_mine  # noqa: E402
 from evolve import cmd_evolve  # noqa: E402
 from promote import cmd_promote  # noqa: E402
 from prune import cmd_prune  # noqa: E402
@@ -270,6 +271,15 @@ def main(argv: list[str] | None = None) -> int:
     p_detect.add_argument("--ingest", metavar="FILE", help="ingest Claude-authored candidate instincts")
     p_detect.add_argument("--apply", action="store_true", help="persist (default: dry-run)")
 
+    p_retro = sub.add_parser("retro-mine", help="mine retrospectives into instincts (Phase 2d)")
+    p_retro.add_argument("--scope", choices=["global", "project"], default="project")
+    p_retro.add_argument("--dump-retros", action="store_true",
+                         help="emit a JSON friction summary for Claude to reason over")
+    p_retro.add_argument("--retros-dir", default="retrospectives/done",
+                         help="directory of retrospective .md files (cwd-relative default)")
+    p_retro.add_argument("--ingest", metavar="FILE", help="ingest Claude-authored candidate instincts")
+    p_retro.add_argument("--apply", action="store_true", help="persist (default: dry-run)")
+
     p_prune = sub.add_parser("prune", help="decay-prune machine instincts below the floor (Phase 3)")
     p_prune.add_argument("--scope", choices=["global", "project"], default="project")
     p_prune.add_argument("--apply", action="store_true", help="delete (default: dry-run; snapshots first)")
@@ -305,6 +315,14 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_detect(
             scope=args.scope,
             dump_observations=args.dump_observations,
+            ingest_path=args.ingest,
+            apply=args.apply,
+        )
+    if args.cmd == "retro-mine":
+        return cmd_retro_mine(
+            scope=args.scope,
+            dump_retros=args.dump_retros,
+            retros_dir=args.retros_dir,
             ingest_path=args.ingest,
             apply=args.apply,
         )

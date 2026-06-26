@@ -25,6 +25,7 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 | `/instinct-import` | Command | Available; takes `<file-path>` argument |
 | `/instinct-status` | Command | Available; no arguments |
 | `/instinct-detect` | Command | Available; Claude-driven correction/preference detection (Phase 2c) |
+| `/instinct-from-retro` | Command | Available; mine recurring retrospective friction Rules into instincts (Phase 2d) |
 | `/evolve` | Command | Available; cluster + merge near-duplicate instincts (Phase 3) |
 | `/promote` | Command | Available; project→global promotion (Phase 3) |
 | `/prune` | Command | Available; confidence-decay pruning (Phase 3) |
@@ -36,6 +37,7 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 | `/analyze-observations` | Report tool-use patterns from the current project's `observations.jsonl`; user decides which patterns to codify as instincts |
 | `/instinct-synthesize [--scope=global\|project] [--write]` | Auto-create instincts from frequency patterns in `observations.jsonl` (dry-run by default); writes to `personal/` |
 | `/instinct-detect [--scope=global\|project] [--dump-observations\|--ingest <file>] [--apply]` | Claude-driven detection of correction/preference instincts from the transcript + observations; candidates land in `personal/` as `claude-detected` (capped at 0.80) |
+| `/instinct-from-retro [--scope=global\|project] [--dump-retros\|--ingest <file>] [--retros-dir <dir>] [--apply]` | Mine recurring (`≥2` retro) friction Rules from `retrospectives/done/*.md` into `personal/` instincts as `retro-mined` (capped at 0.80); closes the write-only retrospective loop |
 | `/evolve [--scope=global\|project] [--apply]` | Cluster machine instincts ≥80% similar on `trigger + title`, merge each cluster into its strongest member, archive merged sources to `evolved/` |
 | `/promote (<id> \| --auto) [--scope=global\|project] [--apply]` | Promote a project instinct to the global store (copy-verify-delete); `--auto` promotes ones widespread across projects with decayed confidence ≥ 0.80 |
 | `/prune [--scope=global\|project] [--apply]` | Remove machine instincts whose confidence has decayed (30-day half-life) below 0.2; human instincts exempt |
@@ -218,6 +220,7 @@ export LEARNING_OBSERVE=off
 
 - **Phase 2b** (1.2.0): automated instinct creation from frequency patterns — `/instinct-synthesize`.
 - **Phase 2c**: Claude-driven detection of correction/preference patterns — `/instinct-detect` (Path A). The intelligence runs in-session (Claude reads the transcript + an observation summary); candidates are written as `claude-detected`, capped at 0.80.
+- **Phase 2d**: retrospective mining — `/instinct-from-retro`. Parses `## Friction / bugs` Rules from `retrospectives/done/*.md`, clusters those recurring across ≥2 retros, and writes them as `retro-mined` (capped at 0.80). Closes the previously write-only retro loop; the source observable is human reflections rather than tool telemetry.
 - **Phase 3**: instinct lifecycle — `/evolve` (cluster + merge), `/promote` (project→global), `/prune` (confidence-decay). Decay uses a 30-day half-life on `last_reinforced`; re-derivation reinforces.
 
 ### Deferred

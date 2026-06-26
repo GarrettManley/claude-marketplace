@@ -11,6 +11,10 @@ All notable changes to the **learning** plugin are documented here. The format i
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+- **Phase 2d — retrospective mining.** New `retro_mine.py` + `/instinct-from-retro` close the previously write-only retrospective loop: the script deterministically parses each retro's `## Friction / bugs` entries (the `*Rule:*` / `*Root cause:*` / `*What happened:*` / `*How caught:*` sub-labels) and emits a JSON friction summary; Claude clusters rules that recur across ≥2 retros and authors candidates, which `--ingest` normalizes into the new `retro-mined` source (capped at `MAX_CONF_DETECTED` = 0.80) and writes via the existing idempotent `write_instincts`. No new storage — retro instincts surface at SessionStart and are evolved/pruned like any machine instinct. New `retro-mine` CLI subcommand and `tests/test_retro_mine.py` (14 tests). `retro-mined` registered in `is_machine_source`.
+
 ## 1.2.0 — 2026-06-25
 
 - **Phase 2b — automated instinct creation.** New `synthesize.py` converts frequency patterns in `observations.jsonl` into instincts: tool-pair sequences become `workflow` instincts (scored by support × consistency) and Bash command prefixes become `tooling` instincts. Confidence is auto-derived via a saturating, capped model (≤0.85 workflow, ≤0.70 bash) and auto-created instincts carry `source: auto-frequency`. Writes are idempotent and never overwrite a manually-promoted instinct of the same id.
