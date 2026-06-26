@@ -25,6 +25,7 @@ from instinct_schema import (  # noqa: E402
 )
 from detect import cmd_detect  # noqa: E402
 from retro_mine import cmd_retro_mine  # noqa: E402
+from synthesize_nightly import cmd_synthesize_nightly  # noqa: E402
 from evolve import cmd_evolve  # noqa: E402
 from promote import cmd_promote  # noqa: E402
 from prune import cmd_prune  # noqa: E402
@@ -295,6 +296,15 @@ def main(argv: list[str] | None = None) -> int:
     p_evolve.add_argument("--scope", choices=["global", "project"], default="project")
     p_evolve.add_argument("--apply", action="store_true", help="merge (default: dry-run; snapshots first)")
 
+    p_nightly = sub.add_parser(
+        "synthesize-nightly",
+        help="headless Phase 2b synthesis across ALL observed projects (nightly steward)",
+    )
+    p_nightly.add_argument("--apply", action="store_true",
+                           help="persist + write the data-root report (default: dry-run)")
+    p_nightly.add_argument("--report-path", metavar="FILE",
+                           help="override report path (default: <data-root>/last_mine_report.json)")
+
     args = parser.parse_args(argv if argv is not None else sys.argv[1:])
     if args.cmd == "status":
         return cmd_status()
@@ -332,6 +342,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_promote(args.id, scope=args.scope, auto=args.auto, apply=args.apply)
     if args.cmd == "evolve":
         return cmd_evolve(scope=args.scope, apply=args.apply)
+    if args.cmd == "synthesize-nightly":
+        return cmd_synthesize_nightly(apply=args.apply, report_path=args.report_path)
     return 2
 
 
