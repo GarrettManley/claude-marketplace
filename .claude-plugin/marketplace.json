@@ -220,7 +220,7 @@
       "name": "learning",
       "source": "./plugins/learning",
       "description": "Continuous-learning toolkit: atomic instinct storage plus project-scoped observation hooks (default-off) and an /analyze-observations review report. Adapted from affaan-m/everything-claude-code @ 4774946d.",
-      "version": "1.3.0",
+      "version": "1.4.0",
       "category": "learning",
       "author": {
         "name": "Garrett Manley"

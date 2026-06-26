@@ -1,5 +1,10 @@
 # learning changelog
 
+## 1.4.0
+
+### Features
+- mine retrospectives into instincts (Phase 2d) (#19)
+
 ## 1.3.0
 
 ### Features
