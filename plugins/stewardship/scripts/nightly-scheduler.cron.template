@@ -6,7 +6,7 @@
 #   2. Substitute the placeholder, then append the line to your crontab:
 #
 #       PLUGIN_PATH="$HOME/.claude/plugins/stewardship"
-#       LINE="0 3 * * * /usr/bin/env python3 \"$PLUGIN_PATH/scripts/drift_check.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/auto_memory_housekeep.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/horizon_scan_schedule.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1"
+#       LINE="0 3 * * * /usr/bin/env python3 \"$PLUGIN_PATH/scripts/drift_check.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/auto_memory_housekeep.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/horizon_scan_schedule.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && /usr/bin/env python3 \"$PLUGIN_PATH/scripts/render_briefing.py\" >> \"$HOME/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1"
 #       (crontab -l 2>/dev/null; echo "$LINE") | crontab -
 #
 # Remove:
@@ -23,4 +23,4 @@
 # - Use `crontab -e` to edit interactively, or `crontab -l` to verify.
 #
 # ─── Template line (replace PLUGIN_PATH and LOG_DIR before use) ────────────
-0 3 * * * /usr/bin/env python3 "PLUGIN_PATH/scripts/drift_check.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/auto_memory_housekeep.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/horizon_scan_schedule.py" >> "LOG_DIR/nightly.log" 2>&1
+0 3 * * * /usr/bin/env python3 "PLUGIN_PATH/scripts/drift_check.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/auto_memory_housekeep.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/horizon_scan_schedule.py" >> "LOG_DIR/nightly.log" 2>&1 && /usr/bin/env python3 "PLUGIN_PATH/scripts/render_briefing.py" >> "LOG_DIR/nightly.log" 2>&1

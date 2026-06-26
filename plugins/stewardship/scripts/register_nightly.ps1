@@ -72,6 +72,10 @@ $pythonExe "$pluginRoot/scripts/auto_memory_housekeep.py" $housekeepFlag 2>&1 | 
 "## horizon_scan" | Out-File -Append `$logFile
 $pythonExe "$pluginRoot/scripts/horizon_scan_schedule.py" 2>&1 | Out-File -Append `$logFile
 
+# 4. Morning briefing render
+"## morning_briefing" | Out-File -Append `$logFile
+$pythonExe "$pluginRoot/scripts/render_briefing.py" 2>&1 | Out-File -Append `$logFile
+
 "--- end ---`n" | Out-File -Append `$logFile
 "@
 

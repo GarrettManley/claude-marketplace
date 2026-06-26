@@ -40,7 +40,7 @@ TEMPLATE="${SCRIPT_DIR}/nightly-scheduler.cron.template"
 # Build the cron command: run the nightly wrapper via python3 at 03:00 daily.
 # We use the drift_check.py + auto_memory_housekeep.py scripts as the canonical
 # nightly entry — mirrors what register_nightly.ps1 does on Windows.
-CRON_COMMAND="0 3 * * * python3 \"${PLUGIN_ROOT}/scripts/drift_check.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && python3 \"${PLUGIN_ROOT}/scripts/auto_memory_housekeep.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && python3 \"${PLUGIN_ROOT}/scripts/horizon_scan_schedule.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1"
+CRON_COMMAND="0 3 * * * python3 \"${PLUGIN_ROOT}/scripts/drift_check.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && python3 \"${PLUGIN_ROOT}/scripts/auto_memory_housekeep.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && python3 \"${PLUGIN_ROOT}/scripts/horizon_scan_schedule.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1 && python3 \"${PLUGIN_ROOT}/scripts/render_briefing.py\" >> \"\${HOME}/.local/share/stewardship-plugin/logs/nightly.log\" 2>&1"
 
 # If the cross-platform scheduler template exists, read the cron line from it.
 if [ -f "${TEMPLATE}" ]; then
