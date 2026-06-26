@@ -46,6 +46,7 @@ They fire under `standard` and `strict` profiles; they are off under `minimal`.
 |--------|---------|
 | `scripts/drift_check.py` | Scans `~/.claude/context/` for `verification_cmd:` frontmatter; runs each command; reports pass/fail and staleness |
 | `scripts/auto_memory_housekeep.py` | Identifies stale entries (>90d by default) in `~/.claude/projects/*/memory/`; optionally archives them; flags broken `MEMORY.md` pointers |
+| `scripts/horizon_scan_schedule.py` | Deterministic cadence tracker — surfaces a "horizon-scan DUE" reminder when the monthly interval elapses. Reminds only; the scan itself (`/orchestration:horizon-scanning`) needs an interactive session |
 | `scripts/register_nightly.ps1` | Windows Task Scheduler helper — registers, updates, or removes the `stewardship-nightly-steward` task |
 | `scripts/post_edit_accumulator.py` | Backing store for the `PostToolUse` hook |
 | `scripts/stop_format_typecheck.py` | Backing store for the `Stop` hook |
@@ -133,6 +134,26 @@ python <plugin>/scripts/auto_memory_housekeep.py --apply
 # Custom threshold and projects directory
 python <plugin>/scripts/auto_memory_housekeep.py --apply --days 60 --projects-dir /custom/path
 ```
+
+### Check the horizon-scan cadence on demand
+
+The nightly steward's third step tracks when an `orchestration:horizon-scanning` sweep is due. It is a **reminder, not an executor**: horizon-scanning web-searches benchmarks, weighs the 8 GB VRAM ceiling, and runs load tests, so it requires an interactive Claude session and cannot run headless. The steward surfaces a DUE notice; you run the scan interactively, then reset the clock.
+
+```bash
+# Is a scan due? (markdown body; default interval 30 days)
+python <plugin>/scripts/horizon_scan_schedule.py
+
+# Machine-readable output (for a briefing renderer)
+python <plugin>/scripts/horizon_scan_schedule.py --json
+
+# Custom cadence
+python <plugin>/scripts/horizon_scan_schedule.py --interval-days 45
+
+# After completing an interactive scan, reset the clock (also invoked by the skill's closing step)
+python <plugin>/scripts/horizon_scan_schedule.py --mark-done
+```
+
+State lives at `~/.claude/stewardship/horizon-scan-state.json` (a `last_scan` timestamp). A missing or unreadable state file is treated as never-scanned → DUE. The nightly run logs a `## horizon_scan` section to `nightly.log`, and the `{{HORIZON_SCAN_SECTION}}` token in `templates/morning-briefing.md` gives a briefing renderer a slot to surface it. See `docs/adr/0010-horizon-scan-cadence-reminder.md` for why the steward reminds rather than executes.
 
 ### Register the nightly task (Windows, manual)
 
@@ -226,6 +247,8 @@ of whether the command passes.
 | 90-day staleness threshold (housekeep) | `--days N` |
 | 45-day staleness threshold (drift check) | `--max-age-days N` |
 | Dry-run mode (housekeep) | `--apply` to enable archival |
+| 30-day horizon-scan cadence | `--interval-days N` |
+| `~/.claude/stewardship/horizon-scan-state.json` (scan state) | managed by `--mark-done` |
 
 ## Troubleshooting
 
@@ -246,5 +269,6 @@ of whether the command passes.
 | Missed runs | Task Scheduler catches up on wake (`-StartWhenAvailable`) | launchd skips missed runs; no catch-up | cron skips missed runs; no catch-up |
 | Log rotation | Not automatic; manually manage `nightly.log` | Use `newsyslog` | Use `logrotate` |
 
-The two Python maintenance scripts (`drift_check.py`, `auto_memory_housekeep.py`) are
-pure Python 3 and run identically on all platforms. Only the scheduler wiring differs.
+The three Python maintenance scripts (`drift_check.py`, `auto_memory_housekeep.py`,
+`horizon_scan_schedule.py`) are pure Python 3 and run identically on all platforms. Only
+the scheduler wiring differs.
