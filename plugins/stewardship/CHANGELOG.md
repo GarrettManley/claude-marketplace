@@ -1,5 +1,10 @@
 # stewardship changelog
 
+## 1.3.1
+
+### Fixes
+- Force UTF-8 stdout in render_briefing so --stdout survives cp1252 consoles
+
 ## 1.3.0
 
 ### Features
