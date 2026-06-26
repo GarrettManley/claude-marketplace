@@ -88,7 +88,7 @@
       "name": "stewardship",
       "source": "./plugins/stewardship",
       "description": "Autonomous maintenance toolkit: drift-check runner against context-file verification commands, morning-briefing template, Windows Task Scheduler registration helper, auto-memory housekeeping for ~/.claude/projects/*/memory/.",
-      "version": "1.3.0",
+      "version": "1.3.1",
       "category": "automation",
       "author": {
         "name": "Garrett Manley"
