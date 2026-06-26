@@ -10,6 +10,8 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+## [1.1.1] — 2026-06-25
+
 ### Changed
 
 - `aether` plugin (1.1.1): migrated the `eval-run` skill and

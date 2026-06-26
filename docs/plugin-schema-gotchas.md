@@ -124,9 +124,20 @@ All 11 plugin manifests in `plugins/*/.claude-plugin/plugin.json` were audited a
 | `orchestration` | `0.1.0` | ✓ | ✓ |  |
 | `stewardship` | `0.1.0` | ✓ | ✓ |  |
 | `windows` | `0.1.0` | ✓ | ✓ |  |
-| `docs`, `review`, `retrospective`, `git` | — | ✓ | ✓ | Phase 5 plugins — verify on first edit |
+| `docs` | `1.1.0` | ✓ | ✓ | Verified 2026-06-25 (`--strict` pass) |
+| `review` | `1.1.0` | ✓ | ✓ | Verified 2026-06-25 (`--strict` pass); 16 agents auto-discovered from `agents/` |
+| `retrospective` | `1.1.0` | ✓ | ✓ | Verified 2026-06-25 (`--strict` pass); `hooks/hooks.json` auto-discovered |
+| `git` | `1.1.0` | ✓ | ✓ | Verified 2026-06-25 (`--strict` pass) |
+| `learning` | `1.2.0` | ✓ | ✓ | Verified 2026-06-25 (`--strict` pass); `hooks/hooks.json` auto-discovered |
 
 None ship a root `.mcp.json`, so the `mcpServers` opt-out is not currently relevant.
+
+> **2026-06-25 audit:** the four Phase-5 plugins (`docs`, `review`, `retrospective`,
+> `git`) and the later-added `learning` plugin were validated with
+> `claude plugin validate ./plugins/<name> --strict` and confirmed to carry no
+> `agents`/`hooks`/`mcpServers` keys (relying on directory auto-discovery). The
+> per-plugin version columns above for the original seven predate the 1.x releases
+> and are left as the historical snapshot.
 
 ### When to revisit this doc
 
