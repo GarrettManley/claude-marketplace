@@ -102,3 +102,63 @@ def test_required_fields_constant():
     assert "domain" in INSTINCT_FRONTMATTER_FIELDS
     assert "trigger" in INSTINCT_FRONTMATTER_FIELDS
     assert "source" in INSTINCT_FRONTMATTER_FIELDS
+
+
+# --- Phase 2c/3 additions ---
+
+
+def test_is_machine_source_classifies_auto_and_detected():
+    from instinct_schema import is_machine_source
+
+    assert is_machine_source("auto-frequency") is True
+    assert is_machine_source("auto-seq-grep-edit") is True
+    assert is_machine_source("claude-detected") is True
+    # Human / imported sources are NOT machine-owned (never auto-overwritten or decayed)
+    assert is_machine_source("manual") is False
+    assert is_machine_source("human-verified") is False
+    assert is_machine_source("import") is False
+
+
+def test_max_conf_detected_constant():
+    from instinct_schema import MAX_CONF_DETECTED
+
+    assert MAX_CONF_DETECTED == 0.80
+
+
+def test_last_reinforced_defaults_none_when_absent():
+    inst = parse_instinct(SINGLE_INSTINCT)
+    assert inst.last_reinforced is None
+
+
+def test_last_reinforced_parsed_and_roundtrips():
+    text = """---
+id: x
+trigger: y
+confidence: 0.5
+domain: workflow
+source: claude-detected
+last_reinforced: 1750000000.0
+---
+
+# X
+
+## Action
+
+Do x.
+
+## Evidence
+
+- because.
+"""
+    inst = parse_instinct(text)
+    assert inst.last_reinforced == 1750000000.0
+    out = format_instinct(inst)
+    assert "last_reinforced: 1750000000.0" in out
+    inst2 = parse_instinct(out)
+    assert inst2.last_reinforced == 1750000000.0
+
+
+def test_format_omits_last_reinforced_when_none():
+    inst = parse_instinct(SINGLE_INSTINCT)
+    out = format_instinct(inst)
+    assert "last_reinforced" not in out

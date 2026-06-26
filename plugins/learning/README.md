@@ -24,6 +24,10 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 | `/instinct-export` | Command | Available; takes `<output-path>` argument |
 | `/instinct-import` | Command | Available; takes `<file-path>` argument |
 | `/instinct-status` | Command | Available; no arguments |
+| `/instinct-detect` | Command | Available; Claude-driven correction/preference detection (Phase 2c) |
+| `/evolve` | Command | Available; cluster + merge near-duplicate instincts (Phase 3) |
+| `/promote` | Command | Available; project→global promotion (Phase 3) |
+| `/prune` | Command | Available; confidence-decay pruning (Phase 3) |
 
 ### Commands
 
@@ -31,9 +35,15 @@ Enabling the plugin alone records nothing. The observation hook is gated off unt
 |---------|-------------|
 | `/analyze-observations` | Report tool-use patterns from the current project's `observations.jsonl`; user decides which patterns to codify as instincts |
 | `/instinct-synthesize [--scope=global\|project] [--write]` | Auto-create instincts from frequency patterns in `observations.jsonl` (dry-run by default); writes to `personal/` |
+| `/instinct-detect [--scope=global\|project] [--dump-observations\|--ingest <file>] [--apply]` | Claude-driven detection of correction/preference instincts from the transcript + observations; candidates land in `personal/` as `claude-detected` (capped at 0.80) |
+| `/evolve [--scope=global\|project] [--apply]` | Cluster machine instincts ≥80% similar on `trigger + title`, merge each cluster into its strongest member, archive merged sources to `evolved/` |
+| `/promote (<id> \| --auto) [--scope=global\|project] [--apply]` | Promote a project instinct to the global store (copy-verify-delete); `--auto` promotes ones widespread across projects with decayed confidence ≥ 0.80 |
+| `/prune [--scope=global\|project] [--apply]` | Remove machine instincts whose confidence has decayed (30-day half-life) below 0.2; human instincts exempt |
 | `/instinct-export <output-path> [--scope=global\|project]` | Export the union of `personal/` and `inherited/` instincts to a single YAML file |
 | `/instinct-import <file-path> [--scope=global\|project]` | Import a YAML instinct file into the `inherited/` directory of a scope |
 | `/instinct-status` | Show all instincts grouped by domain, with confidence bars |
+
+All `/evolve`, `/promote`, `/prune` mutations are dry-run by default and take a timestamped snapshot of the instinct stores before any `--apply`, so a wrong merge/prune/promotion can be restored.
 
 ## Usage
 
@@ -90,12 +100,14 @@ A SessionStart hook then injects the highest-confidence project + global instinc
 ├── instincts/
 │   ├── personal/      (auto-learned via /instinct-synthesize --scope=global)
 │   └── inherited/     (manual /instinct-import)
-├── evolved/           (Phase 3, not yet implemented)
+├── evolved/           (global instincts archived by /evolve --scope=global)
+├── .snapshots/        (timestamped backups taken before /prune /promote /evolve --apply)
 └── projects/
     └── <12-char-hash>/
         ├── instincts/
-        │   ├── personal/   (auto-learned via /instinct-synthesize)
+        │   ├── personal/   (auto-learned via /instinct-synthesize, /instinct-detect)
         │   └── inherited/
+        ├── evolved/            (project instincts archived by /evolve)
         └── observations.jsonl   (written when LEARNING_OBSERVE=on)
 ```
 
@@ -202,9 +214,12 @@ export LEARNING_OBSERVE=off
 - **macOS / Linux:** data root is `~/.local/share/claude-marketplace/learning/`. No platform-specific differences in behavior.
 - This plugin ships **no** `init.sh` / `init.ps1` — no scaffolding step is required. The data directory is created on first use.
 
-## What ships in future phases
+## Phase history
 
-- **Phase 2c:** LLM-driven pattern detection (correction patterns, preference signals)
-- **Phase 3:** `/evolve` clustering, `/promote` (project→global), `/prune` (confidence-decay)
+- **Phase 2b** (1.2.0): automated instinct creation from frequency patterns — `/instinct-synthesize`.
+- **Phase 2c**: Claude-driven detection of correction/preference patterns — `/instinct-detect` (Path A). The intelligence runs in-session (Claude reads the transcript + an observation summary); candidates are written as `claude-detected`, capped at 0.80.
+- **Phase 3**: instinct lifecycle — `/evolve` (cluster + merge), `/promote` (project→global), `/prune` (confidence-decay). Decay uses a 30-day half-life on `last_reinforced`; re-derivation reinforces.
 
-(Phase 2b — automated instinct creation from frequency patterns — shipped in 1.2.0 via `/instinct-synthesize`.)
+### Deferred
+
+- **Phase 2c Path B** — a headless local-LLM (llama-server) detection backend that runs without a live session. Deferred until a concrete headless/nightly consumer exists; `/instinct-detect` (Path A) covers interactive use today.

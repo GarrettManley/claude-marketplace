@@ -204,3 +204,36 @@ def test_write_preserves_non_auto_file(tmp_data):
     assert counts["skipped"] == 1
     # The human-authored content survives untouched.
     assert parse_instinct(f.read_text(encoding="utf-8")).source == "manual"
+
+
+def test_write_overwrites_claude_detected_file(tmp_data):
+    # claude-detected is a machine source: re-derivation must reinforce/overwrite it,
+    # NOT preserve it as if human-authored (was the bug: only auto-* was overwritten).
+    target = get_target_dir("project")
+    target.mkdir(parents=True, exist_ok=True)
+    detected = Instinct(
+        id="auto-seq-grep-edit", trigger="t", confidence=0.4,
+        domain="workflow", source="claude-detected", source_repo=None,
+        title="old", action="stale action", evidence="stale evidence",
+    )
+    f = target / "auto-seq-grep-edit.yaml"
+    f.write_text(format_instinct(detected), encoding="utf-8")
+    counts = write_instincts([_auto_instinct()], target, dry_run=False)
+    assert counts["updated"] == 1
+    assert parse_instinct(f.read_text(encoding="utf-8")).action == "Use Edit after Grep."
+
+
+def test_write_stamps_last_reinforced(tmp_data):
+    target = get_target_dir("project")
+    counts = write_instincts([_auto_instinct()], target, dry_run=False)
+    assert counts["written"] == 1
+    parsed = parse_instinct((target / "auto-seq-grep-edit.yaml").read_text(encoding="utf-8"))
+    assert parsed.last_reinforced is not None and parsed.last_reinforced > 0
+
+
+def test_write_leaves_no_temp_files(tmp_data):
+    # Atomic write must not leave partial/temp artifacts behind.
+    target = get_target_dir("project")
+    write_instincts([_auto_instinct()], target, dry_run=False)
+    leftovers = [p.name for p in target.iterdir() if not p.name.endswith(".yaml")]
+    assert leftovers == []

@@ -174,3 +174,26 @@ def test_synthesize_empty_observations(tmp_data, capsys):
     assert rc == 0
     out = capsys.readouterr().out.lower()
     assert "0 candidate" in out or "no observation" in out
+
+
+# --- Phase 2c / 3: new subcommands dispatch via main() ---
+
+from instinct_cli import main
+
+
+def test_main_detect_dump_observations(tmp_data, capsys):
+    rc = main(["detect", "--dump-observations"])
+    assert rc == 0
+    assert "tool_frequency" in capsys.readouterr().out
+
+
+def test_main_prune_dry_run(tmp_data):
+    assert main(["prune", "--scope", "project"]) == 0
+
+
+def test_main_promote_requires_id_or_auto(tmp_data):
+    assert main(["promote"]) == 1  # neither id nor --auto
+
+
+def test_main_evolve_dry_run(tmp_data):
+    assert main(["evolve", "--scope", "project"]) == 0

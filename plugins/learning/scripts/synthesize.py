@@ -26,8 +26,12 @@ behavior.
 """
 from __future__ import annotations
 
+import os
 import re
 import sys
+import tempfile
+import time
+from dataclasses import replace
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -36,7 +40,12 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from analyze import bash_command_prefixes, pre_post_sequences  # noqa: E402
-from instinct_schema import Instinct, format_instinct, parse_instinct  # noqa: E402
+from instinct_schema import (  # noqa: E402
+    Instinct,
+    format_instinct,
+    is_machine_source,
+    parse_instinct,
+)
 from storage import (  # noqa: E402
     get_global_instincts_dir,
     get_project_id,
@@ -177,7 +186,9 @@ def write_instincts(
             except (ValueError, OSError):
                 counts["skipped"] += 1
                 continue
-            if not existing.source.startswith("auto-"):
+            # Only machine-owned instincts (auto-* / *-detected) are reinforced in
+            # place; a human-promoted instinct under the same id is preserved.
+            if not is_machine_source(existing.source):
                 counts["skipped"] += 1
                 continue
             counts["updated"] += 1
@@ -185,5 +196,24 @@ def write_instincts(
             counts["written"] += 1
         if not dry_run:
             target_dir.mkdir(parents=True, exist_ok=True)
-            out_file.write_text(format_instinct(inst), encoding="utf-8")
+            # Stamp reinforcement time so a later prune pass can decay by age.
+            stamped = replace(inst, last_reinforced=time.time())
+            _atomic_write(out_file, format_instinct(stamped))
     return counts
+
+
+def _atomic_write(path: Path, text: str) -> None:
+    """Write text to `path` atomically (temp file in the same dir + os.replace),
+    so a crash mid-write cannot corrupt an existing instinct file.
+    """
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
