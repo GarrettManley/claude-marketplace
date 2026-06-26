@@ -46,6 +46,19 @@ Sixteen reviewer archetypes ship as `.agent.md` files under `agents/`. Each agen
 |------|-------|----------|
 | `session-start-review-nag.sh` | `SessionStart` | Lists artifacts in `.claude/reviews/pending/` that completed without a reviewer-personas completion token; silent when the directory is absent or empty |
 
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `/review-evolve <slug>` | Automates the [post-cycle update protocol](#post-cycle-update-protocol): turns a cycle's Caught/Missed/Hallucinated catches into validated, refined `agents/<name>.agent.md` rewrites (dry-run by default) |
+
+### Scripts
+
+| Script | Role |
+|--------|------|
+| `persona.py` | Parse/validate/diff helpers for archetype persona files — frontmatter-key + required-section + name-match validation (stdlib regex, no PyYAML) and atomic writes |
+| `review_cli.py` | The `evolve --ingest <dir>` ingester backing `/review-evolve` — validates a batch of Claude-authored full-persona rewrites, renders a dry-run diff, and (`--apply`) atomic-writes them |
+
 ## Usage
 
 Invoke the skill with an artifact reference. The skill selects archetypes from the built-in selection table, dispatches up to 4 agents in parallel, and consolidates findings into a single report.
@@ -83,7 +96,15 @@ Override the table for your team by forking the skill into `.claude/skills/revie
 
 ### Post-cycle update protocol
 
-After each review, record what each archetype caught, missed, or hallucinated. Update the relevant `agents/<name>.agent.md` with refined pushback triggers and commit it alongside the reviewed artifact. This is how the library sharpens over time.
+After each review, record what each archetype caught, missed, or hallucinated, then run **`/review-evolve <slug>`** to turn those catches into refined `agents/<name>.agent.md` rewrites. This is how the library sharpens over time.
+
+`/review-evolve` automates the *apply* half of the protocol; the judgment (what to refine) stays yours. It derives the per-persona Caught/Missed/Hallucinated buckets from the consolidated review report already in the conversation (no separate ledger artifact), you author a refined full-persona body, and the `review_cli.py evolve` ingester validates its structure (frontmatter keys, required sections, name match) before writing. A Missed catch becomes a new pushback trigger; a Hallucinated catch tightens the trigger that misfired or sharpens the NOT-covered boundary.
+
+**Target.** By default the ingester writes to project-local `.claude/agents/` (adopter-safe — it never touches the read-only install cache). As the marketplace maintainer sharpening the *shipped* library, pass `--agents-dir plugins/review/agents/` explicitly.
+
+**Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. The whole batch is rejected if any file is structurally invalid or targets a non-existent persona, so a typo cannot half-write.
+
+**Out of scope (deferred).** Scaffolding a *new* archetype when a coverage gap is found is not automated — `/review-evolve` only refines existing personas, and the ingester hard-rejects an unknown target.
 
 ## Configuration
 
@@ -141,3 +162,11 @@ Keep these additions in your project. The upstream library stays archetype-only.
 The `session-start-review-nag.sh` hook is a POSIX shell script. On Windows it requires a Bash-compatible shell in PATH (e.g. Git Bash). The Claude Code hook runner invokes it via `bash "${CLAUDE_PLUGIN_ROOT}/hooks/session-start-review-nag.sh"`, so Git Bash on Windows is sufficient — no WSL required.
 
 The marker file contract (`.claude/reviews/pending/*.marker`) is path-based and cross-platform. Paths inside marker files should use forward slashes or be relative to the project root for portability.
+
+## Running tests
+
+```bash
+python3 -m pytest plugins/review/tests
+```
+
+Covers persona frontmatter/section validation, diff rendering, atomic writes, and the `evolve` ingester's dry-run / apply / batch-reject / unknown-persona paths.

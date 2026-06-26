@@ -1,3 +1,12 @@
+# review changelog
+
+## 1.2.0
+
+### Features
+- Add /review-evolve command (Post-Cycle protocol automation)
+- Add review_cli evolve ingester (validate + diff + apply)
+- Add persona parse/validate/diff helpers
+
 # Changelog
 
 All notable changes to the **review** plugin are documented here. The format is
