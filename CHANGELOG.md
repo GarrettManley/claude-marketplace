@@ -27,6 +27,11 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
   project-local `.claude/agents/` target, git as the snapshot). Backed by the
   plugin's first `scripts/` (`persona.py`, `review_cli.py`) + `tests/`.
   New-archetype scaffolding is deferred. See `docs/adr/0009-review-persona-evolution.md`.
+- `review` plugin: `review_cli.py scaffold <name>` creates a structurally-valid
+  new-archetype persona skeleton (dry-run by default, refuses to clobber,
+  project-local `.claude/agents/` default), and `/review-evolve` now points at it
+  when a cycle surfaces a coverage gap — closing the new-archetype scaffolding
+  deferred in D3 (#12).
 - `stewardship` plugin: nightly steward now runs a third step,
   `horizon_scan_schedule.py` — a deterministic cadence tracker that surfaces a
   "horizon-scan DUE" reminder monthly (state in
