@@ -37,4 +37,11 @@ The dry-run prints a unified diff per persona; `--apply` atomic-writes them. The
 
 ## Notes
 
-A coverage **gap** (a class of issue no archetype would catch) is *not* handled here: note it for the deferred new-archetype follow-up. `/review-evolve` only refines existing personas.
+If a cycle surfaces a **coverage gap** — a class of issue *no* current archetype would catch — scaffold a new archetype instead of refining an existing one:
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review_cli.py" scaffold <name> --agents-dir plugins/review/agents
+# review the printed skeleton, then re-run with --apply
+```
+
+`scaffold` writes a structurally-valid `agents/<name>.agent.md` skeleton (real frontmatter + the required sections with `<placeholders>`); it refuses to clobber an existing persona. Fill its pushback triggers from the catch, then commit. As the maintainer, target `plugins/review/agents`; adopters omit `--agents-dir` to scaffold into project-local `.claude/agents/`. See `skills/reviewer-personas/templates/persona-stub.md` for the full guidance on writing a good persona.
