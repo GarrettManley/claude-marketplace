@@ -10,6 +10,16 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ## [Unreleased]
 
+### Added
+
+- `review` plugin: `/review-evolve` command automating the post-cycle update
+  protocol — derives per-persona Caught/Missed/Hallucinated catches from the
+  in-context review report and turns the notable signals into validated,
+  full-persona rewrites of `agents/<name>.agent.md` (dry-run by default,
+  project-local `.claude/agents/` target, git as the snapshot). Backed by the
+  plugin's first `scripts/` (`persona.py`, `review_cli.py`) + `tests/`.
+  New-archetype scaffolding is deferred. See `docs/adr/0009-review-persona-evolution.md`.
+
 ## [evidence 1.2.0] — 2026-06-25
 
 ### Added
