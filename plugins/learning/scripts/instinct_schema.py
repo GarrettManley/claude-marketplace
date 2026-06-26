@@ -21,7 +21,9 @@ MAX_CONF_DETECTED = 0.80
 
 # Sources the machine owns: it may overwrite (reinforce) and decay/prune them.
 # Human-curated sources (manual, human-verified, import) are never auto-touched.
-_DETECTED_SOURCES = frozenset({"claude-detected", "llm-detected"})
+# `retro-mined` (Phase 2d) is Claude-authored from retrospective friction Rules —
+# machine-owned like the *-detected band, capped at MAX_CONF_DETECTED.
+_DETECTED_SOURCES = frozenset({"claude-detected", "llm-detected", "retro-mined"})
 
 
 def is_machine_source(source: str) -> bool:
