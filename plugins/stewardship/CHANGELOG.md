@@ -1,5 +1,10 @@
 # stewardship changelog
 
+## 1.4.0
+
+### Features
+- learned-instincts briefing section + nightly synthesis step
+
 ## 1.3.1
 
 ### Fixes

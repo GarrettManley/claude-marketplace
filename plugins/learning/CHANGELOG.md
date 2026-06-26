@@ -1,5 +1,10 @@
 # learning changelog
 
+## 1.5.0
+
+### Features
+- nightly headless instinct synthesis across all observed projects
+
 ## 1.4.0
 
 ### Features
