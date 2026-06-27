@@ -1,3 +1,10 @@
+# retrospective changelog
+
+## 1.2.0
+
+### Features
+- add /pre-plan-brief to surface prior retro findings
+
 # Changelog
 
 All notable changes to the **retrospective** plugin are documented here. The format is

@@ -1,5 +1,10 @@
 # review changelog
 
+## 1.3.1
+
+### Fixes
+- accept heading-form and "Does NOT cover" persona sections in the validator
+
 ## 1.3.0
 
 ### Features

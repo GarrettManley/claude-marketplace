@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "retrospective",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Plan retrospective discipline: a self-contained cycle of marker-drop (exit plan mode), session-start nag, a plan-completion pre-check (verify a plan is actually done before retrospecting) with a soft completion-gate hook, and a retro-authoring skill. Forces a pause after every approved plan to capture what worked, what surprised you, and concrete improvements.",
   "author": {
     "name": "Garrett Manley",
