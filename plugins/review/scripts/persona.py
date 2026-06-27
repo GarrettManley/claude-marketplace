@@ -21,6 +21,15 @@ REQUIRED_SECTIONS = (
     "**Severity rubric:**",
     "**Last updated:**",
 )
+# Some personas delimit a section with a markdown heading instead of the bold
+# inline label (both forms ship in the library). Validation is presence-only —
+# nothing parses the section structure — so either form satisfies the section.
+# The canonical (bold) form stays the one named in error messages.
+_SECTION_ALTERNATIVES = {
+    "**Pushback triggers:**": ("## Pushback triggers",),
+    "**Severity rubric:**": ("## Severity rubric",),
+    "**NOT covered": ("**Does NOT cover", "## NOT covered"),
+}
 _REQUIRED_FM_KEYS = ("name", "description", "tools")
 _FM_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n(.*)$", re.DOTALL)
 _KEY_RE = re.compile(r"^([A-Za-z_][\w-]*):", re.MULTILINE)
@@ -65,7 +74,8 @@ def validate_persona(text: str, expected_name: str) -> list[str]:
     if name != expected_name:
         errors.append(f"frontmatter name {name!r} != expected {expected_name!r}")
     for section in REQUIRED_SECTIONS:
-        if section not in body:
+        forms = (section, *_SECTION_ALTERNATIVES.get(section, ()))
+        if not any(form in body for form in forms):
             errors.append(f"body missing required section: {section}")
     return errors
 

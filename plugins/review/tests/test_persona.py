@@ -19,6 +19,32 @@ tools: Read, Grep, Glob, Bash
 - **Last updated:** 0.1.0 — initial archetype.
 """
 
+# Some shipped personas (api-contract, accessibility, compliance, error-handling)
+# delimit the Pushback-triggers and Severity-rubric sections with markdown headings
+# and label the scope-exclusion `**Does NOT cover:**` rather than `**NOT covered:**`.
+# All these forms are valid; the validator is presence-only (it parses nothing).
+_VALID_HEADING_FORM = """---
+name: api-contract
+description: |
+  Use when reviewing API contract changes.
+tools: Read, Grep, Glob, Bash
+---
+
+# API Contract
+
+**Does NOT cover:** business logic.
+
+## Pushback triggers
+
+1. Breaking change without a versioning strategy.
+
+## Severity rubric
+
+- `blocker` — claim contradicts the diff.
+
+- **Last updated:** 0.1.0 — initial archetype.
+"""
+
 
 def test_split_frontmatter_returns_fm_and_body():
     fm, body = persona.split_frontmatter(_VALID)
@@ -42,6 +68,13 @@ def test_extract_name_returns_none_without_name_key():
 
 def test_validate_persona_accepts_well_formed():
     assert persona.validate_persona(_VALID, "security-auditor") == []
+
+
+def test_validate_persona_accepts_heading_form_sections():
+    # `## Pushback triggers` / `## Severity rubric` headings and a
+    # `**Does NOT cover:**` label are accepted alternatives to the
+    # `**Pushback triggers:**` / `**Severity rubric:**` / `**NOT covered:**` forms.
+    assert persona.validate_persona(_VALID_HEADING_FORM, "api-contract") == []
 
 
 def test_validate_persona_flags_name_mismatch():
