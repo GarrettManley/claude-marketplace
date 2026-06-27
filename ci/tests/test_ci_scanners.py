@@ -362,6 +362,51 @@ class TestLintFrontmatter:
         out = capsys.readouterr().out
         assert "3 problem(s)" in out
 
+    # --- command files (per-type schema) -------------------------------------
+
+    def _command(self, tmp_path: Path, stem: str, content: str) -> Path:
+        d = tmp_path / "commands"
+        d.mkdir(exist_ok=True)
+        p = d / f"{stem}.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_lint_command_description_only_valid(self, tmp_path):
+        # Commands derive their name from the filename; `name` is optional.
+        p = self._command(tmp_path, "checkpoint", "---\ndescription: does things\n---\nBody\n")
+        assert lint_fm.lint_file(p) == []
+
+    def test_lint_command_missing_description(self, tmp_path):
+        p = self._command(tmp_path, "foo", "---\nargument-hint: <x>\n---\n")
+        problems = lint_fm.lint_file(p)
+        assert any("description" in pr for pr in problems)
+
+    def test_lint_command_name_not_required(self, tmp_path):
+        # Absent `name` on a command must NOT be reported (unlike skills/agents).
+        p = self._command(tmp_path, "foo", "---\ndescription: d\n---\n")
+        problems = lint_fm.lint_file(p)
+        assert not any("name" in pr for pr in problems)
+
+    def test_lint_command_name_parity_ok(self, tmp_path):
+        p = self._command(tmp_path, "evolve", "---\nname: evolve\ndescription: d\n---\n")
+        assert lint_fm.lint_file(p) == []
+
+    def test_lint_command_name_parity_mismatch(self, tmp_path):
+        # A declared name that disagrees with the filename stem is the real defect class.
+        p = self._command(tmp_path, "evolve", "---\nname: wrong\ndescription: d\n---\n")
+        problems = lint_fm.lint_file(p)
+        assert any("stem" in pr or "match" in pr for pr in problems)
+
+    def test_main_picks_up_command_file(self, tmp_path, monkeypatch, capsys):
+        cmd_dir = tmp_path / "plugins" / "myplugin" / "commands"
+        cmd_dir.mkdir(parents=True)
+        (cmd_dir / "do-thing.md").write_text(
+            "---\ndescription: does a thing\n---\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(lint_fm, "ROOT", tmp_path)
+        rc = lint_fm.main()
+        assert rc == 0
+
 
 # ===========================================================================
 # gen-skill-index.py
@@ -417,13 +462,31 @@ class TestGenSkillIndex:
         name, _ = gen_index._describe(p)
         assert name == "fallback-skill"
 
+    def _make_command(self, tmp_path: Path, plugin: str, stem: str, name: str | None, desc: str) -> Path:
+        d = tmp_path / "plugins" / plugin / "commands"
+        d.mkdir(parents=True, exist_ok=True)
+        p = d / f"{stem}.md"
+        fm = (
+            f"---\nname: {name}\ndescription: {desc}\n---\n"
+            if name
+            else f"---\ndescription: {desc}\n---\n"
+        )
+        p.write_text(fm, encoding="utf-8")
+        return p
+
+    def test_describe_command_fallback_to_stem(self, tmp_path):
+        # A nameless command falls back to the filename stem, not the parent dir ("commands").
+        p = self._make_command(tmp_path, "p", "checkpoint", None, "desc")
+        name, _ = gen_index._describe(p)
+        assert name == "checkpoint"
+
     # --- generate / main --write / --check -----------------------------------
 
     def test_generate_contains_header(self, tmp_path, monkeypatch):
         self._point(monkeypatch, tmp_path)
         self._make_skill(tmp_path, "myplugin", "myskill", "my-skill", "Does things")
         content = gen_index.generate()
-        assert "# Skill & Agent Index" in content
+        assert "# Skill, Agent & Command Index" in content
         assert "## Skills" in content
         assert "## Agents" in content
 
@@ -440,6 +503,13 @@ class TestGenSkillIndex:
         content = gen_index.generate()
         assert "`my-agent`" in content
 
+    def test_generate_includes_command_section(self, tmp_path, monkeypatch):
+        self._point(monkeypatch, tmp_path)
+        self._make_command(tmp_path, "myplugin", "do-thing", "do-thing", "Does a thing")
+        content = gen_index.generate()
+        assert "## Commands" in content
+        assert "`do-thing`" in content
+
     def test_main_write_creates_file(self, tmp_path, monkeypatch, capsys):
         self._point(monkeypatch, tmp_path)
         self._make_skill(tmp_path, "p", "s", "s-name", "s-desc")
@@ -447,7 +517,7 @@ class TestGenSkillIndex:
         assert rc == 0
         index_path = tmp_path / "docs" / "skill-index.md"
         assert index_path.is_file()
-        assert "# Skill & Agent Index" in index_path.read_text(encoding="utf-8")
+        assert "# Skill, Agent & Command Index" in index_path.read_text(encoding="utf-8")
         out = capsys.readouterr().out
         assert "gen-skill-index: wrote" in out
 
