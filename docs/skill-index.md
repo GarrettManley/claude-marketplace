@@ -4,7 +4,7 @@
 > `scripts/verify.sh` runs `--check` and fails when this file drifts from
 > the frontmatter it is generated from.
 
-## Skills (29)
+## Skills (30)
 
 | Plugin | Skill | Description |
 |---|---|---|
@@ -33,6 +33,7 @@
 | orchestration | `local-orchestrator` | Use when a task requires multi-file searches (>10 files), high-volume log/history compaction, or multi-round reasoning loops that would burn cloud tokens… |
 | retrospective | `plan-completion` | Use when you think a plan is finished, BEFORE running /plan-retrospective, to verify it is actually complete — checks for a filled-in completion section, no… |
 | retrospective | `plan-retrospective` | Use after completing a plan to capture what worked, friction, and improvements. Writes retrospectives/done/<slug>.md and clears the pending marker at… |
+| retrospective | `pre-plan-brief` | Use BEFORE planning or brainstorming work in an area that has prior retrospectives — surfaces the matching findings (friction, bugs, concrete improvements)… |
 | review | `reviewer-personas` | Use when reviewing design documents, PRs, operational docs, work items, wiki pages, or skill files with sub-agent reviewer personas. Provides a reusable… |
 | stewardship | `marketplace-setup` | Use when setting up this marketplace on a new machine, when a plugin reports missing machine/user config, or when the user asks to… |
 | stewardship | `stewardship-overview` | Use when the user wants to set up automated maintenance — nightly drift checks against context files, auto-memory housekeeping, scheduled briefings. Walks… |
@@ -66,7 +67,7 @@
 | review | `test-strategy` | Use when reviewing design documents, features, or PRs that define or imply a test approach. Catches wrong test level for risk, mock contract gaps, missing… |
 | stewardship | `harness-optimizer` | Audit a Claude Code marketplace setup (plugin manifests, hook configs, enabled-plugin list, MCP footprint) and propose top-3 reversible config changes for… |
 
-## Commands (13)
+## Commands (14)
 
 | Plugin | Command | Description |
 |---|---|---|
@@ -81,5 +82,6 @@
 | learning | `instinct-synthesize` | Auto-create instincts from frequency patterns in observations.jsonl (Phase 2b) |
 | learning | `promote` | Promote a project-scoped instinct to the global store, explicitly or auto by cross-project evidence (Phase 3) |
 | learning | `prune` | Decay-prune machine-learned instincts whose confidence has aged below the floor (Phase 3) |
+| retrospective | `pre-plan-brief` | Surface prior retrospective findings for an area before planning, so a known issue does not silently recur. |
 | review | `review-evolve` | Automate the reviewer-personas Post-Cycle Update Protocol — turn a cycle's Caught/Missed/Hallucinated catches into refined archetype persona files. |
 | stewardship | `morning-briefing` | Render today's stewardship morning briefing — drift-check, memory-housekeeping, and horizon-scan status with suggested actions — from live data. |
