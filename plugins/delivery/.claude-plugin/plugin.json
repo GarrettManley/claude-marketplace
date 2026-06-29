@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "delivery",
+  "version": "0.1.0",
+  "description": "End-to-end value-delivery lifecycle: a /deliver command + skill that drives one body of work through plan -> adversarial plan review -> subagent execution -> completion gate -> adversarial code review -> land -> retrospective, composing superpowers + docs + retrospective skills. Project-specific plan/doc/checklist steps bind per-repo via .claude/delivery.local.md; no project-internal names are committed.",
+  "author": {
+    "name": "Garrett Manley",
+    "email": "garrettmanley@gmail.com",
+    "url": "https://garrettmanley.com"
+  },
+  "homepage": "https://github.com/garrettmanley/claude-marketplace/tree/main/plugins/delivery",
+  "repository": "https://github.com/garrettmanley/claude-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "workflow",
+    "orchestration",
+    "plan-lifecycle",
+    "delivery",
+    "ship",
+    "value-delivery"
+  ]
+}

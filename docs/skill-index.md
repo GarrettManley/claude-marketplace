@@ -4,7 +4,7 @@
 > `scripts/verify.sh` runs `--check` and fails when this file drifts from
 > the frontmatter it is generated from.
 
-## Skills (30)
+## Skills (31)
 
 | Plugin | Skill | Description |
 |---|---|---|
@@ -15,6 +15,7 @@
 | aether | `ledger-doctor` | Inspect a campaign ledger for hash-chain integrity errors, identify the first broken block, and guide safe truncation to the nearest prior snapshot. Use when… |
 | aether | `value-justify` | Generate the exact-format Value Justification block required by .claude/hooks/plan_issue_check.py. Use when writing a plan under docs/engineering/plans/ to… |
 | agentic | `agentic-app-setup` | Use when starting a new AI app project (Claude API integration, MCP server, custom agent) or when reviewing the foundations of an existing one. Routes to the… |
+| delivery | `deliver` | Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review,… |
 | discipline | `council` | Convene a four-voice council for ambiguous decisions, tradeoffs, and go/no-go calls. Use when multiple valid paths exist and you need structured disagreement… |
 | discipline | `finish-and-push` | Close out a feature branch using the standard rebase-onto-main + FF-merge + push routine. User-invocable only (disable-model-invocation true) because pushing… |
 | discipline | `session-handoff` | Write a thorough end-of-session handoff document using a structured 8-section schema (What We're Building / What WORKED / What Did NOT Work / What Has NOT… |
@@ -67,10 +68,11 @@
 | review | `test-strategy` | Use when reviewing design documents, features, or PRs that define or imply a test approach. Catches wrong test level for risk, mock contract gaps, missing… |
 | stewardship | `harness-optimizer` | Audit a Claude Code marketplace setup (plugin manifests, hook configs, enabled-plugin list, MCP footprint) and propose top-3 reversible config changes for… |
 
-## Commands (14)
+## Commands (15)
 
 | Plugin | Command | Description |
 |---|---|---|
+| delivery | `deliver` | Drive one body of work end-to-end through the delivery lifecycle — plan, adversarial plan review, subagent execution, completion gate, adversarial code… |
 | discipline | `checkpoint` | Create, verify, or list git-state checkpoints with delta reporting (files changed, lines +/-, live test pass-count). Use to mark stable points mid-work so you… |
 | learning | `analyze-observations` | Report tool-use patterns from learning's observations.jsonl |
 | learning | `evolve` | Cluster near-duplicate machine instincts and merge each cluster into its strongest member (Phase 3) |

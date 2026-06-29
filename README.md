@@ -3,7 +3,7 @@
 [![CI](https://github.com/garrettmanley/claude-marketplace/actions/workflows/ci.yml/badge.svg)](https://github.com/garrettmanley/claude-marketplace/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-A Claude Code plugin marketplace. Twelve capability-bundled plugins for cross-project use — dev hygiene, evidence-grounded research, local LLM orchestration, Windows tooling, autonomous maintenance, AI app development, documentation craft, multi-lens review, git workflow, continuous learning, and a TTRPG narrative framework.
+A Claude Code plugin marketplace. Thirteen capability-bundled plugins for cross-project use — dev hygiene, evidence-grounded research, local LLM orchestration, Windows tooling, autonomous maintenance, AI app development, documentation craft, multi-lens review, git workflow, continuous learning, an end-to-end delivery lifecycle, and a TTRPG narrative framework.
 
 MIT licensed; portions adapted from [`affaan-m/everything-claude-code`](https://github.com/affaan-m/everything-claude-code) (see [NOTICE](NOTICE)).
 
@@ -23,6 +23,7 @@ MIT licensed; portions adapted from [`affaan-m/everything-claude-code`](https://
 | `retrospective` | Discipline | Plan-retrospective cycle — ExitPlanMode marker drop, SessionStart nag, retro-authoring skill |
 | `git` | Workflow | Conventional Commits formatting (resists common CI-guard failures) + PR creation that detects remote host (GitHub / Azure DevOps / GitLab) |
 | `learning` | Learning | Atomic instinct storage, project-scoped observation hooks (default-off), `/analyze-observations` review report |
+| `delivery` | Workflow | `/deliver` lifecycle — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, retrospective; composes superpowers + docs + retrospective; project steps bind per-repo via `.claude/delivery.local.md` |
 
 Each plugin ships its own README under `plugins/<name>/README.md` with full component, hook, and configuration detail. [`plugins/discipline/README.md`](plugins/discipline/README.md) is the most thorough.
 
