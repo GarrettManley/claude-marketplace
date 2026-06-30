@@ -30,6 +30,9 @@ automated runner — the approval and landing gates are deliberately human.
   `/plan-completion`, `/adversarial-review-code`, `/plan-retrospective` and want it captured once.
 - A repo has its own plan/doc/checklist skills and you want them slotted into the standard lifecycle
   automatically rather than remembered by hand.
+- The work isn't understood well enough to plan yet — `deliver` can start at an optional design phase
+  (Phase 0, see Workflow) instead of requiring a plan-ready work-target, and feed the resulting
+  approved design spec into plan authoring.
 
 Do **not** use it for a one-line fix or a quick question — the lifecycle overhead is the point only
 when the work is substantial enough to plan.
@@ -104,7 +107,8 @@ deliver — resolved slots (no delivery.local.md):
   land-policy    = finishing-a-development-branch
 ```
 
-This echo is the contract: it shows the operator exactly which path the run will take.
+This echo is the contract: it shows the operator exactly which path the run will take. (Step 1 also
+performs the SDD-ledger resume check right after this echo — see Workflow step 1.)
 
 ## Configuration
 
@@ -129,6 +133,25 @@ land-policy: ff-only                      # omit -> finishing-a-development-bran
 ## Workflow
 
 Work the three phases in order. Announce each step as you enter it.
+
+### Phase 0 — Design (optional)
+
+Skip Phase 0 (go straight to Phase A) when any of these hold — the trigger is objective, not a
+"well-understood" judgment call:
+- A spec or design doc already exists for the work (e.g. the work-target argument points at an
+  existing file under `docs/superpowers/specs/` or equivalent, or the user-provided work description
+  references one).
+- The work-target argument is already a directory, issue reference, or sufficiently concrete prose
+  description that a plan can be written directly from it without first exploring "what should this
+  even be."
+- The user explicitly states the work is understood and ready to plan (no further design needed).
+
+Run Phase 0 only when **none** of the above hold — i.e. the work-target is vague or exploratory
+enough that `writing-plans` would have nothing concrete to work from.
+
+0. **Design** — dispatch `superpowers:brainstorming` to explore intent, requirements, and design
+   before a plan exists. Carry the resulting approved design spec forward as the input to Phase A
+   step 3 (plan authoring) — `writing-plans` then works from that spec instead of a bare work-target.
 
 ### Phase A — Plan (in plan mode)
 
@@ -248,6 +271,9 @@ merge/discard paths.
   `verification-before-completion` (`superpowers`, external) — plan authoring, execution, hybrid
   landing (unset `land-policy`), and the completion-gate Iron Law respectively; best-effort, with
   built-in fallbacks when superpowers is not installed.
+- `brainstorming` (`superpowers`, external) — optional Phase 0 design exploration; unlike the
+  fixed/slot steps above, `deliver` invokes it only conditionally (see Workflow Phase 0), not on
+  every run.
 - `dependencies` in `plugin.json` (`["docs", "retrospective"]`) is advisory installer metadata, not a
   hard runtime check — an install lacking either plugin keeps working via the Availability
   (best-effort) fallbacks above, just with those steps announced and skipped.
