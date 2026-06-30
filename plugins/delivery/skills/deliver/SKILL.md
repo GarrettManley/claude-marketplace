@@ -89,7 +89,8 @@ This keeps `deliver` runnable anywhere while staying honest about what it could 
 
 The resolve+echo step (Workflow step 1) runs first, every run: read `<repo>/.claude/delivery.local.md`
 (if present), resolve all slots, and
-**print the resolved-slot table** before doing anything else, e.g.:
+**print the resolved-slot table** before doing anything else (except Phase 0's design work, when that
+optional phase triggers — see Workflow), e.g.:
 
 ```
 deliver — resolved slots (myproject):
@@ -245,8 +246,10 @@ enough that `writing-plans` would have nothing concrete to work from.
      plan's own `## Verification` section, not asserted separately — that's the artifact
      `plan_completion_check.py`'s "Verification addressed" check actually inspects, so missing
      evidence there is mechanically caught rather than self-attested;
-   - no unresolved `<!-- REVIEW -->` markers anywhere in that section — the same check's placeholder
-     scan (`TODO`/`TBD`/`<...>`) already flags an unresolved `<!-- REVIEW -->` marker once it's there.
+   - no unresolved `<!-- REVIEW -->` markers anywhere in that section — `plan_completion_check.py`'s
+     placeholder scan does not reliably catch this (its `<[^>]+>` pattern requires word-boundary
+     adjacency, which a marker on its own line or surrounded by whitespace doesn't satisfy), so this
+     is verified by the orchestrating agent reading the plan file directly, not mechanically enforced.
 
    If the gate reports blockers, clear them and re-run; do not proceed on an incomplete plan.
 10. **Adversarial code review** — `docs:adversarial-review-code` on the resulting diff, run at
