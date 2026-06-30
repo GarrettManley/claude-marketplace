@@ -132,7 +132,17 @@ Work the three phases in order. Announce each step as you enter it.
 
 ### Phase A — Plan (in plan mode)
 
-1. **Resolve + echo.** Read the config, resolve slots, print the resolved-slot table (above).
+1. **Resolve + echo.** Read the config, resolve slots, print the resolved-slot table (above). Then
+   check for an existing Phase B ledger: `cat "$(git rev-parse --show-toplevel)/.superpowers/sdd/progress.md"`
+   (the same path `superpowers:subagent-driven-development` itself reads — see
+   `references/resumability.md`). If it exists and lists incomplete tasks, print a note immediately
+   after the resolved-slot table, e.g. "Found an in-progress SDD ledger with N incomplete task(s) —
+   resuming Phase B from the first incomplete task rather than starting fresh," and skip directly to
+   step 7 — Phase A (steps 2-6: pre-plan brief, plan authoring, doc cluster, plan review, approval) was
+   already completed in the prior session that produced this ledger. `deliver` does not parse the
+   ledger itself or duplicate SDD's resume logic; step 7's dispatch to `subagent-driven-development`
+   resumes on its own, natively. If no ledger is found (the common case), proceed through Phase A
+   unchanged.
 2. **Pre-plan brief** — `retrospective:pre-plan-brief` on the work area, so a known issue from a
    prior cycle does not silently recur.
 3. **Write the plan** — `superpowers:writing-plans`. Then, if the `plan-writer` slot is bound, run
@@ -243,3 +253,5 @@ merge/discard paths.
   (best-effort) fallbacks above, just with those steps announced and skipped.
 - Project step-skills bind via config — for example a repo's own plan-writer, doc-cluster, and
   edit-checklist skills. Bindings live only in that repo's `delivery.local.md`, never here.
+- `references/resumability.md` — what step 0's ledger check resumes (Phase B only) and what it
+  deliberately doesn't (Phase A, Phase C, `/recover` integration).
