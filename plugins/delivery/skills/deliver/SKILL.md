@@ -141,9 +141,10 @@ Skip Phase 0 (go straight to Phase A) when any of these hold — the trigger is 
 - A spec or design doc already exists for the work (e.g. the work-target argument points at an
   existing file under `docs/superpowers/specs/` or equivalent, or the user-provided work description
   references one).
-- The work-target argument is already a directory, issue reference, or sufficiently concrete prose
-  description that a plan can be written directly from it without first exploring "what should this
-  even be."
+- The work-target argument is already a directory or issue reference, **or** the work-target prose
+  itself names at least one concrete file, function, component, or behavior to change — a checkable
+  fact about the text (a reader could extract a rough task list from it as given), not a vibe judgment
+  about whether it "feels" concrete.
 - The user explicitly states the work is understood and ready to plan (no further design needed).
 
 Run Phase 0 only when **none** of the above hold — i.e. the work-target is vague or exploratory
