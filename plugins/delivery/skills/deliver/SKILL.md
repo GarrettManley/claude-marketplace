@@ -202,19 +202,21 @@ Work the three phases in order. Announce each step as you enter it.
 
 ## Landing policy (Hybrid)
 
-Resolve how work lands, in order:
+Resolve how work lands — exactly two cases, both exhaustive over "set" vs "unset":
 
 - **`land-policy` unset** in `delivery.local.md` → delegate to
   `superpowers:finishing-a-development-branch` — its 4-option menu (merge locally / PR / keep as-is /
   discard) plus worktree cleanup, the purpose-built lander that `subagent-driven-development` itself
-  terminates in. This is the default when a repo has not opted into an inline policy.
-- **`land-policy` set** (`ff-only` / `pr` / `direct`) → honor the inline policy verbatim, exactly as
-  before: `ff-only` (rebase onto the main branch → `git merge --ff-only` → push → delete the branch),
-  `pr` (open a pull request and stop), `direct` (commit to the working branch). This branch's behavior
-  is unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
+  terminates in. This is the default when a repo has not opted into an inline policy; the repo's
+  stated branch-and-merge convention (its `CLAUDE.md` / `AGENTS.md`), if any, is superseded by this
+  delegation rather than consulted separately.
+- **`land-policy` set** (`ff-only` / `pr` / `direct` / `ask`) → honor the inline policy verbatim,
+  exactly as before: `ff-only` (rebase onto the main branch → `git merge --ff-only` → push → delete
+  the branch), `pr` (open a pull request and stop), `direct` (commit to the working branch), `ask`
+  (always confirm with the user before proposing a land shape — distinct from the *unset* case above,
+  which delegates to `finishing-a-development-branch` instead of asking). This branch's behavior is
+  unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
   `ff-only`) exactly as they already work.
-- Neither resolves → fall back to the repo's stated policy (its `CLAUDE.md` / `AGENTS.md`
-  branch-and-merge section, or the git default branch) → else **ask**.
 
 All existing invariants hold regardless of path: **always propose the exact commands and land only on
 explicit user authorization — never auto-push.** This holds even when `land-policy` is set: the
