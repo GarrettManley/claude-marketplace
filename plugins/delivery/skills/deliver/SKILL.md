@@ -95,6 +95,7 @@ deliver — resolved slots (myproject):
   doc-cluster    = myproject:doc-cluster
   edit-checklist = myproject:edit-checklist
   land-policy    = ff-only
+  constitution   = docs/CONSTITUTION.md
 ```
 
 or, with no config file:
@@ -105,6 +106,7 @@ deliver — resolved slots (no delivery.local.md):
   doc-cluster    = skip
   edit-checklist = skip
   land-policy    = finishing-a-development-branch
+  constitution   = skip
 ```
 
 This echo is the contract: it shows the operator exactly which path the run will take. (Step 1 also
@@ -124,11 +126,14 @@ plan-writer: myproject:plan-writer        # omit -> superpowers:writing-plans on
 doc-cluster: myproject:doc-cluster        # omit -> skip
 edit-checklist: myproject:edit-checklist  # omit -> skip
 land-policy: ff-only                      # omit -> finishing-a-development-branch (Hybrid)
+constitution: docs/CONSTITUTION.md        # omit -> skip
 ---
 ```
 
 `land-policy` accepts a short verb the Landing-policy step understands (e.g. `ff-only`, `pr`,
-`direct`, or the explicit `ask` override). Slot values are `plugin:skill` slugs.
+`direct`, or the explicit `ask` override). Slot values are `plugin:skill` slugs. `constitution` is a
+file path (not a `plugin:skill` slug) pointing at a per-repo governance doc — code-quality, testing,
+UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who know that prior art.
 
 ## Workflow
 
@@ -169,11 +174,15 @@ enough that `writing-plans` would have nothing concrete to work from.
    prior cycle does not silently recur.
 3. **Write the plan** — `superpowers:writing-plans`. Then, if the `plan-writer` slot is bound, run
    that skill to layer the repo's plan rules (a project plan-writer that already emits a
-   value-justification block makes a separate value step unnecessary).
+   value-justification block makes a separate value step unnecessary). When `constitution` is bound
+   (see Configuration), read it and treat it as binding context the plan must satisfy.
 4. **Doc cluster** — if the `doc-cluster` slot is bound, run it to determine which companion docs
    must land with this work. Skip cleanly if unbound.
-5. **Adversarial plan review** — `docs:adversarial-review-plan` against the plan file. **Only
-   proceed when this gate passes:**
+5. **Adversarial plan review** — `docs:adversarial-review-plan` against the plan file. When
+   `constitution` is bound (see Configuration), treat it as binding context the plan is measured
+   against, in addition to the standard review. The existing `docs:plan-scope-cutter` archetype
+   already dispatched by `adversarial-review-plan` is the over-engineering audit — no new audit
+   mechanism is needed. **Only proceed when this gate passes:**
    - all CRITICAL findings resolved;
    - all IMPORTANT findings resolved or explicitly deferred with a stated reason;
    - the findings file committed alongside the plan.
@@ -219,9 +228,10 @@ enough that `writing-plans` would have nothing concrete to work from.
 10. **Adversarial code review** — `docs:adversarial-review-code` on the resulting diff, run at
     **wider scope and without a down-routed model** (omit any `model` override so the review inherits
     the session's capability tier) — this is the whole-branch review, distinct from the down-routed
-    per-task SDD reviews at step 7. Apply the same no-fabrication rule as step 7: a failed or
-    incomplete reviewer subagent is a surfaced failure, never a synthesized result. **Only proceed
-    when this gate passes:**
+    per-task SDD reviews at step 7. When `constitution` is bound (see Configuration), treat it as
+    binding context the diff is measured against, in addition to the standard review. Apply the same
+    no-fabrication rule as step 7: a failed or incomplete reviewer subagent is a surfaced failure,
+    never a synthesized result. **Only proceed when this gate passes:**
     - all CRITICAL/IMPORTANT findings fixed or explicitly deferred with a stated reason;
     - the whole-branch review actually ran at the wider scope described above, not just the per-task
       diffs already covered in step 7.
