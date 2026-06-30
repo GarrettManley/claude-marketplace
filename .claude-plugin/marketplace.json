@@ -236,7 +236,7 @@
       "name": "delivery",
       "source": "./plugins/delivery",
       "description": "End-to-end value-delivery lifecycle: a /deliver command + skill that drives one body of work through plan -> adversarial plan review -> subagent execution -> completion gate -> adversarial code review -> land -> retrospective, composing superpowers + docs + retrospective skills. Project-specific plan/doc/checklist steps bind per-repo via .claude/delivery.local.md; no project-internal names are committed.",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "category": "workflow",
       "author": {
         "name": "Garrett Manley"

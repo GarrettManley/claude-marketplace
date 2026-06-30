@@ -5,6 +5,15 @@ skill run a fixed spine — pre-plan brief → write plan → adversarial plan r
 subagent execution → completion gate → adversarial code review → land → retrospective — composing
 existing `superpowers`, `docs`, and `retrospective` skills instead of reimplementing them.
 
+The three gates (plan review, completion, code review) are hardened: each states "only proceed when
+this gate passes" against a concrete checklist, the completion gate requires fresh positive evidence
+(`superpowers:verification-before-completion`'s Iron Law — a clean terminal state is not evidence of
+a correct outcome when any silent-catch-and-continue path exists), and the code review runs a
+whole-branch pass at full model capability, distinct from the down-routed per-task reviews during
+execution. Landing is **Hybrid**: a repo with no `land-policy` configured gets
+`superpowers:finishing-a-development-branch`'s 4-option menu and worktree cleanup; a repo with an
+inline `land-policy` (`ff-only`/`pr`/`direct`) keeps that behavior unchanged.
+
 The spine is project-agnostic. The few steps that differ per repo — how a plan is authored, which
 companion docs must ship, the pre-commit checklist — are **slots** that bind from a per-repo
 `<repo>/.claude/delivery.local.md` config. A repo with its own plan/doc/checklist skills gets full
@@ -22,14 +31,17 @@ forks of the skill.
 /plugin install delivery@garrettmanley
 ```
 
-No init scripts. The `docs` and `retrospective` plugins are the composed dependencies;
-`superpowers` (external) is used best-effort with built-in fallbacks when it is absent.
+No init scripts. The `docs` and `retrospective` plugins are the composed dependencies (declared in
+`plugin.json` as advisory installer metadata, not a hard runtime check); `superpowers` (external,
+including `finishing-a-development-branch` and `verification-before-completion`) and
+`pr-review-toolkit` (external, composed internally by `docs:adversarial-review-code`) are used
+best-effort with built-in fallbacks when absent.
 
 ## Components
 
 | Component | Type | Trigger / Purpose |
 |-----------|------|-------------------|
-| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, then runs the plan → execute → review → land → retrospect arc. |
+| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, then runs the plan → execute → review → land → retrospect arc with hardened gates and Hybrid landing. |
 | `/deliver` | Command | Thin entry that takes an optional `<work-target>` and defers to the `deliver` skill. |
 
 ## Usage
@@ -62,5 +74,5 @@ no env vars or global config.
 - **Not an automated runner.** The approval and landing gates are deliberately human; the skill
   proposes commands and lands only on explicit authorization.
 - **Not a replacement** for the skills it composes — invoke `pre-plan-brief`, `adversarial-review-plan`,
-  `plan-completion`, `adversarial-review-code`, or `plan-retrospective` directly when you want just
-  that one step.
+  `plan-completion`, `adversarial-review-code`, `plan-retrospective`, or
+  `superpowers:finishing-a-development-branch` directly when you want just that one step.
