@@ -69,6 +69,12 @@ Project bindings live in `<repo>/.claude/delivery.local.md` — schema and examp
 skill's `## Configuration` section (kept there so there is one source of truth). The plugin itself has
 no env vars or global config.
 
+## Developing this plugin
+
+See [`references/plugin-authoring.md`](references/plugin-authoring.md) for how to dev-test changes to
+this plugin locally (`--plugin-dir`, and the dependency-loading gotcha from `delivery`'s own
+`dependencies` array) before publishing them through the marketplace.
+
 ## What this is not
 
 - **Not an automated runner.** The approval and landing gates are deliberately human; the skill
