@@ -1,9 +1,12 @@
 # delivery@garrettmanley
 
 End-to-end value-delivery lifecycle in one orchestrated pass. The `/deliver` command + `deliver`
-skill run a fixed spine — pre-plan brief → write plan → adversarial plan review → approval →
-subagent execution → completion gate → adversarial code review → land → retrospective — composing
-existing `superpowers`, `docs`, and `retrospective` skills instead of reimplementing them.
+skill run a fixed spine — an optional design phase for work that isn't plan-ready yet, then pre-plan
+brief → write plan → adversarial plan review → approval → subagent execution → completion gate →
+adversarial code review → land → retrospective — composing existing `superpowers`, `docs`, and
+`retrospective` skills instead of reimplementing them. If a prior run left an in-progress
+`subagent-driven-development` ledger, the next run resumes Phase B execution directly instead of
+re-running plan authoring and review.
 
 The three gates (plan review, completion, code review) are hardened: each states "only proceed when
 this gate passes" against a concrete checklist, the completion gate requires fresh positive evidence
@@ -41,7 +44,7 @@ best-effort with built-in fallbacks when absent.
 
 | Component | Type | Trigger / Purpose |
 |-----------|------|-------------------|
-| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, then runs the plan → execute → review → land → retrospect arc with hardened gates and Hybrid landing. |
+| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, optionally runs a Phase 0 design pass for vague work-targets, resumes Phase B from an existing SDD ledger when one exists, then runs the plan → execute → review → land → retrospect arc with hardened gates and Hybrid landing. |
 | `/deliver` | Command | Thin entry that takes an optional `<work-target>` and defers to the `deliver` skill. |
 
 ## Usage
@@ -54,7 +57,7 @@ best-effort with built-in fallbacks when absent.
 
 Every run first prints a **resolved-slot table** showing exactly which path it will take — the
 project-specific bindings (or generic defaults) for `plan-writer`, `doc-cluster`, `edit-checklist`,
-and `land-policy`.
+`land-policy`, and `constitution`.
 
 ### Per-project binding
 

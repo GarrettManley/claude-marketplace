@@ -9,10 +9,11 @@ that buys you, and what it deliberately doesn't.
 **Phase B (execute) task-level progress, and only that.** SDD's "Durable Progress" behavior is native
 to the skill: at skill start it checks `"$(git rev-parse --show-toplevel)/.superpowers/sdd/progress.md"`
 for a ledger; tasks already marked complete there are not re-dispatched, and execution resumes at the
-first incomplete task. `deliver`'s step 0 checks for that same file before doing anything else — if it
-exists with incomplete tasks, step 0 skips straight to step 7 (the `subagent-driven-development`
-dispatch) instead of re-running Phase A, and SDD takes it from there using its own native logic.
-`deliver` does not parse the ledger or duplicate SDD's resume mechanics in any way.
+first incomplete task. `deliver`'s resolve+echo step (Workflow step 1) checks for that same file
+before doing anything else — if it exists with incomplete tasks, step 1 skips straight to step 7 (the
+`subagent-driven-development` dispatch) instead of re-running Phase A, and SDD takes it from there
+using its own native logic. `deliver` does not parse the ledger or duplicate SDD's resume mechanics in
+any way.
 
 ## What does not get resumed
 
@@ -24,7 +25,8 @@ interrupted during Phase A or Phase C, just start `/deliver` again from the top.
 
 ## How to tell a run is resuming vs. starting fresh
 
-The step-0 echo is the only signal, and it's printed every run, right after the resolved-slot table:
+The resolve+echo step's note is the only signal, and it's printed every run, right after the
+resolved-slot table:
 
 - **No `.superpowers/sdd/progress.md` found** (the common case) — nothing extra is printed; the run
   proceeds through Phase A as normal.

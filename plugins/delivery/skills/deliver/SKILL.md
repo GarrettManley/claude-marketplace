@@ -1,6 +1,6 @@
 ---
 name: deliver
-description: Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, and retrospective. Composes superpowers + docs + retrospective skills; the project-specific plan-writer / doc-cluster / edit-checklist steps bind per-repo via .claude/delivery.local.md, so the same skill drives a rigor-heavy repo and a bare one without edits.
+description: Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, and retrospective. Also use when the work-target is too vague or exploratory to plan yet — an optional design phase feeds the resulting approved design spec into the same pass. Composes superpowers + docs + retrospective skills; the project-specific plan-writer / doc-cluster / edit-checklist steps bind per-repo via .claude/delivery.local.md, so the same skill drives a rigor-heavy repo and a bare one without edits.
 version: 0.2.0
 dependencies: ["docs", "retrospective"]
 ---
@@ -60,7 +60,8 @@ Three steps are configurable. Each resolves **2-level**:
 | `plan-writer` | `superpowers:writing-plans` only | How the plan is authored. A bound project skill runs **after** `writing-plans` to layer repo-specific rules (issue citation, value justification, etc.). |
 | `doc-cluster` | *skip* | Decide which companion docs (spec / ADR / threat model / runbook / user guide) must land in the same change. |
 | `edit-checklist` | *skip* | Repo-specific pre-commit ground-truth checklist run before declaring work done. |
-| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`) is honored inline instead. |
+| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead. |
+| `constitution` | *skip* | Per-repo governance doc (file path, not a `plugin:skill` slug) treated as binding context for the plan review (step 5) and code review (step 10) gates, in addition to the standard review. |
 
 The five **fixed** steps are not configurable — they are always the same generic skills:
 `retrospective:pre-plan-brief`, `docs:adversarial-review-plan`,
@@ -86,7 +87,8 @@ This keeps `deliver` runnable anywhere while staying honest about what it could 
 
 ### Resolved-slot echo (do this first, every run)
 
-Step 0 of every run: read `<repo>/.claude/delivery.local.md` (if present), resolve all slots, and
+The resolve+echo step (Workflow step 1) runs first, every run: read `<repo>/.claude/delivery.local.md`
+(if present), resolve all slots, and
 **print the resolved-slot table** before doing anything else, e.g.:
 
 ```
@@ -134,6 +136,12 @@ constitution: docs/CONSTITUTION.md        # omit -> skip
 `direct`, or the explicit `ask` override). Slot values are `plugin:skill` slugs. `constitution` is a
 file path (not a `plugin:skill` slug) pointing at a per-repo governance doc — code-quality, testing,
 UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who know that prior art.
+Because it's a path rather than a slug, the Availability fallback above does not apply to it: if
+`constitution` is bound but the path is missing or unreadable, warn and treat the run as if it were
+unset rather than silently proceeding as though the constraint were applied. Constitution violations
+found while measuring the plan (step 5) or the diff (step 10) against it must be appended to that
+step's consolidated findings file, tagged CRITICAL/IMPORTANT/MINOR per the standard format — not left
+as free-floating commentary the gate checklist never inspects.
 
 ## Workflow
 
@@ -146,16 +154,23 @@ Skip Phase 0 (go straight to Phase A) when any of these hold — the trigger is 
 - A spec or design doc already exists for the work (e.g. the work-target argument points at an
   existing file under `docs/superpowers/specs/` or equivalent, or the user-provided work description
   references one).
-- The work-target argument is already a directory or issue reference, **or** the work-target prose
+- The work-target argument is already a directory or issue reference, or the work-target prose
   names at least one concrete file or function to change.
 - The user explicitly states the work is understood and ready to plan (no further design needed).
 
 Run Phase 0 only when **none** of the above hold — i.e. the work-target is vague or exploratory
 enough that `writing-plans` would have nothing concrete to work from.
 
-0. **Design** — dispatch `superpowers:brainstorming` to explore intent, requirements, and design
-   before a plan exists. Carry the resulting approved design spec forward as the input to Phase A
-   step 3 (plan authoring) — `writing-plans` then works from that spec instead of a bare work-target.
+0. **Pre-plan brief, then design.** Run `retrospective:pre-plan-brief` on the work area first —
+   its own contract is "run it at the start of planning, not after," and dispatching `brainstorming`
+   before this ran would be exactly that mis-order. Then dispatch `superpowers:brainstorming` to
+   explore intent, requirements, and design before a plan exists. **Stop `brainstorming` at the
+   approved design spec** — instruct it not to trigger its own documented auto-hand-off into
+   `superpowers:writing-plans`; Phase A step 3 owns that transition, the same category of
+   stop-instruction Phase B gives `subagent-driven-development` before its hand-off into
+   `finishing-a-development-branch` (see "Stop SDD before its own hand-off" below). Carry the
+   resulting approved design spec forward as the input to Phase A step 3 (plan authoring) —
+   `writing-plans` then works from that spec instead of a bare work-target.
 
 ### Phase A — Plan (in plan mode)
 
@@ -169,9 +184,12 @@ enough that `writing-plans` would have nothing concrete to work from.
    already completed in the prior session that produced this ledger. `deliver` does not parse the
    ledger itself or duplicate SDD's resume logic; step 7's dispatch to `subagent-driven-development`
    resumes on its own, natively. If no ledger is found (the common case), proceed through Phase A
-   unchanged.
+   unchanged. If the ledger's content cannot be confidently read as well-formed (e.g. truncated or
+   garbled mid-write), do not treat it as resumable — surface the ambiguity to the user rather than
+   silently choosing skip-to-step-7 or silently ignoring it.
 2. **Pre-plan brief** — `retrospective:pre-plan-brief` on the work area, so a known issue from a
-   prior cycle does not silently recur.
+   prior cycle does not silently recur. Skip this step if Phase 0 ran — its own first action already
+   covered this brief.
 3. **Write the plan** — `superpowers:writing-plans`. Then, if the `plan-writer` slot is bound, run
    that skill to layer the repo's plan rules (a project plan-writer that already emits a
    value-justification block makes a separate value step unnecessary). When `constitution` is bound
@@ -204,7 +222,9 @@ enough that `writing-plans` would have nothing concrete to work from.
      `superpowers:finishing-a-development-branch`. This is a real conflict: SDD's process chains
      straight from the final reviewer into `finishing-a-development-branch`, which would skip
      `deliver`'s own steps 8-11 (edit checklist, completion gate, code review, land) — those own the
-     post-execution sequence instead. State this in the dispatch so SDD ends at the final review.
+     post-execution sequence instead. State this in the dispatch so SDD ends at the final review. If
+     `finishing-a-development-branch`'s menu or any land/merge action appears before step 9 has
+     passed, treat it as a suppression failure — do not act on the menu, halt, and return to step 8.
    - **No fabrication on subagent failure.** If a dispatched subagent (implementer, task reviewer, or
      the per-task SDD review) fails or returns partial output, refuse to synthesize a result over the
      gap — surface the failure and its partial progress rather than inferring or fabricating what the
@@ -221,8 +241,12 @@ enough that `writing-plans` would have nothing concrete to work from.
    correct outcome when any silent-catch-and-continue path exists** — absence of an error is not
    fresh positive evidence. **Only proceed when this gate passes:**
    - every plan checkbox ticked;
-   - the Iron Law evidence (command + output + exit code) captured for each verification criterion;
-   - no unresolved `<!-- REVIEW -->` markers.
+   - the Iron Law evidence (command + output + exit code) recorded inline under each criterion in the
+     plan's own `## Verification` section, not asserted separately — that's the artifact
+     `plan_completion_check.py`'s "Verification addressed" check actually inspects, so missing
+     evidence there is mechanically caught rather than self-attested;
+   - no unresolved `<!-- REVIEW -->` markers anywhere in that section — the same check's placeholder
+     scan (`TODO`/`TBD`/`<...>`) already flags an unresolved `<!-- REVIEW -->` marker once it's there.
 
    If the gate reports blockers, clear them and re-run; do not proceed on an incomplete plan.
 10. **Adversarial code review** — `docs:adversarial-review-code` on the resulting diff, run at
@@ -288,5 +312,6 @@ merge/discard paths.
   (best-effort) fallbacks above, just with those steps announced and skipped.
 - Project step-skills bind via config — for example a repo's own plan-writer, doc-cluster, and
   edit-checklist skills. Bindings live only in that repo's `delivery.local.md`, never here.
-- `references/resumability.md` — what step 0's ledger check resumes (Phase B only) and what it
+- `references/resumability.md` — what the resolve+echo step's ledger check (Workflow step 1) resumes
+  (Phase B only) and what it
   deliberately doesn't (Phase A, Phase C, `/recover` integration).
