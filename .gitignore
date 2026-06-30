@@ -28,3 +28,6 @@ htmlcov/
 
 # Per-machine local tier override (canonical copy lives at ~/.claude/context/, never in the repo)
 tiers.local.json
+
+# git worktree scratch (superpowers:using-git-worktrees convention)
+.worktrees/
