@@ -100,6 +100,34 @@ def test_marker_without_plan_path_yields_no_active_plan(project):
     assert state["pending_retros"] == [{"slug": "odd"}]
 
 
+def test_nonexistent_fallback_token_yields_no_active_plan(project):
+    sdd = project / ".superpowers" / "sdd"
+    sdd.mkdir(parents=True)
+    (sdd / "progress.md").write_text(
+        "# SDD ledger\nsee notes-about-stuff.md for details\n", encoding="utf-8"
+    )
+    state = gather_workflow_state()
+    assert state["active_plan"] is None
+
+
+def test_relative_ledger_plan_path_anchors_to_root(project, tmp_path, monkeypatch):
+    plan = project / "docs" / "p.md"
+    plan.parent.mkdir(parents=True)
+    _write_plan(plan, done=1, open_=2)
+    sdd = project / ".superpowers" / "sdd"
+    sdd.mkdir(parents=True)
+    (sdd / "progress.md").write_text(
+        "# SDD ledger\nPlan: docs/p.md\n", encoding="utf-8"
+    )
+    other_dir = tmp_path / "elsewhere"
+    other_dir.mkdir()
+    monkeypatch.chdir(other_dir)
+    state = gather_workflow_state()
+    assert state["active_plan"]["path"] == str(plan)
+    assert state["active_plan"]["tasks_done"] == 1
+    assert state["active_plan"]["tasks_open"] == 2
+
+
 def test_project_root_falls_back_to_cwd(project, tmp_path, monkeypatch):
     monkeypatch.delenv("CLAUDE_PROJECT_DIR")
     monkeypatch.setattr(snapshot, "_git_toplevel", lambda: None)

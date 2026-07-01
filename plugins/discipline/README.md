@@ -216,7 +216,7 @@ Gateguard session state lives at `~/.claude/discipline/gateguard/state-<session-
 
 ### Snapshot storage
 
-Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key>.json` (one file per project, latest overwrites). Override with `DISCIPLINE_SNAPSHOT_DIR`. The compact-plan skill additionally writes `<project-key>.note.json` alongside the snapshot — a `{text, timestamp}` intent note with a 4-hour TTL; expired or malformed notes are ignored.
+Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key>.json` (one file per project, latest overwrites). Override with `DISCIPLINE_SNAPSHOT_DIR`. The compact-plan skill additionally writes `<root-key>.note.json` into the snapshot directory — a `{text, timestamp}` intent note with a 4-hour TTL, keyed by the resolved project root (deliberately not the snapshot's own project key, so hook and CLI contexts converge); expired or malformed notes are ignored.
 
 ## Troubleshooting
 

@@ -116,21 +116,40 @@ def _pending_retros(root: Path) -> list[dict[str, Any]]:
     return [{"slug": marker.stem} for marker in sorted(pending.glob("*.marker"))]
 
 
+def _safe_mtime(path: Path) -> float:
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0.0
+
+
+def _resolve_plan_candidate(root: Path, raw: str) -> Path | None:
+    """Root-anchor a discovered plan path and validate it exists on disk."""
+    p = Path(raw)
+    if not p.is_absolute():
+        p = root / p
+    return p if p.is_file() else None
+
+
 def _discover_active_plan(root: Path) -> dict[str, Any] | None:
     ledger = _sdd_ledger(root)
     if ledger and ledger.get("plan_path"):
-        return {"path": ledger["plan_path"], "source": "sdd-ledger"}
+        resolved = _resolve_plan_candidate(root, ledger["plan_path"])
+        if resolved is not None:
+            return {"path": str(resolved), "source": "sdd-ledger"}
     pending = root / "retrospectives" / "pending"
     if pending.is_dir():
         markers = sorted(
-            pending.glob("*.marker"), key=lambda p: p.stat().st_mtime, reverse=True
+            pending.glob("*.marker"), key=_safe_mtime, reverse=True
         )
         for marker in markers:
             text = _read_text(marker) or ""
             lines = text.splitlines()
             first = lines[0].strip() if lines else ""
             if first.endswith(".md"):
-                return {"path": first, "source": "pending-marker"}
+                resolved = _resolve_plan_candidate(root, first)
+                if resolved is not None:
+                    return {"path": str(resolved), "source": "pending-marker"}
     return None
 
 

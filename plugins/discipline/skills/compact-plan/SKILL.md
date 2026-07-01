@@ -37,7 +37,9 @@ handoff) or quick breadcrumbs for a future session.
    ```
 
    The `--note` line is the single highest-value thing to write: it is the only
-   piece of conversation state the filesystem cannot rediscover.
+   piece of conversation state the filesystem cannot rediscover. Run the command
+   from the project root — the note is keyed by the repository the command runs
+   in.
 
 2. **Read the digest.** The script prints the discovered active plan, ledger, and
    pending retros. If it printed `no workflow state discovered`, proceed with
