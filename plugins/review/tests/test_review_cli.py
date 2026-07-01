@@ -182,3 +182,23 @@ def test_ingest_mixed_batch_defers_unknown_and_processes_valid(tmp_path, capsys)
     assert "deferred" in out.lower()
     # Valid persona should still be processed: with a change, should show diff, not fail
     assert "modified trigger" in out.lower() or "security-auditor" in out.lower()
+
+
+def test_ingest_mixed_batch_apply_writes_valid_and_skips_deferred(tmp_path, capsys):
+    """Same mixed-batch scenario, but with --apply: the valid persona is actually written to
+    disk even though the unknown persona in the same batch is deferred, and nothing is created
+    for the deferred one.
+    """
+    agents = _seed_agents(tmp_path)
+    proposed = _seed_proposal(tmp_path, _persona(trigger="Modified trigger"), name="security-auditor")
+    _seed_proposal(
+        tmp_path,
+        _persona().replace("security-auditor", "data-architect"),
+        name="data-architect",
+    )
+    rc = review_cli.main(["evolve", "--ingest", str(proposed), "--agents-dir", str(agents), "--apply"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "deferred" in out.lower()
+    assert not (agents / "data-architect.agent.md").exists()
+    assert "Modified trigger" in (agents / "security-auditor.agent.md").read_text(encoding="utf-8")
