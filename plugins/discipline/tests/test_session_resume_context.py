@@ -93,3 +93,119 @@ def test_invalid_json_input_still_works(tmp_snapshot_dir, monkeypatch):
     assert rc == 0
     payload = json.loads(out)
     assert "additionalContext" in payload["hookSpecificOutput"]
+
+
+# --- live workflow section rendering ---
+
+
+def test_format_workflow_renders_plan_retros_and_note():
+    from session_resume_context import _format_workflow
+
+    workflow = {
+        "active_plan": {
+            "path": "/tmp/plans/example-plan.md",
+            "source": "sdd-ledger",
+            "tasks_done": 3,
+            "tasks_open": 2,
+        },
+        "sdd_ledger": {"path": "/tmp/x/.superpowers/sdd/progress.md", "plan_path": None},
+        "pending_retros": [{"slug": "example-plan"}],
+    }
+    note = {"text": "next: wire the CLI", "timestamp": 1700000000.0}
+    lines = _format_workflow(workflow, note)
+    joined = "\n".join(lines)
+    assert "**Active plan:** `/tmp/plans/example-plan.md` (via sdd-ledger) - 3 done / 2 open" in joined
+    assert "**Pending retros:** example-plan" in joined
+    assert "**Where you were**" in joined
+    assert "next: wire the CLI" in joined
+
+
+def test_format_workflow_empty_yields_no_lines():
+    from session_resume_context import _format_workflow
+
+    assert _format_workflow({}, None) == []
+    assert (
+        _format_workflow(
+            {"active_plan": None, "sdd_ledger": None, "pending_retros": []}, None
+        )
+        == []
+    )
+
+
+def test_main_snapshot_only_output_unchanged(tmp_path, monkeypatch, capsys):
+    """Legacy: with a snapshot and no workflow, output is exactly format_snapshot."""
+    import io
+    import json as _json
+
+    import session_resume_context
+    from snapshot import write_snapshot
+
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(proj))
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "snap"))
+    state = {"timestamp": 1700000000.0, "git": {"branch": "main", "head": "a" * 40}, "recent_files": []}
+    assert write_snapshot(state) is True
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    rc = session_resume_context.main([])
+    assert rc == 0
+    payload = _json.loads(capsys.readouterr().out)
+    expected = session_resume_context.format_snapshot(state)
+    assert payload["hookSpecificOutput"]["additionalContext"] == expected
+
+
+def test_main_emits_workflow_without_snapshot(tmp_path, monkeypatch, capsys):
+    import io
+    import json as _json
+
+    import session_resume_context
+
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    plan = proj / "p.md"
+    plan.write_text("# P\n- [x] a\n- [ ] b\n", encoding="utf-8")
+    pending = proj / "retrospectives" / "pending"
+    pending.mkdir(parents=True)
+    (pending / "p.marker").write_text(str(plan) + "\n", encoding="utf-8")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(proj))
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "snap-empty"))
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    rc = session_resume_context.main([])
+    assert rc == 0
+    payload = _json.loads(capsys.readouterr().out)
+    ctx = payload["hookSpecificOutput"]["additionalContext"]
+    assert "## Workflow context" in ctx
+    assert f"**Active plan:** `{plan}` (via pending-marker) - 1 done / 1 open" in ctx
+
+
+def test_main_silent_when_nothing_exists(tmp_path, monkeypatch, capsys):
+    import io
+
+    import session_resume_context
+
+    proj = tmp_path / "empty-proj"
+    proj.mkdir()
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(proj))
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "no-snap"))
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    rc = session_resume_context.main([])
+    assert rc == 0
+    assert capsys.readouterr().out == ""
+
+
+def test_main_survives_workflow_discovery_crash(tmp_path, monkeypatch, capsys):
+    """Hook safety: a crashing plan_state must not break the hook."""
+    import io
+
+    import plan_state
+    import session_resume_context
+
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(tmp_path))
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "no-snap"))
+    monkeypatch.setattr(
+        plan_state, "gather_workflow_state", lambda: (_ for _ in ()).throw(RuntimeError)
+    )
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    rc = session_resume_context.main([])
+    assert rc == 0
+    assert capsys.readouterr().out == ""
