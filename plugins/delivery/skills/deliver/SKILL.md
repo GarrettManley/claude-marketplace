@@ -271,7 +271,8 @@ enough that `writing-plans` would have nothing concrete to work from.
 
 ## Landing policy (Hybrid)
 
-Resolve how work lands — exactly two cases, both exhaustive over "set" vs "unset":
+Resolve how work lands. `land-policy` is either unset, set to a recognized verb, or set
+to an unrecognized value — three outcomes:
 
 - **`land-policy` unset** in `delivery.local.md` → delegate to
   `superpowers:finishing-a-development-branch` — its 4-option menu (merge locally / PR / keep as-is /
@@ -286,6 +287,11 @@ Resolve how work lands — exactly two cases, both exhaustive over "set" vs "uns
   which delegates to `finishing-a-development-branch` instead of asking). This branch's behavior is
   unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
   `ff-only`) exactly as they already work.
+- **An unrecognized `land-policy` value** (any value not in the recognized set above) →
+  **halt and surface**: announce that the configured value is not one of ff-only, pr, direct, or ask,
+  and stop — do not delegate to a land path, present the menu, or propose any land. Resolve the
+  misconfiguration first: fix `land-policy`, or tell the operator to name the land shape explicitly.
+  Fail-closed by design: an ambiguous landing instruction never results in a land.
 
 All existing invariants hold regardless of path: **always propose the exact commands and land only on
 explicit user authorization — never auto-push.** This holds even when `land-policy` is set: the
