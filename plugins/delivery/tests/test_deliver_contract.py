@@ -226,6 +226,20 @@ def extract_cross_reference_bare_names() -> set[str]:
     return set(BACKTICK_TOKEN_RE.findall(cross_refs))
 
 
+def extract_step5_body() -> str:
+    """Return step 5's full body: from its list marker up to (not including) step 6.
+
+    Step 5 is a numbered list item inside "### Phase A", not its own markdown
+    heading, so `section()` (heading-anchored) doesn't apply -- anchor on the list
+    marker text itself instead, the same text-anchoring convention already used by
+    `parenthetical_after` / `extract_fixed_step_slugs` above.
+    """
+    phase_a = section(SKILL_TEXT, "### Phase A — Plan (in plan mode)")
+    start = phase_a.index("5. **Adversarial plan review")
+    end = phase_a.index("6. **Approval", start)
+    return phase_a[start:end]
+
+
 # ---------------------------------------------------------------------------
 # Invariant 1 -- slot name set identical across all four representations
 # ---------------------------------------------------------------------------
@@ -355,3 +369,57 @@ class TestComposedHandoffsAreSuppressed:
         assert re.search(r"hand-?off", body, re.IGNORECASE), (
             f"{phase_heading!r} lacks a 'hand-off' suppression instruction"
         )
+
+
+# ---------------------------------------------------------------------------
+# Invariant 7 -- the plan-review triage is named and wired
+# ---------------------------------------------------------------------------
+
+
+class TestReviewTriage:
+    """Step 5's adversarial-plan-review dispatch is triaged (SKIP/SCALED/FULL), not
+    an unconditional full review -- a future edit that simplifies step 5 back to a
+    flat invocation must not silently drop the triage this plugin exists to add.
+    """
+
+    def test_step_5_names_all_three_postures(self):
+        body = extract_step5_body()
+        for posture in ("SKIP", "SCALED", "FULL"):
+            assert posture in body, f"step 5 does not name the {posture!r} posture"
+
+    def test_skip_is_conditioned_on_the_format_self_check(self):
+        body = extract_step5_body()
+        skip_bullet = body[body.index("**`SKIP`**"): body.index("**`FULL`**")]
+        # Collapse markdown's hard-wrapped whitespace/newlines before the substring
+        # check -- prose reflow must not break this invariant.
+        collapsed = re.sub(r"\s+", " ", skip_bullet)
+        assert "format self-check" in collapsed, (
+            "the SKIP posture's own bullet must condition on the format self-check, "
+            "not just mention it elsewhere in step 5"
+        )
+
+    def test_phase_0_signal_is_wired_to_scaled(self):
+        body = extract_step5_body()
+        scaled_bullet = body[body.index("**`SCALED`**"):]
+        assert "Phase 0" in scaled_bullet, (
+            "the SCALED posture's own bullet must reference Phase 0 -- this is the "
+            "brainstorming-as-gate mechanism the whole feature exists to wire up"
+        )
+
+    def test_an_artifact_is_committed_on_every_posture(self):
+        body = extract_step5_body()
+        skip_bullet = body[body.index("**`SKIP`**"): body.index("**`FULL`**")]
+        assert "commit" in skip_bullet.lower(), (
+            "SKIP must still leave a committed record -- the 'findings file committed' "
+            "invariant must hold on every posture, not just SCALED/FULL"
+        )
+
+    def test_plan_review_policy_key_is_in_all_four_slot_representations(self):
+        """plan-review-policy must ride the same four-representation invariant
+        TestSlotNameSetIsIdentical already enforces for every slot -- assert it
+        explicitly here so reviewing this feature's diff doesn't require
+        cross-referencing that unrelated test class to know it's covered."""
+        assert "plan-review-policy" in extract_slots_table()
+        assert "plan-review-policy" in extract_config_yaml_keys()
+        assert "plan-review-policy" in extract_with_config_echo()
+        assert "plan-review-policy" in extract_no_config_echo()

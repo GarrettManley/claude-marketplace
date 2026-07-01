@@ -2,8 +2,8 @@
 
 End-to-end value-delivery lifecycle in one orchestrated pass. The `/deliver` command + `deliver`
 skill run a fixed spine — an optional design phase for work that isn't plan-ready yet, then pre-plan
-brief → write plan → adversarial plan review → approval → subagent execution → completion gate →
-adversarial code review → land → retrospective — composing existing `superpowers`, `docs`, and
+brief → write plan → triaged adversarial plan review → approval → subagent execution → completion gate
+→ adversarial code review → land → retrospective — composing existing `superpowers`, `docs`, and
 `retrospective` skills instead of reimplementing them. If a prior run left an in-progress
 `subagent-driven-development` ledger, the next run resumes Phase B execution directly instead of
 re-running plan authoring and review.
@@ -13,7 +13,12 @@ this gate passes" against a concrete checklist, the completion gate requires fre
 (`superpowers:verification-before-completion`'s Iron Law — a clean terminal state is not evidence of
 a correct outcome when any silent-catch-and-continue path exists), and the code review runs a
 whole-branch pass at full model capability, distinct from the down-routed per-task reviews during
-execution. Landing is **Hybrid**: a repo with no `land-policy` configured gets
+execution. The plan review is **triaged** rather than always run at full breadth: a built-in rubric
+(effort/complexity/uncertainty axes + a plan-format self-check) scores the plan `SKIP` (no review
+subagents — small, low-risk, already-vetted plans), `SCALED` (the feasibility-auditor archetype only —
+the common case once Phase 0's brainstorming already vetted the premise), or `FULL` (today's 9-agent
+review — any high-risk axis, or the `plan-review-policy: always` override). Landing is **Hybrid**: a
+repo with no `land-policy` configured gets
 `superpowers:finishing-a-development-branch`'s 4-option menu and worktree cleanup; a repo with an
 inline `land-policy` (`ff-only`/`pr`/`direct`/`ask`) keeps that behavior unchanged; an unrecognized
 `land-policy` value halts and surfaces instead of landing.
@@ -58,7 +63,7 @@ best-effort with built-in fallbacks when absent.
 
 Every run first prints a **resolved-slot table** showing exactly which path it will take — the
 project-specific bindings (or generic defaults) for `plan-writer`, `doc-cluster`, `edit-checklist`,
-`land-policy`, and `constitution`.
+`land-policy`, `plan-review-policy`, and `constitution`.
 
 ### Per-project binding
 

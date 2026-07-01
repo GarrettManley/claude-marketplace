@@ -61,6 +61,7 @@ The steps below are configurable. Each resolves **2-level**:
 | `doc-cluster` | *skip* | Decide which companion docs (spec / ADR / threat model / runbook / user guide) must land in the same change. |
 | `edit-checklist` | *skip* | Repo-specific pre-commit ground-truth checklist run before declaring work done. |
 | `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead; anything else halts and surfaces rather than landing. |
+| `plan-review-policy` | `auto` | How wide the adversarial plan review (step 5) runs — see step 5 for the triage. `auto` (default) lets the built-in triage choose `SKIP`/`SCALED`/`FULL`; `always` forces the full 9-agent review; `never` skips it (the format self-check still applies). An unrecognized value warns and falls back to `always`, not a halt. |
 | `constitution` | *skip* | Per-repo governance doc (file path, not a `plugin:skill` slug) treated as binding context for the plan review (step 5) and code review (step 10) gates, in addition to the standard review. |
 
 The fixed steps are not configurable — they are always the same generic skills:
@@ -94,22 +95,24 @@ optional phase triggers — see Workflow), e.g.:
 
 ```
 deliver — resolved slots (myproject):
-  plan-writer    = myproject:plan-writer
-  doc-cluster    = myproject:doc-cluster
-  edit-checklist = myproject:edit-checklist
-  land-policy    = ff-only
-  constitution   = docs/CONSTITUTION.md
+  plan-writer        = myproject:plan-writer
+  doc-cluster        = myproject:doc-cluster
+  edit-checklist     = myproject:edit-checklist
+  land-policy        = ff-only
+  plan-review-policy = auto
+  constitution       = docs/CONSTITUTION.md
 ```
 
 or, with no config file:
 
 ```
 deliver — resolved slots (no delivery.local.md):
-  plan-writer    = superpowers:writing-plans
-  doc-cluster    = skip
-  edit-checklist = skip
-  land-policy    = finishing-a-development-branch
-  constitution   = skip
+  plan-writer        = superpowers:writing-plans
+  doc-cluster        = skip
+  edit-checklist     = skip
+  land-policy        = finishing-a-development-branch
+  plan-review-policy = auto
+  constitution       = skip
 ```
 
 This echo is the contract: it shows the operator exactly which path the run will take. (Step 1 also
@@ -129,15 +132,22 @@ plan-writer: myproject:plan-writer        # omit -> superpowers:writing-plans on
 doc-cluster: myproject:doc-cluster        # omit -> skip
 edit-checklist: myproject:edit-checklist  # omit -> skip
 land-policy: ff-only                      # omit -> finishing-a-development-branch (Hybrid)
+plan-review-policy: auto                  # omit -> auto (built-in triage picks SKIP/SCALED/FULL)
 constitution: docs/CONSTITUTION.md        # omit -> skip
 ---
 ```
 
 `land-policy` accepts a short verb the Landing-policy step understands (e.g. `ff-only`, `pr`,
 `direct`, or the explicit `ask` override) — any other value halts and surfaces rather than landing
-(see Landing policy). Slot values are `plugin:skill` slugs. `constitution` is a
-file path (not a `plugin:skill` slug) pointing at a per-repo governance doc — code-quality, testing,
-UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who know that prior art.
+(see Landing policy). `plan-review-policy` accepts `auto` (default — the step 5 triage decides),
+`always` (force the full review regardless of triage), or `never` (skip the review; the format
+self-check still applies) — any other value warns and falls back to `always`, the opposite failure
+mode from `land-policy`: an ambiguous *review* instruction should fail toward more scrutiny, not less,
+whereas an ambiguous *landing* instruction must never auto-land. Slot values are `plugin:skill` slugs
+(except the two verb-valued keys, `land-policy` and `plan-review-policy`, documented separately above).
+`constitution` is a file path (not a `plugin:skill` slug) pointing at a per-repo governance doc —
+code-quality, testing, UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who
+know that prior art.
 Because it's a path rather than a slug, the Availability fallback above does not apply to it: if
 `constitution` is bound but the path is missing or unreadable, warn and treat the run as if it were
 unset rather than silently proceeding as though the constraint were applied. Constitution violations
@@ -214,14 +224,58 @@ enough that `writing-plans` would have nothing concrete to work from.
    context the plan must satisfy.
 4. **Doc cluster** — if the `doc-cluster` slot is bound, run it to determine which companion docs
    must land with this work. Skip cleanly if unbound.
-5. **Adversarial plan review** — `docs:adversarial-review-plan` against the plan file. When
-   `constitution` is bound (see Configuration), treat it as binding context the plan is measured
-   against, in addition to the standard review. The existing `docs:plan-scope-cutter` archetype
-   already dispatched by `adversarial-review-plan` is the over-engineering audit — no new audit
-   mechanism is needed. **Only proceed when this gate passes:**
-   - all CRITICAL findings resolved;
-   - all IMPORTANT findings resolved or explicitly deferred with a stated reason;
-   - the findings file committed alongside the plan.
+5. **Adversarial plan review — triaged.** This step still always runs — only its *breadth* is
+   conditional. It can never be silently skipped by omission, only by the explicit `SKIP` posture
+   below, which itself requires the plan to pass a format self-check and always leaves a committed
+   record.
+
+   **5a — Triage.** Built-in scoring, no subagents dispatched yet. Evaluate three axes against named,
+   checkable thresholds:
+
+   | Axis | LOW | HIGH |
+   |------|-----|------|
+   | Effort | ≤ 2 `## Task` headings | ≥ 5 `## Task` headings |
+   | Complexity | ≤ 3 files touched, no irreversible/stateful operation, no new cross-system interface | any irreversible/stateful operation (migration, delete, force-push, schema change, external side effect), or ≥ 8 files touched, or a new external interface |
+   | Uncertainty | Phase 0 ran and the design spec was approved, or the plan only extends an established in-repo pattern — and no unresolved `<!-- REVIEW -->` markers or open questions remain | a novel approach with no Phase 0 design pass, or any unresolved `<!-- REVIEW -->` marker or open question |
+
+   Then confirm the **format self-check** — this is the "adheres to the correct format and calls out
+   all the correct gates and skill usages" bar. It confirms properties already enforced elsewhere; it
+   does not re-implement them: the mandatory `writing-plans` header (including the `REQUIRED SUB-SKILL`
+   line), the `## Global Constraints` block, per-task TDD structure, the Interfaces
+   (Consumes/Produces) block, no placeholders (step 3's own contract); a concrete `## Verification`
+   section (what step 9's completion gate reads); and that discipline's `plan_issue_check.py` rules
+   already passed (issue citation; retro issue-state changes if a `## Retrospective` section exists).
+
+   **5b — Dispatch by posture**, resolved from the `plan-review-policy` slot (default `auto`, see
+   Configuration) plus the 5a scoring:
+   - **`SKIP`** — `plan-review-policy` is `auto` or `never`, all three axes score LOW, and the format
+     self-check is clean. Dispatch zero review subagents. Write a short triage record to
+     `<plan>.review.md` (the axis scoring plus a one-line rationale) and commit it alongside the
+     plan — the "findings file committed" invariant below still holds, it just records a triage
+     rather than agent findings. `plan-review-policy: never` forces this posture even when an axis
+     scores HIGH; warn in the record that the review was skipped by explicit policy override in
+     that case.
+   - **`FULL`** — `plan-review-policy` is `always`, or any axis scores HIGH. Unchanged from prior
+     behavior: `docs:adversarial-review-plan` at its full default breadth (all 6 dimensions, all 3
+     archetypes). `docs:plan-scope-cutter` remains the over-engineering audit here — no separate
+     audit mechanism is needed.
+   - **`SCALED`** — every other case, which is exactly the case where Phase 0 already ran and a human
+     approved the plan's premise in that gate: dispatch `docs:adversarial-review-plan --dimensions
+     feasibility,risk-rollback,completeness --archetypes feasibility` — the feasibility-auditor only,
+     dropping `plan-skeptic` and `plan-scope-cutter` because Phase 0's approval already discharged the
+     premise-and-scope check they exist to perform.
+
+   An unrecognized `plan-review-policy` value warns and falls back to **`always`** — the opposite
+   failure mode from `land-policy`'s halt-on-unrecognized: an ambiguous *review* instruction should
+   fail toward more scrutiny, not less, while an ambiguous *landing* instruction must never auto-land.
+
+   When `constitution` is bound (see Configuration), treat it as binding context the plan is measured
+   against under `SCALED`/`FULL`, in addition to the standard review; under `SKIP`, note in the triage
+   record whether `constitution` is bound so a reviewer can see the constraint wasn't separately
+   checked. **Only proceed when this gate passes:**
+   - `SKIP` — the format self-check passed and the triage record is committed;
+   - `SCALED` / `FULL` — all CRITICAL findings resolved; all IMPORTANT findings resolved or explicitly
+     deferred with a stated reason; the findings file committed alongside the plan.
 6. **Approval** — present the finalized plan and exit plan mode for the user's sign-off.
 
 ### Phase B — Execute
@@ -328,8 +382,9 @@ the same rule `finishing-a-development-branch` applies to its own merge/discard 
 - `pre-plan-brief`, `plan-completion`, `plan-retrospective` (`retrospective@garrettmanley`) — the
   lifecycle gates; `deliver` runs them as fixed steps.
 - `adversarial-review-plan`, `adversarial-review-code` (`docs@garrettmanley`) — the two review gates;
-  `adversarial-review-code` composes `pr-review-toolkit` (external, git-hash-pinned in the official
-  marketplace, no semver) internally — also best-effort.
+  `deliver` triages `adversarial-review-plan`'s dispatch breadth (see step 5) rather than always
+  requesting its full default scope; `adversarial-review-code` composes `pr-review-toolkit`
+  (external, git-hash-pinned in the official marketplace, no semver) internally — also best-effort.
 - `writing-plans`, `subagent-driven-development`, `executing-plans`, `finishing-a-development-branch`,
   `verification-before-completion` (`superpowers`, external) — plan authoring, execution (both subagent-driven and inline approaches), hybrid
   landing (unset `land-policy`), and the completion-gate Iron Law respectively; best-effort, with
