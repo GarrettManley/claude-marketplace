@@ -1,7 +1,7 @@
 ---
 name: deliver
 description: Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, and retrospective. Also use when the work-target is too vague or exploratory to plan yet — an optional design phase feeds the resulting approved design spec into the same pass. Composes superpowers + docs + retrospective skills; the project-specific plan-writer / doc-cluster / edit-checklist steps bind per-repo via .claude/delivery.local.md, so the same skill drives a rigor-heavy repo and a bare one without edits.
-version: 0.2.0
+version: 0.2.1
 dependencies: ["docs", "retrospective"]
 ---
 
@@ -192,10 +192,26 @@ enough that `writing-plans` would have nothing concrete to work from.
 2. **Pre-plan brief** — `retrospective:pre-plan-brief` on the work area, so a known issue from a
    prior cycle does not silently recur. Skip this step if Phase 0 ran — its own first action already
    covered this brief.
-3. **Write the plan** — `superpowers:writing-plans`. Then, if the `plan-writer` slot is bound, run
-   that skill to layer the repo's plan rules (a project plan-writer that already emits a
-   value-justification block makes a separate value step unnecessary). When `constitution` is bound
-   (see Configuration), read it and treat it as binding context the plan must satisfy.
+3. **Write the plan — invoke `superpowers:writing-plans` and follow it exactly.** Do **not**
+   hand-author the plan in deliver's own style: **invoke** the skill (via the Skill tool, in this
+   plan-mode session) and follow its full contract — the mandatory plan header (including the
+   `REQUIRED SUB-SKILL` line), the `## Global Constraints` block, the per-task TDD structure, the
+   Interfaces (Consumes/Produces) block, the no-placeholder rules, and its self-review gate.
+   Author into deliver's plan file — `writing-plans`' "user preferences override the default plan
+   location" clause applies, and this run's plan file *is* that preference — so steps 4-6, 9, and
+   the completion gate all read one canonical artifact.
+   - **Stop `writing-plans` before its own execution hand-off.** `writing-plans` ends by presenting
+     its two-option execution menu ("Subagent-Driven / Inline Execution — which approach?") and
+     handing off into `superpowers:subagent-driven-development` or `superpowers:executing-plans`.
+     Instruct it **not** to trigger that hand-off: Phase A steps 4-6 (doc cluster, plan review,
+     approval) and Phase B step 7 own that transition — the same category of stop-instruction
+     Phase 0 gives `brainstorming` and Phase B gives SDD (see "Stop SDD before its own hand-off").
+     If `writing-plans`' execution menu or any task dispatch appears before step 6 (approval) has
+     passed, treat it as a suppression failure — do not act on the menu, halt, and finish Phase A.
+   Then, if the `plan-writer` slot is bound, run that skill to layer the repo's plan rules (a
+   project plan-writer that already emits a value-justification block makes a separate value step
+   unnecessary). When `constitution` is bound (see Configuration), read it and treat it as binding
+   context the plan must satisfy.
 4. **Doc cluster** — if the `doc-cluster` slot is bound, run it to determine which companion docs
    must land with this work. Skip cleanly if unbound.
 5. **Adversarial plan review** — `docs:adversarial-review-plan` against the plan file. When
@@ -314,8 +330,8 @@ the same rule `finishing-a-development-branch` applies to its own merge/discard 
 - `adversarial-review-plan`, `adversarial-review-code` (`docs@garrettmanley`) — the two review gates;
   `adversarial-review-code` composes `pr-review-toolkit` (external, git-hash-pinned in the official
   marketplace, no semver) internally — also best-effort.
-- `writing-plans`, `subagent-driven-development`, `finishing-a-development-branch`,
-  `verification-before-completion` (`superpowers`, external) — plan authoring, execution, hybrid
+- `writing-plans`, `subagent-driven-development`, `executing-plans`, `finishing-a-development-branch`,
+  `verification-before-completion` (`superpowers`, external) — plan authoring, execution (both subagent-driven and inline approaches), hybrid
   landing (unset `land-policy`), and the completion-gate Iron Law respectively; best-effort, with
   built-in fallbacks when superpowers is not installed.
 - `brainstorming` (`superpowers`, external) — optional Phase 0 design exploration; unlike the

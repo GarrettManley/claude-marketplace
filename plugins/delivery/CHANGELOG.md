@@ -4,6 +4,23 @@ All notable changes to the **delivery** plugin are documented here. The format i
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.2.1
+
+Fix for a hand-authoring regression at Phase A step 3, found via real `/deliver` usage.
+
+- **Phase A step 3** ("Write the plan") previously read as a bare label naming
+  `superpowers:writing-plans` rather than an explicit invocation, unlike deliver's other two
+  composed-skill seams. Agents read it as descriptive prose and hand-authored plans in their own
+  style, skipping writing-plans' mandatory header, per-task TDD structure, and self-review gate --
+  forcing a manual re-invoke of `/writing-plans` after `/deliver` had already produced a plan. Step 3
+  now explicitly invokes `superpowers:writing-plans` and follows its full contract, and carries the
+  same "stop before its own execution hand-off" suppression instruction already present at the
+  Phase 0 (brainstorming) and Phase B (SDD) seams, so a correctly-invoked writing-plans run doesn't
+  skip deliver's own steps 4-6 (doc cluster, plan review, approval).
+- **New contract test** `TestComposedHandoffsAreSuppressed` enforces that all three composed-skill
+  seams (Phase 0, Phase A step 3, Phase B) carry a Stop + hand-off-suppression instruction in their
+  phase text, so a future edit can't silently drop one of the three again.
+
 ## 0.2.0
 
 Hardening pass driven by real usage (the dev-clone dogfood loop never having actually run `/deliver`
