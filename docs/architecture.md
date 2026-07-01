@@ -156,9 +156,9 @@ and let `verify.sh` / pre-commit / CI catch anything that drifted. Canonical tes
 (duplicate test basenames also break repo-root pytest collection).
 
 A second gate, `ci/verify_hook_runtime_controls.py`, asserts that **every** command in
-`discipline`'s `hooks.json` routes through `run_with_flags.py`. Without it, a
-contributor could add a hook that silently bypasses the disable list for itself; CI
-rejection on first review is the cheapest fix.
+`discipline`, `learning`, and `stewardship` plugins' `hooks.json` files routes through
+`run_with_flags.py`. Without it, a contributor could add a hook that silently bypasses
+the disable list for itself; CI rejection on first review is the cheapest fix.
 
 ## Runtime-control env vars
 

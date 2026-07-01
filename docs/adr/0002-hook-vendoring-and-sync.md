@@ -37,9 +37,9 @@ propagate with `--fix`. Editing a consumer copy directly will cause CI to fail
 on the next `scripts/verify.sh` run, which gates every pre-merge.
 
 `ci/verify_hook_runtime_controls.py` enforces a complementary invariant: every
-command in `plugins/discipline/hooks/hooks.json` must invoke
-`scripts/run_with_flags.py`, so `DISCIPLINE_DISABLED_HOOKS` applies uniformly
-to all hooks in the plugin.
+command in the gated plugins' (`discipline`, `learning`, `stewardship`)
+`hooks.json` files must invoke `scripts/run_with_flags.py`, so env-var disables
+(`*_DISABLED_HOOKS`) apply uniformly to all hooks in each gated plugin.
 
 ## Consequences
 
