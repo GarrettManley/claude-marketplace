@@ -279,7 +279,8 @@ to an unrecognized value — three outcomes:
   discard) plus worktree cleanup, the purpose-built lander that `subagent-driven-development` itself
   terminates in. This is the default when a repo has not opted into an inline policy; the repo's
   stated branch-and-merge convention (its `CLAUDE.md` / `AGENTS.md`), if any, is superseded by this
-  delegation rather than consulted separately.
+  delegation rather than consulted separately. A `land-policy` key that is present but empty or
+  whitespace-only is not "unset" — it falls to the unrecognized-value halt path below, not this menu.
 - **`land-policy` set** (`ff-only` / `pr` / `direct` / `ask`) → honor the inline policy verbatim,
   exactly as before: `ff-only` (rebase onto the main branch → `git merge --ff-only` → push → delete
   the branch), `pr` (open a pull request and stop), `direct` (commit to the working branch), `ask`
@@ -287,7 +288,8 @@ to an unrecognized value — three outcomes:
   which delegates to `finishing-a-development-branch` instead of asking). This branch's behavior is
   unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
   `ff-only`) exactly as they already work.
-- **An unrecognized `land-policy` value** (any value not in the recognized set above) →
+- **An unrecognized `land-policy` value** (any value not in the recognized set above; the match
+  against the four verbs is exact and case-sensitive, with no normalization) →
   **halt and surface**: announce the literal configured value verbatim and state that it is not one
   of ff-only, pr, direct, or ask, and stop — do not delegate to a land path, present the menu, or
   propose any land. Resolve the misconfiguration first: fix `land-policy`, or tell the operator to
