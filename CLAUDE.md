@@ -26,4 +26,8 @@ runs `/plugin` to reinstall — this repo is **separate** from the live plugin c
 - **Pre-merge gate:** `bash scripts/verify.sh` (lint + version drift + hook-runtime checks).
   CI tests: `python3 -m pytest ci/tests/`. Hyphenated `ci/check-versions.py` is loaded
   via importlib, not imported.
+- **Landing:** `/deliver` lands via PR (`land-policy: pr` in `.claude/delivery.local.md`)
+  so ruleset-required checks gate merges before the merge decision — policy-level, not a
+  technical block on direct pushes (owner-bypass still exists) — see
+  `docs/adr/0013-pr-gated-landing.md`.
 - Conventional Commits with per-plugin scopes, e.g. `feat(discipline):`, `fix(ci):`.

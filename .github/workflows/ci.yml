@@ -42,7 +42,8 @@ jobs:
           python -m pip install uv
 
       # Portable gate set: lint-no-bare-python, ruff, check-versions, validate-plugins,
-      # hook-runtime-controls, vendored-sync, frontmatter, skill-index, check-notice.
+      # hook-runtime-controls, vendored-sync, frontmatter, skill-index, check-notice,
+      # check-doc-links.
       - name: Pre-merge gate (scripts/verify.sh)
         run: bash scripts/verify.sh
 
