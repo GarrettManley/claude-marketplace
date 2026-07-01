@@ -12,6 +12,10 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Changed
 
+- `/deliver` now lands via PR by default (`.claude/delivery.local.md`
+  `land-policy: pr`), so the 5 required status checks gate the merge decision instead
+  of running post-hoc on `main` after a direct push. See
+  `docs/adr/0013-pr-gated-landing.md`.
 - Release tooling (`ci/release.py`): tags are now created on `main` after the
   squash-merge via a new `--tag` mode (`--apply` no longer tags on the branch),
   so the squash can never orphan a release tag. A dry-run/apply guard refuses with

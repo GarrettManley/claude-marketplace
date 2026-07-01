@@ -27,6 +27,12 @@ bash scripts/verify.sh
 
 Exit 0 = clean. Exit 1 = failures printed to stdout.
 
+`/deliver` lands via PR by default (`land-policy: pr` in `.claude/delivery.local.md`);
+avoid landing with a direct `git push origin main`. A direct push bypasses the required
+checks that gate a PR merge — they still run on `main` afterward (`ci.yml` also
+triggers on `push: [main]`), but only post-hoc and non-blocking, after the merge
+decision has already been made. See `docs/adr/0013-pr-gated-landing.md`.
+
 ## Continuous integration
 
 `.github/workflows/ci.yml` is **verification-only — it never tags or publishes**
