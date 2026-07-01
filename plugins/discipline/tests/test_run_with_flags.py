@@ -118,3 +118,26 @@ class TestInvokeWhenEnabled:
         # Errors swallowed so subsequent hooks still fire
         assert result.returncode == 0
         assert "runtime error" in result.stderr
+
+    def test_shell_hook_bash_source_self_location_works(self, tmp_path):
+        """Regression: a real-world pattern (dirname "${BASH_SOURCE[0]}" to locate a
+        sibling file) must survive being wrapped. The existing
+        test_shell_hook_invoked_via_subprocess fixture doesn't reference BASH_SOURCE at
+        all, which is exactly why this class of bug went uncaught (see
+        plugins/discipline/hooks/inject_issues.sh:27 for the real pattern this mirrors)."""
+        sibling = tmp_path / "sibling.txt"
+        sibling.write_text("sibling-content")
+        hook = tmp_path / "self_locating_hook.sh"
+        hook.write_text(
+            "#!/usr/bin/env bash\n"
+            "set -euo pipefail\n"
+            'dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+            'cat "$dir/sibling.txt"\n'
+        )
+        hook.chmod(0o755)
+        result = run_wrapper(
+            [str(hook), "discipline:test:self-locating", "standard"],
+            stdin="",
+        )
+        assert result.returncode == 0, result.stderr
+        assert "sibling-content" in result.stdout

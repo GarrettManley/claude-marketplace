@@ -113,19 +113,19 @@ def _resolve_bash() -> str:
 
 
 def _spawn_shell(script_path: Path, stdin_text: str) -> int:
-    # Passing a Windows path as a bash argument fails on Windows regardless of
-    # whether bash resolves to Git Bash (MSYS mangles the path) or WSL bash
-    # (path is inaccessible from the Linux side).  Reading the script content
-    # and using `bash -c` avoids the argument entirely.  This is safe for the
-    # gated shell hooks because none uses $0/BASH_SOURCE/dirname "$0" --
-    # they resolve directories via `git rev-parse --show-toplevel`.
-    try:
-        script_content = script_path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError) as e:
-        print(f"run_with_flags: cannot read shell script {script_path.name}: {e}", file=sys.stderr)
-        return _passthrough(stdin_text)
+    # Pass the real script path directly rather than reading its content into
+    # `bash -c <text>`. The prior approach broke any script using
+    # `dirname "${BASH_SOURCE[0]}"` for self-location (BASH_SOURCE is unset
+    # under `bash -c`) -- confirmed live-broken for
+    # plugins/discipline/hooks/inject_issues.sh. Git Bash (which _resolve_bash()
+    # already prefers on Windows) handles a Windows-style path passed as the
+    # script argument correctly -- confirmed empirically with a real
+    # backslash-separated str(Path) value (not just a hand-typed forward-slash
+    # path): dirname "${BASH_SOURCE[0]}" resolves correctly and the script's
+    # own sibling-file lookup succeeds. On POSIX there was never a
+    # path-translation concern to begin with.
     result = subprocess.run(
-        [_resolve_bash(), "-c", script_content],
+        [_resolve_bash(), str(script_path)],
         input=stdin_text,
         capture_output=True,
         text=True,
