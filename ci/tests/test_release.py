@@ -409,13 +409,26 @@ def test_prepend_changelog_creates_then_prepends(git_repo):
     release._prepend_changelog("git", "## 1.0.0\n\n### Fixes\n- a\n")
     path = git_repo / "plugins" / "git" / "CHANGELOG.md"
     first = path.read_text(encoding="utf-8")
-    assert first.startswith("# git changelog\n\n")
-    assert "## 1.0.0" in first
-    # Second release prepends above the first, header kept exactly once.
+    assert first == "# git changelog\n\n## 1.0.0\n\n### Fixes\n- a\n"
+    # Simulate a hand-authored intro paragraph sitting between the H1 and the
+    # version list (this is the shape that exposed the double-H1 / wedged-intro bug).
+    path.write_text(
+        "# git changelog\n\n"
+        "All notable changes to the **git** plugin are documented here.\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n",
+        encoding="utf-8",
+    )
+    # Second release inserts below the preamble/intro, above the prior `## ` section
+    # — the intro must stay put and the header must not be duplicated.
     release._prepend_changelog("git", "## 1.1.0\n\n### Features\n- b\n")
     second = path.read_text(encoding="utf-8")
+    assert second == (
+        "# git changelog\n\n"
+        "All notable changes to the **git** plugin are documented here.\n\n"
+        "## 1.1.0\n\n### Features\n- b\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n"
+    )
     assert second.count("# git changelog") == 1
-    assert second.index("## 1.1.0") < second.index("## 1.0.0")
 
 
 def test_prepend_changelog_tolerates_headerless_existing(git_repo):
@@ -424,8 +437,42 @@ def test_prepend_changelog_tolerates_headerless_existing(git_repo):
     path.write_text("legacy content with no header\n", encoding="utf-8")
     release._prepend_changelog("git", "## 1.1.0\n\n### Fixes\n- z\n")
     text = path.read_text(encoding="utf-8")
-    assert text.startswith("# git changelog\n\n")
+    # Case 2 (headerless existing): the legacy body is the preamble and is preserved
+    # verbatim — no H1 is fabricated — with the new section appended after it.
+    assert text == "legacy content with no header\n\n## 1.1.0\n\n### Fixes\n- z\n"
     assert "legacy content with no header" in text
+    assert text.index("legacy content with no header") < text.index("## 1.1.0")
+
+
+def test_prepend_changelog_file_absent_creates_header_and_section(git_repo):
+    _write_plugin(git_repo, "git", "1.0.0")
+    path = git_repo / "plugins" / "git" / "CHANGELOG.md"
+    assert not path.exists()
+    release._prepend_changelog("git", "## 1.0.0\n\n### Fixes\n- a\n")
+    text = path.read_text(encoding="utf-8")
+    assert text == "# git changelog\n\n## 1.0.0\n\n### Fixes\n- a\n"
+
+
+def test_prepend_changelog_inserts_between_preamble_and_first_section(git_repo):
+    _write_plugin(git_repo, "git", "1.0.0")
+    path = git_repo / "plugins" / "git" / "CHANGELOG.md"
+    path.write_text(
+        "# git changelog\n\n"
+        "All notable changes to the **git** plugin are documented here.\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n",
+        encoding="utf-8",
+    )
+    release._prepend_changelog("git", "## 1.1.0\n\n### Features\n- b\n")
+    text = path.read_text(encoding="utf-8")
+    assert text == (
+        "# git changelog\n\n"
+        "All notable changes to the **git** plugin are documented here.\n\n"
+        "## 1.1.0\n\n### Features\n- b\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n"
+    )
+    assert text.count("# git changelog") == 1
+    assert text.index("All notable changes") < text.index("## 1.1.0")
+    assert text.index("## 1.1.0") < text.index("## 1.0.0")
 
 
 # --- _current_version / _ondisk_plugins ---------------------------------------
