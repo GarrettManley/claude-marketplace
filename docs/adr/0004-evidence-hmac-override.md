@@ -1,3 +1,10 @@
+---
+status: active
+author: Garrett Manley
+created: 2026-06-24
+diataxis: reference
+---
+
 # 0004. HMAC-signed override token for evidence-discipline hard blocks
 
 **Status:** Accepted

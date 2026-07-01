@@ -1,3 +1,10 @@
+---
+status: active
+author: Garrett Manley
+created: 2026-06-24
+diataxis: reference
+---
+
 # 0005. Machine-specific context routes to ~/.claude/context/, never to the repo
 
 **Status:** Accepted
