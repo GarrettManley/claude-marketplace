@@ -1,15 +1,13 @@
 # retrospective changelog
 
+All notable changes to the **retrospective** plugin are documented here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
+to [Semantic Versioning](https://semver.org/).
+
 ## 1.2.0
 
 ### Features
 - add /pre-plan-brief to surface prior retro findings
-
-# Changelog
-
-All notable changes to the **retrospective** plugin are documented here. The format is
-based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
-to [Semantic Versioning](https://semver.org/).
 
 ## 1.1.0 — 2026-06-24
 
