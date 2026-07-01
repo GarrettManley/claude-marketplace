@@ -119,6 +119,51 @@ class TestInvokeWhenEnabled:
         assert result.returncode == 0
         assert "runtime error" in result.stderr
 
+    def test_python_hook_runtime_error_never_double_invokes(self, tmp_path):
+        """Regression guard for the argv-detection fix's most important correctness
+        property: the inspect.signature() check must never cause a hook's real
+        runtime error to be reinterpreted as a signature mismatch and retried.
+        Uses a counter file (not just a stderr substring, which a duplicated log
+        line would still satisfy) so a future refactor that merges the two try
+        blocks or adds a TypeError-based retry actually fails this test. Covers
+        both calling conventions -- bare def main() and def main(argv=None) --
+        since a regression could plausibly affect only one path."""
+        counter = tmp_path / "counter.txt"
+        counter.write_text("0", encoding="utf-8")
+
+        bare_hook = tmp_path / "bare_broken_hook.py"
+        bare_hook.write_text(
+            f"from pathlib import Path\n"
+            f"COUNTER = Path(r'{counter}')\n"
+            "def main():\n"
+            "    COUNTER.write_text(str(int(COUNTER.read_text()) + 1))\n"
+            "    raise ValueError('boom')\n"
+        )
+        result = run_wrapper(
+            [str(bare_hook), "discipline:test:bare-broken", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "runtime error" in result.stderr
+        assert counter.read_text() == "1", "bare def main() was invoked more than once"
+
+        counter.write_text("0", encoding="utf-8")
+        argv_hook = tmp_path / "argv_broken_hook.py"
+        argv_hook.write_text(
+            f"from pathlib import Path\n"
+            f"COUNTER = Path(r'{counter}')\n"
+            "def main(argv=None):\n"
+            "    COUNTER.write_text(str(int(COUNTER.read_text()) + 1))\n"
+            "    raise ValueError('boom')\n"
+        )
+        result = run_wrapper(
+            [str(argv_hook), "discipline:test:argv-broken", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "runtime error" in result.stderr
+        assert counter.read_text() == "1", "def main(argv=None) was invoked more than once"
+
     def test_shell_hook_bash_source_self_location_works(self, tmp_path):
         """Regression: a real-world pattern (dirname "${BASH_SOURCE[0]}" to locate a
         sibling file) must survive being wrapped. The existing
