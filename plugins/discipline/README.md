@@ -18,6 +18,7 @@ Generic dev hygiene for Claude Code: TODO+issue enforcement, frontmatter lint, p
 | `discipline:council` | Convene a four-voice council (Architect/Skeptic/Pragmatist/Critic) for ambiguous go/no-go decisions. Anti-anchoring: the three external voices launch as fresh subagents with only the question, not the full conversation. |
 | `discipline:finish-and-push` | Close out a feature branch: fetch, rebase onto main, recheck gates, subagent code review, user sign-off, FF-merge, push, delete branch, prune worktree. User-invocable only (`disable-model-invocation: true`). |
 | `discipline:session-handoff` | Write a thorough 8-section end-of-session handoff to `.remember/remember.md`. The heavyweight authoring depth for the same auto-injected file that `remember` writes lightly — reach for it on high-stakes handoffs. |
+| `discipline:compact-plan` | Mid-task guided compaction: save an intent note + emit a /compact preservation command; live workflow state re-injects automatically. |
 
 ### Commands
 
@@ -45,7 +46,7 @@ Generic dev hygiene for Claude Code: TODO+issue enforcement, frontmatter lint, p
 | `pre_compact_snapshot.py` | PreCompact | standard, strict | Writes a filesystem-state snapshot (branch, HEAD SHA, top-10 recently-modified files) before conversation compaction. |
 | `inject_issues.sh` | SessionStart | minimal, standard, strict | Injects open GitHub issues into `additionalContext` when `gh` is on PATH and `origin` resolves to a GitHub repo. |
 | `inject_branch_state.sh` | SessionStart | minimal, standard, strict | Warns about stale/unmerged/unpushed branches at session open. |
-| `session_resume_context.py` | SessionStart | standard, strict | Reads the latest pre-compact snapshot back at session open and emits it as `additionalContext`. |
+| `session_resume_context.py` | SessionStart | standard, strict | Reads the latest pre-compact snapshot back at session open and emits it as `additionalContext`. Also renders live workflow state (active plan via SDD ledger or pending retro marker, checkbox progress, pending retros) and the compact-plan intent note (4-hour TTL). |
 
 ## Init / Setup
 
@@ -215,7 +216,7 @@ Gateguard session state lives at `~/.claude/discipline/gateguard/state-<session-
 
 ### Snapshot storage
 
-Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key>.json` (one file per project, latest overwrites). Override with `DISCIPLINE_SNAPSHOT_DIR`.
+Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key>.json` (one file per project, latest overwrites). Override with `DISCIPLINE_SNAPSHOT_DIR`. The compact-plan skill additionally writes `<project-key>.note.json` alongside the snapshot — a `{text, timestamp}` intent note with a 4-hour TTL; expired or malformed notes are ignored.
 
 ## Troubleshooting
 
@@ -244,6 +245,8 @@ Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key
 **0.5.0 → 0.6.0:** Gateguard file gate narrowed to code files — prose (`.md`/`.txt`/`.rst`) is now exempt except `CLAUDE.md`/`AGENTS.md`/`GEMINI.md`. Routine-Bash gate removed entirely. Destructive-Bash detection unchanged.
 
 **0.7.0 → 0.7.1:** Gateguard edit gate narrowed to the `strict` profile only (`discipline:pre-edit:gateguard-fact-force` no longer fires under `standard`). The destructive-Bash gate (`discipline:pre-bash:gateguard-fact-force`) still fires under both `standard` and `strict`. To restore the fact-forcing edit gate, run with `DISCIPLINE_HOOK_PROFILE=strict`.
+
+**1.1.0 → 1.2.0:** adds the `compact-plan` skill, live workflow-state rendering in resume context, and the intent-note sidecar. No hooks.json changes; no action needed.
 
 If you previously maintained these hooks at the project level:
 
