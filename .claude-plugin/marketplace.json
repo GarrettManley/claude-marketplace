@@ -14,7 +14,7 @@
       "name": "discipline",
       "source": "./plugins/discipline",
       "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills, and a compact-plan skill for plan-preserving context compaction.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "quality",
       "author": {
         "name": "Garrett Manley"
@@ -164,7 +164,7 @@
       "name": "review",
       "source": "./plugins/review",
       "description": "Multi-lens review: the reviewer-personas skill maps an artifact (design docs, PRs, work items, wiki pages, or skill files) to a set of 16 archetype agents and dispatches them as sub-agents (security-auditor, observability-champion, data-architect, incident-commander, ecosystem-context-reviewer, new-engineer, skill-craft-reviewer, architect, contract-surface, performance-scalability, test-strategy, migration-safety, compliance, api-contract, error-handling, accessibility); each agent definition is the persona. SessionStart hook nags about review-triggering artifacts that completed without a review token. Includes persona-stub template for adopters to add their own archetype agents.",
-      "version": "1.3.2",
+      "version": "1.3.3",
       "category": "review",
       "author": {
         "name": "Garrett Manley"
@@ -236,7 +236,7 @@
       "name": "delivery",
       "source": "./plugins/delivery",
       "description": "End-to-end value-delivery lifecycle: a /deliver command + skill that drives one body of work through plan -> adversarial plan review -> subagent execution -> completion gate -> adversarial code review -> land -> retrospective, composing superpowers + docs + retrospective skills. Project-specific plan/doc/checklist steps bind per-repo via .claude/delivery.local.md; no project-internal names are committed.",
-      "version": "0.2.1",
+      "version": "0.3.0",
       "category": "workflow",
       "author": {
         "name": "Garrett Manley"

@@ -4,6 +4,14 @@ All notable changes to the **discipline** plugin are documented here. The format
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.0
+
+### Features
+- compact-plan skill + live workflow-state resume context (#45)
+
+### Fixes
+- fix run_with_flags.py shell/python spawn bugs (#24)
+
 ## 1.1.0 — 2026-06-24
 
 - SessionStart shell hooks no longer require a bare `python3`: `inject_issues.sh` runs its helper via `uv run --no-project` (needs `uv` on PATH), and `inject_branch_state.sh` dropped its Python check entirely since it is pure bash + git.
