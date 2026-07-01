@@ -878,25 +878,19 @@ class TestRunWithFlags:
         rc = _import_and_run_python(hook, "")
         assert rc == 0
 
-    def test_spawn_shell_unreadable_script(self, tmp_path, monkeypatch, capsys):
-        """_spawn_shell — can't read script → _passthrough."""
-        hook = tmp_path / "unreadable.sh"
-        hook.write_text("exit 0")
-
-        # _spawn_shell calls script_path.read_text() — patch Path.read_text
-        from pathlib import Path as _Path
-        original_read_text = _Path.read_text
-
-        def _fail_read_text(self, *a, **kw):
-            if self == hook:
-                raise OSError("access denied")
-            return original_read_text(self, *a, **kw)
-
-        monkeypatch.setattr(_Path, "read_text", _fail_read_text)
+    def test_spawn_shell_nonexistent_script_surfaces_bash_error(self, tmp_path, capsys):
+        """_spawn_shell no longer reads the script's content in Python (it passes the
+        real path directly to bash, to preserve BASH_SOURCE self-location semantics)
+        so there is no more run_with_flags-authored "cannot read" message for an
+        unreadable/missing script. bash itself now surfaces the failure: a
+        nonexistent path reliably reproduces this across platforms (a
+        permission-denied file does not, since chmod 000 does not block reads on
+        this filesystem)."""
+        hook = tmp_path / "does_not_exist.sh"
         rc = _spawn_shell(hook, "")
-        assert rc == 0
+        assert rc != 0
         err = capsys.readouterr().err
-        assert "cannot read" in err
+        assert "no such file or directory" in err.lower()
 
     def test_zsh_extension_dispatches_to_spawn_shell(self, monkeypatch, tmp_path):
         """Hook enabled + .zsh extension → _spawn_shell."""
@@ -913,7 +907,10 @@ class TestRunWithFlags:
         assert called.get("p") == hook
 
     def test_spawn_shell_runs_subprocess(self, tmp_path, monkeypatch):
-        """Lines 107-115 — _spawn_shell calls subprocess.run (bash -c)."""
+        """_spawn_shell calls subprocess.run with the real script path as bash's
+        argument (not `bash -c <content>`) — see run_with_flags.py's _spawn_shell,
+        fixed so BASH_SOURCE-dependent hooks (e.g. plugins/discipline/hooks/
+        inject_issues.sh) work correctly when wrapped."""
         hook = tmp_path / "hook.sh"
         hook.write_text("exit 0\n", encoding="utf-8")
 
@@ -933,7 +930,7 @@ class TestRunWithFlags:
         rc = _spawn_shell(hook, "test-stdin")
         assert rc == 0
         assert captured["cmd"][0].endswith(("bash", "bash.exe"))
-        assert captured["cmd"][1] == "-c"
+        assert captured["cmd"][1] == str(hook)
         assert captured["input"] == "test-stdin"
 
     def test_spawn_shell_propagates_returncode(self, tmp_path, monkeypatch):

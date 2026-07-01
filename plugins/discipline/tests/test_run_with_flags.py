@@ -118,3 +118,115 @@ class TestInvokeWhenEnabled:
         # Errors swallowed so subsequent hooks still fire
         assert result.returncode == 0
         assert "runtime error" in result.stderr
+
+    def test_python_hook_runtime_error_never_double_invokes(self, tmp_path):
+        """Regression guard for the argv-detection fix's most important correctness
+        property: the inspect.signature() check must never cause a hook's real
+        runtime error to be reinterpreted as a signature mismatch and retried.
+        Uses a counter file (not just a stderr substring, which a duplicated log
+        line would still satisfy) so a future refactor that merges the two try
+        blocks or adds a TypeError-based retry actually fails this test. Covers
+        both calling conventions -- bare def main() and def main(argv=None) --
+        since a regression could plausibly affect only one path."""
+        counter = tmp_path / "counter.txt"
+        counter.write_text("0", encoding="utf-8")
+
+        bare_hook = tmp_path / "bare_broken_hook.py"
+        bare_hook.write_text(
+            f"from pathlib import Path\n"
+            f"COUNTER = Path(r'{counter}')\n"
+            "def main():\n"
+            "    COUNTER.write_text(str(int(COUNTER.read_text()) + 1))\n"
+            "    raise ValueError('boom')\n"
+        )
+        result = run_wrapper(
+            [str(bare_hook), "discipline:test:bare-broken", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "runtime error" in result.stderr
+        assert counter.read_text() == "1", "bare def main() was invoked more than once"
+
+        counter.write_text("0", encoding="utf-8")
+        argv_hook = tmp_path / "argv_broken_hook.py"
+        argv_hook.write_text(
+            f"from pathlib import Path\n"
+            f"COUNTER = Path(r'{counter}')\n"
+            "def main(argv=None):\n"
+            "    COUNTER.write_text(str(int(COUNTER.read_text()) + 1))\n"
+            "    raise ValueError('boom')\n"
+        )
+        result = run_wrapper(
+            [str(argv_hook), "discipline:test:argv-broken", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "runtime error" in result.stderr
+        assert counter.read_text() == "1", "def main(argv=None) was invoked more than once"
+
+    def test_shell_hook_bash_source_self_location_works(self, tmp_path):
+        """Regression: a real-world pattern (dirname "${BASH_SOURCE[0]}" to locate a
+        sibling file) must survive being wrapped. The existing
+        test_shell_hook_invoked_via_subprocess fixture doesn't reference BASH_SOURCE at
+        all, which is exactly why this class of bug went uncaught (see
+        plugins/discipline/hooks/inject_issues.sh:27 for the real pattern this mirrors)."""
+        sibling = tmp_path / "sibling.txt"
+        sibling.write_text("sibling-content")
+        hook = tmp_path / "self_locating_hook.sh"
+        hook.write_text(
+            "#!/usr/bin/env bash\n"
+            "set -euo pipefail\n"
+            'dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"\n'
+            'cat "$dir/sibling.txt"\n'
+        )
+        hook.chmod(0o755)
+        result = run_wrapper(
+            [str(hook), "discipline:test:self-locating", "standard"],
+            stdin="",
+        )
+        assert result.returncode == 0, result.stderr
+        assert "sibling-content" in result.stdout
+
+    def test_python_hook_receives_empty_argv_not_wrapper_own_argv(self, tmp_path):
+        """Regression: a hook using the standard `main(argv: list[str] | None = None)`
+        idiom, falling back to sys.argv[1:] when argv is None, must see an empty list --
+        not run_with_flags.py's own process argv (hook_script_path, hook_id,
+        profile_csv). Mirrors the real pattern in
+        plugins/retrospective/hooks/plan_completion_check.py:300-312, which would
+        misinterpret its own script path as a CLI positional argument if this broke."""
+        hook = tmp_path / "argv_fallback_hook.py"
+        hook.write_text(
+            "import sys\n"
+            "def main(argv=None):\n"
+            "    args = sys.argv[1:] if argv is None else argv\n"
+            "    print('argv-was:' + repr(args))\n"
+            "    return 0\n"
+        )
+        result = run_wrapper(
+            [str(hook), "discipline:test:argv-fallback", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "argv-was:[]" in result.stdout
+
+    def test_python_hook_zero_param_main_still_works(self, tmp_path):
+        """Regression: real, currently-wrapped discipline hooks (todo_issue_hook.py,
+        memory_tracker_check.py, frontmatter_lint.py, pitfalls_pointer.py,
+        spec_companion_check.py) use bare `def main():` with no parameters at all --
+        the fix for the argv-leak bug above must not break these. This mirrors the
+        pre-existing test_python_hook_main_called_with_stdin/
+        test_python_hook_exit_code_propagated fixtures but asserts explicitly on the
+        zero-param case so a regression here fails with a clear name, not just
+        collateral failures in unrelated tests."""
+        hook = tmp_path / "zero_param_hook.py"
+        hook.write_text(
+            "def main():\n"
+            "    print('zero-param-ran')\n"
+            "    return 0\n"
+        )
+        result = run_wrapper(
+            [str(hook), "discipline:test:zero-param", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "zero-param-ran" in result.stdout

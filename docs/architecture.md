@@ -133,8 +133,11 @@ bytes, different behaviour, decided entirely by the id passed on the command lin
 
 `run_with_flags.py` reads stdin once (capped at 1 MiB), checks whether the hook is
 enabled, and if so dispatches it. Python hooks are run via `importlib` (no second
-interpreter cold-start); shell hooks are spawned via `bash -c` with the script content
-inlined (to dodge Windows path-mangling). It fails open: import or runtime errors in a
+interpreter cold-start); shell hooks are spawned by passing the real script path
+directly to `bash` — an earlier version piped the script's content through `bash -c`
+to dodge Windows path-mangling, but that broke any hook using `dirname
+"${BASH_SOURCE[0]}"` for self-location (`BASH_SOURCE` is unset under `bash -c`), so it
+was replaced with direct-path invocation. It fails open: import or runtime errors in a
 hook print to stderr and return 0, so a broken hook never breaks the hook chain. When a
 hook is disabled, the wrapper exits 0 **without writing stdout** — important because
 SessionStart treats stdout as `additionalContext`, and echoing the raw event JSON would

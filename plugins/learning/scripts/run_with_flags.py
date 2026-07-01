@@ -19,6 +19,7 @@ Adapted from affaan-m/everything-claude-code @ 4774946d, scripts/hooks/run-with-
 """
 from __future__ import annotations
 
+import inspect
 import io
 import importlib.util
 import os
@@ -113,19 +114,19 @@ def _resolve_bash() -> str:
 
 
 def _spawn_shell(script_path: Path, stdin_text: str) -> int:
-    # Passing a Windows path as a bash argument fails on Windows regardless of
-    # whether bash resolves to Git Bash (MSYS mangles the path) or WSL bash
-    # (path is inaccessible from the Linux side).  Reading the script content
-    # and using `bash -c` avoids the argument entirely.  This is safe for the
-    # gated shell hooks because none uses $0/BASH_SOURCE/dirname "$0" --
-    # they resolve directories via `git rev-parse --show-toplevel`.
-    try:
-        script_content = script_path.read_text(encoding="utf-8")
-    except (UnicodeDecodeError, OSError) as e:
-        print(f"run_with_flags: cannot read shell script {script_path.name}: {e}", file=sys.stderr)
-        return _passthrough(stdin_text)
+    # Pass the real script path directly rather than reading its content into
+    # `bash -c <text>`. The prior approach broke any script using
+    # `dirname "${BASH_SOURCE[0]}"` for self-location (BASH_SOURCE is unset
+    # under `bash -c`) -- confirmed live-broken for
+    # plugins/discipline/hooks/inject_issues.sh. Git Bash (which _resolve_bash()
+    # already prefers on Windows) handles a Windows-style path passed as the
+    # script argument correctly -- confirmed empirically with a real
+    # backslash-separated str(Path) value (not just a hand-typed forward-slash
+    # path): dirname "${BASH_SOURCE[0]}" resolves correctly and the script's
+    # own sibling-file lookup succeeds. On POSIX there was never a
+    # path-translation concern to begin with.
     result = subprocess.run(
-        [_resolve_bash(), "-c", script_content],
+        [_resolve_bash(), str(script_path)],
         input=stdin_text,
         capture_output=True,
         text=True,
@@ -170,8 +171,37 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
     if not callable(main_fn):
         # No main(); module top-level already ran (and didn't exit). Treat as success.
         return 0
+    # Detect the calling convention BEFORE invoking -- some currently-wrapped hooks
+    # (todo_issue_hook.py, memory_tracker_check.py, frontmatter_lint.py,
+    # pitfalls_pointer.py, spec_companion_check.py) use bare `def main():` with no
+    # parameters; others (plan_completion_check.py and the standard idiom generally)
+    # use `def main(argv: list[str] | None = None)`. Calling the latter with zero
+    # args leaks this process's own sys.argv (hook_script_path, hook_id,
+    # profile_csv) into the hook when it falls back from argv=None -- calling the
+    # former with one arg raises TypeError. Checking parameter *kind* (not just
+    # whether any parameters exist) avoids misclassifying a keyword-only-only
+    # signature (e.g. `def main(*, flag=None)`) as argv-taking, which would
+    # otherwise raise TypeError on `main_fn([])`. Introspection failure of any
+    # kind (e.g. a C-extension callable) falls back to the zero-arg call,
+    # matching prior behavior. This check is intentionally OUTSIDE the
+    # try/except below: a genuine runtime error raised by the hook's own body
+    # during the real call must never be reinterpreted as a signature
+    # mismatch and retried -- double-invoking a hook with side effects would
+    # be silent data corruption.
+    _ARGV_PARAM_KINDS = (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.VAR_POSITIONAL,
+    )
     try:
-        result = main_fn()
+        takes_argv = any(
+            p.kind in _ARGV_PARAM_KINDS
+            for p in inspect.signature(main_fn).parameters.values()
+        )
+    except Exception:
+        takes_argv = False
+    try:
+        result = main_fn([]) if takes_argv else main_fn()
         return int(result) if result is not None else 0
     except SystemExit as e:
         return int(e.code) if e.code is not None else 0

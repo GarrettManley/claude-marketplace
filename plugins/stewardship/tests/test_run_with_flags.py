@@ -190,22 +190,19 @@ def test_spawn_shell_runs_script(tmp_path, monkeypatch, capsys):
     assert "hello" in out
 
 
-def test_spawn_shell_unreadable_script_returns_0(tmp_path, capsys):
-    script = tmp_path / "unreadable.sh"
-    script.write_text("echo hi", encoding="utf-8")
-
-    real_read = Path.read_text
-
-    def fake_read(self, *args, **kwargs):
-        if self == script:
-            raise OSError("permission denied")
-        return real_read(self, *args, **kwargs)
-
-    with patch.object(Path, "read_text", fake_read):
-        rc = _spawn_shell(script, "")
-    assert rc == 0
+def test_spawn_shell_nonexistent_script_surfaces_bash_error(tmp_path, capsys):
+    """_spawn_shell no longer reads the script's content in Python (it passes the
+    real path directly to bash, to preserve BASH_SOURCE self-location semantics --
+    see run_with_flags.py's _spawn_shell) so there is no more run_with_flags-authored
+    "cannot read" message for an unreadable/missing script. bash itself now surfaces
+    the failure: a nonexistent path reliably reproduces this across platforms (a
+    permission-denied file does not, since chmod 000 does not block reads on this
+    filesystem)."""
+    script = tmp_path / "does_not_exist.sh"
+    rc = _spawn_shell(script, "")
+    assert rc != 0
     err = capsys.readouterr().err
-    assert "cannot read" in err
+    assert "no such file or directory" in err.lower()
 
 
 # ---------------------------------------------------------------------------
