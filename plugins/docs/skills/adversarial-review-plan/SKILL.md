@@ -27,6 +27,7 @@ This skill checks whether a plan is worth executing and survivable. For document
 ```
 /adversarial-review-plan <plan-path>
   [--dimensions dim1,dim2,...]   # override active dimensions; defaults to all 6
+  [--archetypes arch1,arch2,...] # override active archetype agents; defaults to all 3
   [--fix]                        # auto-dispatch fixer after consolidation
   [--output <path>]              # findings file path; defaults to <plan-path>.review.md
 ```
@@ -37,6 +38,7 @@ This skill checks whether a plan is worth executing and survivable. For document
 |----------|---------|-------------|
 | `<plan-path>` | most recent `~/.claude/plans/*.md` | Absolute or repo-relative path to the markdown plan. Any plan works (e.g., `~/.claude/plans/*.md`, `docs/engineering/plans/*.md`, or an explicit path). If omitted, defaults to the most recently modified file in `~/.claude/plans/`. |
 | `--dimensions` | all 6 | Comma-separated subset: `feasibility`, `value-justification`, `clarity`, `completeness`, `risk-rollback`, `scope-cut` |
+| `--archetypes` | all 3 | Comma-separated subset: `skeptic` (`docs:plan-skeptic`), `feasibility` (`docs:plan-feasibility-auditor`), `scope` (`docs:plan-scope-cutter`). Review breadth is `--dimensions` × `--archetypes` — trim either independently to scale cost. |
 | `--fix` | off | After consolidation, dispatch a fixer agent that reads the findings file and applies changes to the plan |
 | `--output` | `<plan>.review.md` | Path where the consolidated findings file is written |
 
@@ -67,13 +69,13 @@ Launch all of the following concurrently. Do not wait for one before starting th
 - Its dimension prompt from `dimensions/<name>.md` (or the workspace dimension file path)
 - A scratch output path for its raw findings: `<output-dir>/<dimension-name>.raw.md`, where `<output-dir>` is the directory of the `--output` file. Scratch files are deleted after consolidation.
 
-**Plan-reviewer archetype agents** — dispatched alongside the dimensions for adversarial depth. Call the `Agent` tool with the plugin-scoped `subagent_type`:
+**Plan-reviewer archetype agents** — dispatched alongside the dimensions for adversarial depth, minus any excluded by `--archetypes`. Call the `Agent` tool with the plugin-scoped `subagent_type`:
 
-| Agent (`subagent_type`) | Lens |
-|-------------------------|------|
-| `docs:plan-skeptic` | Should this be done at all? Is there a materially simpler path? Is the premise wrong? |
-| `docs:plan-feasibility-auditor` | Hidden complexity, unrealistic effort/sequencing, missing dependencies, unverifiable steps, untested assumptions |
-| `docs:plan-scope-cutter` | YAGNI, what to cut, over-engineering, premature abstraction |
+| `--archetypes` key | Agent (`subagent_type`) | Lens |
+|--------------------|-------------------------|------|
+| `skeptic` | `docs:plan-skeptic` | Should this be done at all? Is there a materially simpler path? Is the premise wrong? |
+| `feasibility` | `docs:plan-feasibility-auditor` | Hidden complexity, unrealistic effort/sequencing, missing dependencies, unverifiable steps, untested assumptions |
+| `scope` | `docs:plan-scope-cutter` | YAGNI, what to cut, over-engineering, premature abstraction |
 
 The agent definition **is** the persona — its system prompt carries the full pushback triggers, NOT-covered boundary, and severity rubric. Do not paste any persona text into the prompt. Pass each archetype the plan path (by reference) and instruct it to emit findings in the Standard Findings Format below, written to its own scratch path `<output-dir>/<agent-name>.raw.md`. The archetypes' native severity vocabulary (`blocker` / `must_fix` / `nit` / `signal` / `praise`) maps to the consolidated buckets as: `blocker` to CRITICAL, `must_fix` to IMPORTANT, `nit` / `signal` to MINOR (`praise` is dropped from the findings file).
 
