@@ -60,7 +60,7 @@ The steps below are configurable. Each resolves **2-level**:
 | `plan-writer` | `superpowers:writing-plans` only | How the plan is authored. A bound project skill runs **after** `writing-plans` to layer repo-specific rules (issue citation, value justification, etc.). |
 | `doc-cluster` | *skip* | Decide which companion docs (spec / ADR / threat model / runbook / user guide) must land in the same change. |
 | `edit-checklist` | *skip* | Repo-specific pre-commit ground-truth checklist run before declaring work done. |
-| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead. |
+| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead; anything else halts and surfaces rather than landing. |
 | `constitution` | *skip* | Per-repo governance doc (file path, not a `plugin:skill` slug) treated as binding context for the plan review (step 5) and code review (step 10) gates, in addition to the standard review. |
 
 The fixed steps are not configurable — they are always the same generic skills:
@@ -134,7 +134,8 @@ constitution: docs/CONSTITUTION.md        # omit -> skip
 ```
 
 `land-policy` accepts a short verb the Landing-policy step understands (e.g. `ff-only`, `pr`,
-`direct`, or the explicit `ask` override). Slot values are `plugin:skill` slugs. `constitution` is a
+`direct`, or the explicit `ask` override) — any other value halts and surfaces rather than landing
+(see Landing policy). Slot values are `plugin:skill` slugs. `constitution` is a
 file path (not a `plugin:skill` slug) pointing at a per-repo governance doc — code-quality, testing,
 UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who know that prior art.
 Because it's a path rather than a slug, the Availability fallback above does not apply to it: if

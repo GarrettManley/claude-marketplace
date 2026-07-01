@@ -280,6 +280,16 @@ class TestLandPolicyOverclaimRemoved:
         assert "both exhaustive" not in landing.lower()
         assert "unrecognized" in landing.lower()
 
+    def test_slot_table_row_states_the_halt_outcome_too(self):
+        """The slot table restates land-policy's behavior independently of the
+        Landing policy section prose above -- if only that section were updated
+        (as originally happened; caught by whole-branch review), the table would
+        silently keep describing a two-outcome model. Assert the table's own
+        purpose cell states the halt outcome, not just that the Landing section
+        does."""
+        purpose = extract_slots_table()["land-policy"]["purpose"]
+        assert "halt" in purpose.lower()
+
 
 # ---------------------------------------------------------------------------
 # Invariant 4 -- fixed-step skill names are cross-referenced
