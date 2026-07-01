@@ -288,17 +288,19 @@ to an unrecognized value — three outcomes:
   unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
   `ff-only`) exactly as they already work.
 - **An unrecognized `land-policy` value** (any value not in the recognized set above) →
-  **halt and surface**: announce that the configured value is not one of ff-only, pr, direct, or ask,
-  and stop — do not delegate to a land path, present the menu, or propose any land. Resolve the
-  misconfiguration first: fix `land-policy`, or tell the operator to name the land shape explicitly.
-  Fail-closed by design: an ambiguous landing instruction never results in a land.
+  **halt and surface**: announce the literal configured value verbatim and state that it is not one
+  of ff-only, pr, direct, or ask, and stop — do not delegate to a land path, present the menu, or
+  propose any land. Resolve the misconfiguration first: fix `land-policy`, or tell the operator to
+  name the land shape explicitly. Fail-closed by design: an ambiguous landing instruction never
+  results in a land.
 
-All existing invariants hold regardless of path: **always propose the exact commands and land only on
-explicit user authorization — never auto-push.** This holds even when `land-policy` is set: the
-config chooses the *shape* of the land, the human authorizes the *act*. A multi-step land (rebase →
-ff-only → push) is non-idempotent; if a step fails mid-way (e.g. a rebase conflict), stop and surface
-it rather than forcing through — the same rule `finishing-a-development-branch` applies to its own
-merge/discard paths.
+All existing invariants hold on every path that reaches a landing action: **always propose the exact
+commands and land only on explicit user authorization — never auto-push.** The halt path above reaches
+no landing action at all, so proposing zero commands there is consistent with this invariant, not an
+exception to it. This holds even when `land-policy` is set: the config chooses the *shape* of the
+land, the human authorizes the *act*. A multi-step land (rebase → ff-only → push) is non-idempotent;
+if a step fails mid-way (e.g. a rebase conflict), stop and surface it rather than forcing through —
+the same rule `finishing-a-development-branch` applies to its own merge/discard paths.
 
 ## Cross-references
 
