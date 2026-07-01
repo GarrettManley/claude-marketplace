@@ -7,7 +7,8 @@
 | 1.x     | Yes       |
 | < 1.0   | No        |
 
-Only the latest 1.x release receives security fixes. Pre-1.0 versions are unsupported.
+Only the latest 1.x release receives security fixes. Pre-1.0 plugins (currently
+`delivery`) are pre-stability and receive fixes on a best-effort basis only, until their 1.0 release.
 
 ## Reporting a vulnerability
 
