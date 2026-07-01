@@ -178,15 +178,27 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
     # use `def main(argv: list[str] | None = None)`. Calling the latter with zero
     # args leaks this process's own sys.argv (hook_script_path, hook_id,
     # profile_csv) into the hook when it falls back from argv=None -- calling the
-    # former with one arg raises TypeError. Introspection failure (e.g. a
-    # C-extension callable) falls back to the zero-arg call, matching prior
-    # behavior. This check is intentionally OUTSIDE the try/except below: a
-    # genuine runtime error raised by the hook's own body during the real call
-    # must never be reinterpreted as a signature mismatch and retried --
-    # double-invoking a hook with side effects would be silent data corruption.
+    # former with one arg raises TypeError. Checking parameter *kind* (not just
+    # whether any parameters exist) avoids misclassifying a keyword-only-only
+    # signature (e.g. `def main(*, flag=None)`) as argv-taking, which would
+    # otherwise raise TypeError on `main_fn([])`. Introspection failure of any
+    # kind (e.g. a C-extension callable) falls back to the zero-arg call,
+    # matching prior behavior. This check is intentionally OUTSIDE the
+    # try/except below: a genuine runtime error raised by the hook's own body
+    # during the real call must never be reinterpreted as a signature
+    # mismatch and retried -- double-invoking a hook with side effects would
+    # be silent data corruption.
+    _ARGV_PARAM_KINDS = (
+        inspect.Parameter.POSITIONAL_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.VAR_POSITIONAL,
+    )
     try:
-        takes_argv = bool(inspect.signature(main_fn).parameters)
-    except (TypeError, ValueError):
+        takes_argv = any(
+            p.kind in _ARGV_PARAM_KINDS
+            for p in inspect.signature(main_fn).parameters.values()
+        )
+    except Exception:
         takes_argv = False
     try:
         result = main_fn([]) if takes_argv else main_fn()

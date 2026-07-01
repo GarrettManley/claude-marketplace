@@ -1,8 +1,14 @@
 # Retrospective: Fix run_with_flags.py shell/python spawn bugs
 
 **Plan:** `docs/superpowers/plans/2026-07-01-run-with-flags-spawn-bugs.md`
-**Commits:** `621af6d`, `e5629db`, `9486241` (Tasks 1-2), `8948cdc` (Task 3 tail, closed in a
-follow-up `/deliver` session — see "Update" below)
+**Commits:** see `git log main..worktree-fix-run-with-flags-spawn-bugs` for the exact, current
+hash list — not pinned here by hash, since this branch was rebased onto `main` after this
+retrospective's first draft, which stale-dated a prior hardcoded hash list (caught by whole-branch
+adversarial review). By subject: Bug 1 fix (`_spawn_shell` direct-path invocation), a
+learning/stewardship test update for the new bash invocation shape, Bug 2 fix (`_import_and_run_python`
+calling-convention detection), the Task 3 tail (`docs/architecture.md` + a double-invoke regression
+guard), this plan + retrospective, completion-gate evidence, and a whole-branch-review fix-round
+(signature-detection robustness — see "Update" below).
 **Date:** 2026-07-01
 
 ## Outcome
@@ -88,16 +94,61 @@ timeout with time nearly exhausted, so it was left uncommitted rather than risk 
   `worktree-fix-run-with-flags-spawn-bugs`, kept unpushed/unmerged pending the user's review —
   same standing rule as every delivery tonight (autonomous session does not push/land without
   explicit authorization).
-- **Follow-up, done in a subsequent `/deliver` session (commit `8948cdc`):**
+- **Follow-up, done in a subsequent `/deliver` session (the "Task 3 tail" commit, see header):**
   1. ~~Commit the staged `test_python_hook_runtime_error_never_double_invokes` addition~~ — done;
      verified passing in isolation (`pytest -k double_invokes`) before committing.
   2. ~~Update `docs/architecture.md`'s stale `bash -c`-inlining paragraph~~ — done; now describes
      direct-path invocation and states in one sentence why the old approach broke.
   3. ~~Re-run `bash scripts/verify.sh` fresh at the final state~~ — done, clean (ran automatically
-     as this repo's pre-commit hook on `8948cdc`; all 11 checks OK).
+     as this repo's pre-commit hook; all 11 checks OK).
   4. **Not investigated:** why the pre-commit hook hung in the original session. No repro attempted
      in the follow-up session (it committed cleanly in ~seconds this time) — left as an open
      unknown rather than assumed-resolved; if it recurs, treat as a fresh report.
 - **Confirmed explicitly:** this fix is applied to the dev clone only (`C:\Users\Garre\Workspace\claude-marketplace`),
   separate from the live installed plugin cache — inert for any running Claude Code session
   (including the one that did this work) until the user runs `/plugin` to reinstall.
+
+## Update — whole-branch adversarial code review (same follow-up `/deliver` session)
+
+Ran `docs:adversarial-review-code` (`code-reviewer` + `silent-failure-hunter`, session-tier model,
+no down-routing) against the full `main..HEAD` diff before PR landing, per `deliver`'s Phase C step
+10. Findings and dispositions:
+
+**Fixed:**
+- `_import_and_run_python`'s signature-detection `except (TypeError, ValueError)` was narrower than
+  the "introspection failure" the code comment claimed to cover — widened to `except Exception` so
+  any pathological `__signature__` degrades the same way every other failure path in this file does
+  (fail-open), rather than crashing the wrapper.
+- `takes_argv = bool(inspect.signature(main_fn).parameters)` misclassified a keyword-only-only
+  signature (e.g. `def main(*, flag=None)`) as argv-taking, which would raise `TypeError` on
+  `main_fn([])` — replaced with an explicit parameter-*kind* check
+  (`POSITIONAL_ONLY`/`POSITIONAL_OR_KEYWORD`/`VAR_POSITIONAL`). No currently-wrapped hook has this
+  shape, but the fix is cheap and directly on-topic for Task 2's own bug class.
+- This retrospective's own hardcoded commit-hash list went stale the moment the branch was rebased
+  onto `main` (git rebase rewrites hashes) — replaced with a by-subject description and a pointer to
+  `git log`, so it can't drift out of sync with the branch again.
+
+**Reviewed and deliberately not changed (with reason):**
+- *"`_spawn_shell` dropped the old `read_text` try/except's passthrough fallback for exec
+  failures."* On inspection this mischaracterizes the change: the old try/except caught
+  `UnicodeDecodeError`/`OSError` from **Python reading the script's content** — a failure mode that
+  no longer exists now that the script's content is never read in Python (the path is passed
+  directly to `bash`). `subprocess.run` does not raise on a nonzero exit code (permission-denied or
+  bad-interpreter surfaces as bash's own nonzero `result.returncode`, handled normally); the one
+  path that *could* raise (`_resolve_bash()` returning a nonexistent literal `"bash"`) is a
+  pre-existing gap unrelated to this diff (see next item). No actual regression here.
+- *`_resolve_bash()`'s fallback to the literal `"bash"` risking an uncaught `FileNotFoundError`,
+  and `sys.exit(str)` raising `ValueError` in the `int(e.code)` conversion.* Both pre-existing,
+  unchanged by this diff — out of scope for this fix, which is scoped to the two named spawn bugs.
+  Left as-is; worth a separate follow-up if they ever surface in practice.
+- *The `main_fn([])` fix is a no-op for hooks using the `argv = argv or sys.argv` idiom (as opposed
+  to `argv is None`), since an empty list is falsy — confirmed real for `plugins/learning/scripts/observe.py`,
+  a currently-wrapped hook.* Traced `observe.py`'s `_detect_phase`: it treats `event["hook_event_name"]`
+  (always present in real Claude Code stdin JSON) as the canonical signal and only falls back to
+  `argv[1]` when that's absent — a path the code's own comment confirms only fires in
+  direct-invocation tests, never in production. Confirmed benign; not fixed, since generalizing to
+  every possible argv-fallback idiom is scope creep beyond this plan's two named bugs. Documented
+  here rather than silently ignored.
+- *Regression test coverage for the `or` idiom.* Follows from the above — not added, same reasoning.
+- *Locale-dependent string assertion (`"no such file or directory"`) in the updated vendored tests.*
+  Reviewer's own assessment was "acceptable" (errno strerror is stable); left as-is.
