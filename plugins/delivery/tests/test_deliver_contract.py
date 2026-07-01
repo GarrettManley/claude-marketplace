@@ -323,3 +323,35 @@ class TestNonExternalFixedStepPluginsAreDeclared:
         declared = set(PLUGIN_JSON["dependencies"])
         missing = non_external - declared
         assert not missing, f"fixed-step plugins missing from plugin.json dependencies: {missing}"
+
+
+# ---------------------------------------------------------------------------
+# Invariant 6 -- every composed skill with its own auto-hand-off is suppressed
+# ---------------------------------------------------------------------------
+
+
+class TestComposedHandoffsAreSuppressed:
+    """deliver's spine invariant: each composed skill that documents its own
+    downstream auto-hand-off must be given an explicit stop-instruction, in its
+    own phase, so deliver keeps control of the lifecycle. Three seams carry this:
+    brainstorming (Phase 0), writing-plans (Phase A), subagent-driven-development
+    (Phase B). A future edit that adds/strengthens one but drops another silently
+    reintroduces a double-hand-off bug. Structural guard, not a restatement of a
+    drifting fact -- cf. TestLandPolicyOverclaimRemoved.
+    """
+
+    # (suppressed skill, exact phase heading whose body must contain its stop-instruction)
+    SEAMS = [
+        ("brainstorming", "### Phase 0 — Design (optional)"),
+        ("writing-plans", "### Phase A — Plan (in plan mode)"),
+        ("subagent-driven-development", "### Phase B — Execute"),
+    ]
+
+    @pytest.mark.parametrize("skill,phase_heading", SEAMS)
+    def test_seam_carries_stop_instruction_in_its_phase(self, skill, phase_heading):
+        body = section(SKILL_TEXT, phase_heading)
+        assert skill in body, f"{skill!r} not named in {phase_heading!r}"
+        assert re.search(r"\bStop\b", body), f"{phase_heading!r} lacks a 'Stop' instruction"
+        assert re.search(r"hand-?off", body, re.IGNORECASE), (
+            f"{phase_heading!r} lacks a 'hand-off' suppression instruction"
+        )
