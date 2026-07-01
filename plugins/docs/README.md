@@ -28,7 +28,7 @@ No init scripts. No configuration files. Enable and use.
 | `adversarial-review-doc` | Parallel dimension-agent review for any markdown document. Catches structural problems, broken cross-references, stale claims, terminology drift, and placeholder text. Optional `--fix` fixer dispatch. |
 | `adversarial-review-pr` | PR-level adversarial review: description accuracy vs. the actual diff, work item consistency, commit message alignment, and cross-document sync obligations. |
 | `adversarial-review-code` | Coordination layer over `pr-review-toolkit` agents. Dispatches `code-reviewer`, `silent-failure-hunter`, and (for TypeScript / C# diffs) `type-design-analyzer` in parallel, then consolidates and deduplicates findings. |
-| `adversarial-review-plan` | Pre-execution review for any implementation or work plan. Runs six dimension agents plus three plan-reviewer archetype agents (premise / feasibility / scope) in parallel, then consolidates and deduplicates findings. Optional `--fix` fixer dispatch. |
+| `adversarial-review-plan` | Pre-execution review for any implementation or work plan. Runs up to six dimension agents plus up to three plan-reviewer archetype agents (premise / feasibility / scope) in parallel — each independently selectable via `--dimensions` / `--archetypes` — then consolidates and deduplicates findings. Optional `--fix` fixer dispatch. |
 
 This plugin ships three agents (the plan-reviewer archetypes used by `adversarial-review-plan`); see the Agents section below. It ships no hooks or commands.
 
@@ -172,6 +172,7 @@ If `--fix` is passed, a single fixer agent receives the entire consolidated find
 ```
 /adversarial-review-plan <plan-path>
   [--dimensions dim1,dim2,...]   # default: all 6
+  [--archetypes arch1,arch2,...] # default: all 3 (skeptic, feasibility, scope)
   [--fix]
   [--output <path>]              # default: <plan-path>.review.md
 ```
