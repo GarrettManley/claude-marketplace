@@ -1,7 +1,7 @@
 ---
 name: deliver
 description: Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, and retrospective. Also use when the work-target is too vague or exploratory to plan yet — an optional design phase feeds the resulting approved design spec into the same pass. Composes superpowers + docs + retrospective skills; the project-specific plan-writer / doc-cluster / edit-checklist steps bind per-repo via .claude/delivery.local.md, so the same skill drives a rigor-heavy repo and a bare one without edits.
-version: 0.2.0
+version: 0.2.1
 dependencies: ["docs", "retrospective"]
 ---
 
