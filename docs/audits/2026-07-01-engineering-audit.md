@@ -116,8 +116,10 @@ Filed as GitHub issues after this PR opens (so bodies link a real commit permali
 | IMPORTANT | Vacuous conditional assertion in coverage-boost suite | F07 |
 | IMPORTANT | `env_flags.is_on()` undertested (1 of 5 spellings) | F09 |
 | IMPORTANT | retrospective README omits shipped `/pre-plan-brief` | F11 |
-| IMPORTANT | Root-changelog aggregation gate + catch-up | F03 |
+| IMPORTANT¹ | Root-changelog aggregation gate + catch-up | F03 |
 | IMPORTANT | Promote macOS CI leg from `continue-on-error` (verify streak first) | F14 |
+
+¹ F03 is CRITICAL in Gaps; its acute part (the missing `delivery` entry) was fixed by quick-win `112fb69`, leaving only the IMPORTANT residual — the aggregation gate + full catch-up — as backlog.
 
 ## Possibilities
 
