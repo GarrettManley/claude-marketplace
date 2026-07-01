@@ -15,7 +15,8 @@ a correct outcome when any silent-catch-and-continue path exists), and the code 
 whole-branch pass at full model capability, distinct from the down-routed per-task reviews during
 execution. Landing is **Hybrid**: a repo with no `land-policy` configured gets
 `superpowers:finishing-a-development-branch`'s 4-option menu and worktree cleanup; a repo with an
-inline `land-policy` (`ff-only`/`pr`/`direct`) keeps that behavior unchanged.
+inline `land-policy` (`ff-only`/`pr`/`direct`/`ask`) keeps that behavior unchanged; an unrecognized
+`land-policy` value halts and surfaces instead of landing.
 
 The spine is project-agnostic. The few steps that differ per repo — how a plan is authored, which
 companion docs must ship, the pre-commit checklist — are **slots** that bind from a per-repo

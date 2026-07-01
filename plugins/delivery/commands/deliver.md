@@ -25,7 +25,8 @@ Invoke the `deliver` skill and follow it exactly. It will:
    final review rather than auto-handing off) → edit checklist → completion gate (positive-evidence
    only — fresh command output and exit code, not a clean terminal state) → whole-branch adversarial
    code review (wider scope, no down-routed model) → land (Hybrid: `finishing-a-development-branch`'s
-   menu when no `land-policy` is set, the inline policy verbatim when one is) → retrospective.
+   menu when no `land-policy` is set, the inline policy verbatim when set to a recognized verb, halt
+   and surface when set to an unrecognized value) → retrospective.
 
 There are no flags — project behavior binds from the config file, not the command line. See the
 `deliver` skill for the slot table, the gate checklists, the config schema, and the landing policy.

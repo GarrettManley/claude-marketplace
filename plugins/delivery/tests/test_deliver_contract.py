@@ -270,6 +270,27 @@ class TestLandPolicyVerbSetIsIdentical:
         assert len(from_table) >= 2
 
 
+# Negative guard: pins out prose already confirmed inaccurate (SKILL.md
+# overclaimed "exactly two cases"); this is not the positive-literal antipattern the module
+# docstring warns against, since there is no drifting fact being restated here.
+class TestLandPolicyOverclaimRemoved:
+    def test_overclaim_phrases_are_absent(self):
+        landing = section(SKILL_TEXT, "## Landing policy (Hybrid)")
+        assert "exactly two cases" not in landing.lower()
+        assert "both exhaustive" not in landing.lower()
+        assert "unrecognized" in landing.lower()
+
+    def test_slot_table_row_states_the_halt_outcome_too(self):
+        """The slot table restates land-policy's behavior independently of the
+        Landing policy section prose above -- if only that section were updated
+        (as originally happened; caught by whole-branch review), the table would
+        silently keep describing a two-outcome model. Assert the table's own
+        purpose cell states the halt outcome, not just that the Landing section
+        does."""
+        purpose = extract_slots_table()["land-policy"]["purpose"]
+        assert "halt" in purpose.lower()
+
+
 # ---------------------------------------------------------------------------
 # Invariant 4 -- fixed-step skill names are cross-referenced
 # ---------------------------------------------------------------------------

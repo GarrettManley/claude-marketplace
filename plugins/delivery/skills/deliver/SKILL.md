@@ -60,7 +60,7 @@ The steps below are configurable. Each resolves **2-level**:
 | `plan-writer` | `superpowers:writing-plans` only | How the plan is authored. A bound project skill runs **after** `writing-plans` to layer repo-specific rules (issue citation, value justification, etc.). |
 | `doc-cluster` | *skip* | Decide which companion docs (spec / ADR / threat model / runbook / user guide) must land in the same change. |
 | `edit-checklist` | *skip* | Repo-specific pre-commit ground-truth checklist run before declaring work done. |
-| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead. |
+| `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead; anything else halts and surfaces rather than landing. |
 | `constitution` | *skip* | Per-repo governance doc (file path, not a `plugin:skill` slug) treated as binding context for the plan review (step 5) and code review (step 10) gates, in addition to the standard review. |
 
 The fixed steps are not configurable — they are always the same generic skills:
@@ -134,7 +134,8 @@ constitution: docs/CONSTITUTION.md        # omit -> skip
 ```
 
 `land-policy` accepts a short verb the Landing-policy step understands (e.g. `ff-only`, `pr`,
-`direct`, or the explicit `ask` override). Slot values are `plugin:skill` slugs. `constitution` is a
+`direct`, or the explicit `ask` override) — any other value halts and surfaces rather than landing
+(see Landing policy). Slot values are `plugin:skill` slugs. `constitution` is a
 file path (not a `plugin:skill` slug) pointing at a per-repo governance doc — code-quality, testing,
 UX, or perf standards, the Spec Kit `constitution.md` pattern for readers who know that prior art.
 Because it's a path rather than a slug, the Availability fallback above does not apply to it: if
@@ -271,14 +272,16 @@ enough that `writing-plans` would have nothing concrete to work from.
 
 ## Landing policy (Hybrid)
 
-Resolve how work lands — exactly two cases, both exhaustive over "set" vs "unset":
+Resolve how work lands. `land-policy` is either unset, set to a recognized verb, or set
+to an unrecognized value — three outcomes:
 
 - **`land-policy` unset** in `delivery.local.md` → delegate to
   `superpowers:finishing-a-development-branch` — its 4-option menu (merge locally / PR / keep as-is /
   discard) plus worktree cleanup, the purpose-built lander that `subagent-driven-development` itself
   terminates in. This is the default when a repo has not opted into an inline policy; the repo's
   stated branch-and-merge convention (its `CLAUDE.md` / `AGENTS.md`), if any, is superseded by this
-  delegation rather than consulted separately.
+  delegation rather than consulted separately. A `land-policy` key that is present but empty or
+  whitespace-only is not "unset" — it falls to the unrecognized-value halt path below, not this menu.
 - **`land-policy` set** (`ff-only` / `pr` / `direct` / `ask`) → honor the inline policy verbatim,
   exactly as before: `ff-only` (rebase onto the main branch → `git merge --ff-only` → push → delete
   the branch), `pr` (open a pull request and stop), `direct` (commit to the working branch), `ask`
@@ -286,13 +289,21 @@ Resolve how work lands — exactly two cases, both exhaustive over "set" vs "uns
   which delegates to `finishing-a-development-branch` instead of asking). This branch's behavior is
   unchanged by the Hybrid update — it preserves existing inline bindings (e.g. a repo pinned to
   `ff-only`) exactly as they already work.
+- **An unrecognized `land-policy` value** (any value not in the recognized set above; the match
+  against the four verbs is exact and case-sensitive, with no normalization) →
+  **halt and surface**: announce the literal configured value verbatim and state that it is not one
+  of ff-only, pr, direct, or ask, and stop — do not delegate to a land path, present the menu, or
+  propose any land. Resolve the misconfiguration first: fix `land-policy`, or tell the operator to
+  name the land shape explicitly. Fail-closed by design: an ambiguous landing instruction never
+  results in a land.
 
-All existing invariants hold regardless of path: **always propose the exact commands and land only on
-explicit user authorization — never auto-push.** This holds even when `land-policy` is set: the
-config chooses the *shape* of the land, the human authorizes the *act*. A multi-step land (rebase →
-ff-only → push) is non-idempotent; if a step fails mid-way (e.g. a rebase conflict), stop and surface
-it rather than forcing through — the same rule `finishing-a-development-branch` applies to its own
-merge/discard paths.
+All existing invariants hold on every path that reaches a landing action: **always propose the exact
+commands and land only on explicit user authorization — never auto-push.** The halt path above reaches
+no landing action at all, so proposing zero commands there is consistent with this invariant, not an
+exception to it. This holds even when `land-policy` is set: the config chooses the *shape* of the
+land, the human authorizes the *act*. A multi-step land (rebase → ff-only → push) is non-idempotent;
+if a step fails mid-way (e.g. a rebase conflict), stop and surface it rather than forcing through —
+the same rule `finishing-a-development-branch` applies to its own merge/discard paths.
 
 ## Cross-references
 
