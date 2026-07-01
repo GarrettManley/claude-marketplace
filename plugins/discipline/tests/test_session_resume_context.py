@@ -193,6 +193,43 @@ def test_main_silent_when_nothing_exists(tmp_path, monkeypatch, capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_main_merges_snapshot_and_workflow_without_workflow_header(
+    tmp_path, monkeypatch, capsys
+):
+    """When BOTH a snapshot and live workflow state exist, the output has the
+    Resume-context header and the workflow lines, but no separate
+    '## Workflow context' header (that header is only for the workflow-only
+    branch)."""
+    import io
+
+    import session_resume_context
+    from snapshot import write_snapshot
+
+    proj = tmp_path / "proj"
+    proj.mkdir()
+    plan = proj / "p.md"
+    plan.write_text("# P\n- [x] a\n- [ ] b\n", encoding="utf-8")
+    pending = proj / "retrospectives" / "pending"
+    pending.mkdir(parents=True)
+    (pending / "p.marker").write_text(str(plan) + "\n", encoding="utf-8")
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(proj))
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "snap"))
+    state = {
+        "timestamp": 1700000000.0,
+        "git": {"branch": "main", "head": "a" * 40},
+        "recent_files": [],
+    }
+    assert write_snapshot(state) is True
+    monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
+    rc = session_resume_context.main([])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    ctx = payload["hookSpecificOutput"]["additionalContext"]
+    assert "## Resume context" in ctx
+    assert f"**Active plan:** `{plan}` (via pending-marker) - 1 done / 1 open" in ctx
+    assert "## Workflow context" not in ctx
+
+
 def test_main_survives_workflow_discovery_crash(tmp_path, monkeypatch, capsys):
     """Hook safety: a crashing plan_state must not break the hook."""
     import io

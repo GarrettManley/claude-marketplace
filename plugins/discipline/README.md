@@ -246,7 +246,7 @@ Pre-compact snapshots are stored at `~/.claude/discipline/snapshots/<project-key
 
 **0.7.0 → 0.7.1:** Gateguard edit gate narrowed to the `strict` profile only (`discipline:pre-edit:gateguard-fact-force` no longer fires under `standard`). The destructive-Bash gate (`discipline:pre-bash:gateguard-fact-force`) still fires under both `standard` and `strict`. To restore the fact-forcing edit gate, run with `DISCIPLINE_HOOK_PROFILE=strict`.
 
-**1.1.0 → 1.2.0:** adds the `compact-plan` skill, live workflow-state rendering in resume context, and the intent-note sidecar. No hooks.json changes; no action needed.
+**1.1.0 → 1.2.0:** Adds the `compact-plan` skill, live workflow-state rendering in resume context, and the intent-note sidecar. No hooks.json changes; no action needed.
 
 If you previously maintained these hooks at the project level:
 

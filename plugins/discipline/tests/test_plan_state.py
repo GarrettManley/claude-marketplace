@@ -75,6 +75,22 @@ def test_pending_marker_fallback(project):
     assert state["pending_retros"] == [{"slug": "marker-plan"}]
 
 
+def test_sdd_ledger_plan_path_with_spaces_and_earlier_md_token(project):
+    plan_dir = project / "John Smith" / ".claude" / "plans"
+    plan_dir.mkdir(parents=True)
+    plan = plan_dir / "my-plan.md"
+    _write_plan(plan, done=1, open_=1)
+    sdd = project / ".superpowers" / "sdd"
+    sdd.mkdir(parents=True)
+    (sdd / "progress.md").write_text(
+        f"# SDD ledger (progress.md)\nPlan: {plan}\n", encoding="utf-8"
+    )
+    state = gather_workflow_state()
+    assert state["active_plan"]["path"] == str(plan)
+    assert state["active_plan"]["tasks_done"] == 1
+    assert state["active_plan"]["tasks_open"] == 1
+
+
 def test_marker_without_plan_path_yields_no_active_plan(project):
     pending = project / "retrospectives" / "pending"
     pending.mkdir(parents=True)
@@ -111,3 +127,31 @@ def test_missing_or_malformed_note_reads_as_none(project):
     get_note_path().parent.mkdir(parents=True, exist_ok=True)
     get_note_path().write_text("not-json{{", encoding="utf-8")
     assert read_note() is None
+
+
+def test_non_dict_note_json_reads_as_none(project):
+    get_note_path().parent.mkdir(parents=True, exist_ok=True)
+    get_note_path().write_text("[1]", encoding="utf-8")
+    assert read_note() is None
+
+
+def test_note_key_matches_across_hook_and_cli_contexts(tmp_path, monkeypatch):
+    """The hook path (CLAUDE_PROJECT_DIR set) and the Bash-run CLI path (no
+    CLAUDE_PROJECT_DIR, falls back to git toplevel) must resolve to the same
+    note file for the same project root."""
+    import subprocess
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, capture_output=True, check=True)
+    monkeypatch.setenv("DISCIPLINE_SNAPSHOT_DIR", str(tmp_path / "snap"))
+
+    # Write WITHOUT CLAUDE_PROJECT_DIR (CLI context): falls back to git toplevel.
+    monkeypatch.delenv("CLAUDE_PROJECT_DIR", raising=False)
+    monkeypatch.chdir(repo)
+    write_note("cross-context note", now=1000.0)
+
+    # Read WITH CLAUDE_PROJECT_DIR set to the same directory (hook context).
+    monkeypatch.setenv("CLAUDE_PROJECT_DIR", str(repo))
+    note = read_note(now=1000.0)
+    assert note == {"text": "cross-context note", "timestamp": 1000.0}

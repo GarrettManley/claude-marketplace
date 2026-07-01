@@ -20,11 +20,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-from snapshot import get_project_key, get_snapshot_dir
+from snapshot import _short_hash, get_snapshot_dir
 
 NOTE_TTL_SECONDS = 4 * 3600
 
 _MD_PATH_RE = re.compile(r"([^\s`\"']+\.md)")
+_PLAN_LINE_RE = re.compile(r"(?im)^plan:\s*(.+?\.md)\s*$")
 _CHECKBOX_DONE_RE = re.compile(r"^\s*[-*] \[[xX]\]", re.MULTILINE)
 _CHECKBOX_OPEN_RE = re.compile(r"^\s*[-*] \[ \]", re.MULTILINE)
 
@@ -42,7 +43,8 @@ def get_project_root() -> Path:
 
 
 def get_note_path() -> Path:
-    return get_snapshot_dir() / f"{get_project_key()}.note.json"
+    key = _short_hash(str(get_project_root().resolve()))
+    return get_snapshot_dir() / f"{key}.note.json"
 
 
 def write_note(text: str, now: float | None = None) -> Path:
@@ -64,6 +66,8 @@ def read_note(now: float | None = None) -> dict[str, Any] | None:
         data = json.loads(get_note_path().read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
+    if not isinstance(data, dict):
+        return None
     text = data.get("text")
     ts = data.get("timestamp")
     if isinstance(text, str) and isinstance(ts, (int, float)):
@@ -80,6 +84,9 @@ def _read_text(path: Path) -> str | None:
 
 
 def _first_md_path(text: str) -> str | None:
+    anchored = _PLAN_LINE_RE.search(text)
+    if anchored:
+        return anchored.group(1).strip()
     match = _MD_PATH_RE.search(text)
     return match.group(1) if match else None
 
