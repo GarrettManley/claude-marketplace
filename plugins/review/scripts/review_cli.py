@@ -66,24 +66,34 @@ def _ingest(ingest_dir: Path, agents_dir: Path, apply: bool) -> int:
         return 1
 
     planned: list[tuple[str, Path, str, str]] = []  # stem, target, old, new
-    errors: list[str] = []
+    deferred: list[str] = []  # unknown personas
+    validation_errors: list[str] = []  # invalid content
     for p in proposals:
         stem = p.name[: -len(_SUFFIX)]
         target = agents_dir / f"{stem}{_SUFFIX}"
         new_text = p.read_text(encoding="utf-8")
         if not target.exists():
-            errors.append(
+            deferred.append(
                 f"{stem}: unknown persona; new-archetype scaffolding is deferred "
                 f"(see D3 follow-up). Target {target} does not exist."
             )
             continue
-        errors.extend(f"{stem}: {e}" for e in persona.validate_persona(new_text, stem))
+        validation_errors.extend(f"{stem}: {e}" for e in persona.validate_persona(new_text, stem))
         planned.append((stem, target, target.read_text(encoding="utf-8"), new_text))
 
-    if errors:
+    if deferred:
+        print("ingest deferred:")
+        for d in deferred:
+            print(f"  - {d}")
+
+    if validation_errors:
         print("ingest rejected:")
-        for e in errors:
+        for e in validation_errors:
             print(f"  - {e}")
+        return 1
+
+    if not planned:
+        # No valid personas to process (only deferred ones)
         return 1
 
     for stem, target, old, new in planned:

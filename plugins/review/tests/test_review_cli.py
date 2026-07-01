@@ -159,3 +159,26 @@ def test_skeleton_is_valid():
     content = review_cli._PERSONA_SKELETON.format(
         name="x-reviewer", title="X Reviewer", description="d")
     assert persona.validate_persona(content, "x-reviewer") == []
+
+
+def test_ingest_mixed_batch_defers_unknown_and_processes_valid(tmp_path, capsys):
+    """Test that in a single ingest call, unknown personas are deferred and valid ones are still processed.
+
+    Exercises BOTH the skip-path (unknown persona continue) and normal-path (valid persona processing)
+    within the SAME _ingest() invocation.
+    """
+    agents = _seed_agents(tmp_path)
+    proposed = _seed_proposal(tmp_path, _persona(trigger="Modified trigger"), name="security-auditor")
+    # Add a second file to the proposed dir with an unknown persona (name mismatch)
+    _seed_proposal(
+        tmp_path,
+        _persona().replace("security-auditor", "data-architect"),
+        name="data-architect"
+    )
+    # Run in dry-run mode (default)
+    rc = review_cli.main(["evolve", "--ingest", str(proposed), "--agents-dir", str(agents)])
+    out = capsys.readouterr().out
+    # Unknown persona should be deferred (mentioned in output)
+    assert "deferred" in out.lower()
+    # Valid persona should still be processed: with a change, should show diff, not fail
+    assert "modified trigger" in out.lower() or "security-auditor" in out.lower()
