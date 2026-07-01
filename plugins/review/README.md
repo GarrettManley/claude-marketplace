@@ -102,7 +102,7 @@ After each review, record what each archetype caught, missed, or hallucinated, t
 
 **Target.** By default the ingester writes to project-local `.claude/agents/` (adopter-safe — it never touches the read-only install cache). As the marketplace maintainer sharpening the *shipped* library, pass `--agents-dir plugins/review/agents/` explicitly.
 
-**Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. The whole batch is rejected if any file is structurally invalid or targets a non-existent persona, so a typo cannot half-write.
+**Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. The whole batch is rejected if any file is structurally invalid; a non-existent persona is deferred (not rejected), so only a structurally broken file can half-write.
 
 **New archetypes.** When a cycle surfaces a coverage gap — a class of issue no current archetype catches — scaffold a new one: `review_cli.py scaffold <name>` writes a structurally-valid `agents/<name>.agent.md` skeleton (real frontmatter + the required sections with `<placeholders>`), dry-run by default, refusing to clobber an existing persona. Fill its pushback triggers from the catch, then commit. The `evolve --ingest` path still hard-rejects an *unknown* target — refining and creating are separate operations. See `skills/reviewer-personas/templates/persona-stub.md` for the full "what makes a good persona" guidance.
 
@@ -169,4 +169,4 @@ The marker file contract (`.claude/reviews/pending/*.marker`) is path-based and 
 python3 -m pytest plugins/review/tests
 ```
 
-Covers persona frontmatter/section validation, diff rendering, atomic writes, and the `evolve` ingester's dry-run / apply / batch-reject / unknown-persona paths.
+Covers persona frontmatter/section validation, diff rendering, atomic writes, and the `evolve` ingester's dry-run / apply / reject-on-invalid / defer-on-unknown paths.

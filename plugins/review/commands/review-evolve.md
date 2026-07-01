@@ -31,7 +31,7 @@ python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review_cli.py" evolve --ingest "$TMPDIR/r
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review_cli.py" evolve --ingest "$TMPDIR/review-evolve" --agents-dir plugins/review/agents --apply
 ```
 
-The dry-run prints a unified diff per persona; `--apply` atomic-writes them. The ingester rejects the whole batch if any file is structurally invalid or targets a non-existent persona — so a typo cannot half-write. Restore is `git checkout -- <agents-dir>`.
+The dry-run prints a unified diff per persona; `--apply` atomic-writes them. The ingester rejects the whole batch if any file is structurally invalid; a non-existent persona is deferred (not rejected) — so only a structurally broken file can half-write. Restore is `git checkout -- <agents-dir>`.
 
 **4. Commit** the refined personas alongside the artifact you reviewed (scope `docs(review):` — persona-content edits do not bump the plugin version).
 

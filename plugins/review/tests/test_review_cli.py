@@ -54,7 +54,7 @@ def test_ingest_apply_writes(tmp_path):
     assert "New trigger" in (agents / "security-auditor.agent.md").read_text(encoding="utf-8")
 
 
-def test_ingest_rejects_unknown_persona(tmp_path, capsys):
+def test_ingest_defers_unknown_persona(tmp_path, capsys):
     agents = _seed_agents(tmp_path)
     proposed = _seed_proposal(
         tmp_path, _persona().replace("security-auditor", "data-architect"), name="data-architect")
