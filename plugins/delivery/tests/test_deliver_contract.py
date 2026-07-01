@@ -203,9 +203,18 @@ def extract_land_policy_verbs_from_landing_section() -> set[str]:
 
 
 def extract_fixed_step_slugs() -> list[tuple[str, str]]:
+    """Extract the `plugin:skill` slugs from the fixed-steps sentence.
+
+    Bounded on a backtick immediately followed by a period (the sentence always
+    ends on its last backtick-quoted slug) rather than the next blank line -- a
+    paragraph reflow that inserts a blank line mid-list must not silently
+    truncate the slug set and leave later slugs unguarded by invariants 4/5.
+    """
     marker = "The fixed steps are not configurable"
     start = SKILL_TEXT.index(marker)
-    end = SKILL_TEXT.index("\n\n", start)
+    end_match = re.search(r"`\.", SKILL_TEXT[start:])
+    assert end_match, "could not find a sentence-terminating '`.' after the fixed-steps marker"
+    end = start + end_match.end()
     sentence = SKILL_TEXT[start:end]
     slugs = PLUGIN_SKILL_SLUG_RE.findall(sentence)
     assert slugs, "fixed-steps sentence yielded zero plugin:skill slugs"

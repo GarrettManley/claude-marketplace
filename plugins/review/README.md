@@ -102,7 +102,7 @@ After each review, record what each archetype caught, missed, or hallucinated, t
 
 **Target.** By default the ingester writes to project-local `.claude/agents/` (adopter-safe — it never touches the read-only install cache). As the marketplace maintainer sharpening the *shipped* library, pass `--agents-dir plugins/review/agents/` explicitly.
 
-**Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. The whole batch is rejected if any file is structurally invalid; a non-existent persona is deferred (not rejected), so only a structurally broken file can half-write.
+**Safety.** Dry-run is the default (it prints a unified diff per persona); `--apply` atomic-writes. Run `--apply` on a clean git tree — git is the snapshot, so restore is `git checkout -- <agents-dir>`. A structurally broken file rejects the whole batch (nothing is written); an unknown persona is deferred instead, so the remaining valid files in the same batch still apply.
 
 **New archetypes.** When a cycle surfaces a coverage gap — a class of issue no current archetype catches — scaffold a new one: `review_cli.py scaffold <name>` writes a structurally-valid `agents/<name>.agent.md` skeleton (real frontmatter + the required sections with `<placeholders>`), dry-run by default, refusing to clobber an existing persona. Fill its pushback triggers from the catch, then commit. The `evolve --ingest` path still won't create a file for an *unknown* target (it defers, not writes) — refining and creating are separate operations. See `skills/reviewer-personas/templates/persona-stub.md` for the full "what makes a good persona" guidance.
 

@@ -81,18 +81,16 @@ def _ingest(ingest_dir: Path, agents_dir: Path, apply: bool) -> int:
         validation_errors.extend(f"{stem}: {e}" for e in persona.validate_persona(new_text, stem))
         planned.append((stem, target, target.read_text(encoding="utf-8"), new_text))
 
-    if validation_errors:
-        print("ingest rejected:")
-        for d in deferred:
-            print(f"  - {d}")
-        for e in validation_errors:
-            print(f"  - {e}")
-        return 1
-
     if deferred:
         print("ingest deferred:")
         for d in deferred:
             print(f"  - {d}")
+
+    if validation_errors:
+        print("ingest rejected:")
+        for e in validation_errors:
+            print(f"  - {e}")
+        return 1
 
     if not planned:
         # No valid personas to process (only deferred ones)

@@ -180,8 +180,9 @@ def test_ingest_mixed_batch_defers_unknown_and_processes_valid(tmp_path, capsys)
     out = capsys.readouterr().out
     # Unknown persona should be deferred (mentioned in output)
     assert "deferred" in out.lower()
-    # Valid persona should still be processed: with a change, should show diff, not fail
-    assert "modified trigger" in out.lower() or "security-auditor" in out.lower()
+    # Valid persona should still be processed: the rendered diff must show the actual change,
+    # not just the filename (a diff-header-only match would pass even if content was dropped).
+    assert "modified trigger" in out.lower()
 
 
 def test_ingest_mixed_batch_apply_writes_valid_and_skips_deferred(tmp_path, capsys):
