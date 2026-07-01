@@ -54,26 +54,26 @@ Ranked CRITICAL → IMPORTANT → MINOR. Dispositions: `fixed-here` (landed on t
 
 | # | Finding | Evidence | Impact | Disposition |
 |---|---------|----------|--------|-------------|
-| F01 | Completion-gate placeholder check fails open on `TODO: <prose>` | `plugins/retrospective/hooks/plan_completion_check.py:96-137`. `check_text()` on a plan whose entire Retrospective is `TODO: fill in the details…` returns **`complete=True`**. `_is_placeholder_body()` strips the keyword then checks for leftover text; trailing prose survives and reads as "real content". `check_verification_addressed()` avoids this only via a redundant second guard the completion check lacks. | The one mechanism meant to stop retrospecting an unfinished plan silently passes the most natural form of an unfilled section. Defeats the completion-discipline workflow (`/plan-completion`, the `ExitPlanMode` enforcement in CLAUDE.md) with no error. | issue |
-| F02 | `scope_bind` path confinement defeated by traversal | `plugins/evidence/scripts/scope_binding.py:181-184`. `check_path('/opt/data/engagement-2026/../../../../etc/passwd', scope)` returns `(True, "matches prefix")`. Prefix check runs on the raw string; `..` segments are not normalized, and the "not-yet-existing path" branch (normal Write-new-file case) never resolves them. | The scope-confinement control (SECURITY.md advertises it confining `WebFetch`/writes to declared paths) can be walked out of with a literal `../`. It is opt-in and self-described as defense-in-depth, but it fails open exactly where confinement matters. | issue |
+| F01 | Completion-gate placeholder check fails open on `TODO: <prose>` | `plugins/retrospective/hooks/plan_completion_check.py:96-137`. `check_text()` on a plan whose entire Retrospective is `TODO: fill in the details…` returns **`complete=True`**. `_is_placeholder_body()` strips the keyword then checks for leftover text; trailing prose survives and reads as "real content". `check_verification_addressed()` avoids this only via a redundant second guard the completion check lacks. | The one mechanism meant to stop retrospecting an unfinished plan silently passes the most natural form of an unfilled section. Defeats the completion-discipline workflow (`/plan-completion`, the `ExitPlanMode` enforcement in CLAUDE.md) with no error. | issue #30 |
+| F02 | `scope_bind` path confinement defeated by traversal | `plugins/evidence/scripts/scope_binding.py:181-184`. `check_path('/opt/data/engagement-2026/../../../../etc/passwd', scope)` returns `(True, "matches prefix")`. Prefix check runs on the raw string; `..` segments are not normalized, and the "not-yet-existing path" branch (normal Write-new-file case) never resolves them. | The scope-confinement control (SECURITY.md advertises it confining `WebFetch`/writes to declared paths) can be walked out of with a literal `../`. It is opt-in and self-described as defense-in-depth, but it fails open exactly where confinement matters. | issue #31 |
 | F03 | Root CHANGELOG drift with no automation | `CHANGELOG.md:11-59` vs per-plugin releases; ADR 0008 predicted exactly this. The `delivery` plugin was never recorded; multiple plugin bumps unaggregated. | The public program-level changelog understates the project. ADR 0008 flagged the risk; it is now realized. | one-line entry **fixed-here** (`112fb69`); full catch-up + gate → issue |
 
 ### IMPORTANT
 
 | # | Finding | Evidence | Impact | Disposition |
 |---|---------|----------|--------|-------------|
-| F04 | GateGuard eviction is hash-seed random, not recency | `plugins/discipline/scripts/gateguard.py:147-196`. Three identical runs evict three different sets — `save_state()` unions `checked` into a `set`, whose str iteration order depends on the (unset, randomized) `PYTHONHASHSEED`, then keeps a trailing slice. | On sessions touching >500 files, cleared files re-fire the fact-forcing gate at random — silent, non-reproducible friction contradicting the "first touch per file" contract. | issue |
-| F05 | `release.py --apply` is non-atomic, no rollback | `ci/release.py:327-341`. `_set_version()` + `_prepend_changelog()` write to disk *inside* the loop; a later plugin's H1 check can `return 1` after earlier plugins are already mutated — while printing "refusing to commit". | A failed multi-plugin release leaves earlier plugins version-bumped on disk with no commit/tag; a re-run double-applies. Corrupts changelog/semver state. | issue |
-| F06 | `_parse_frontmatter` treats prose as config when the fence never closes | `plugins/discipline/scripts/discipline_config.py:125-151`. A doc opening with `---` and no closing fence yields bogus `key: value` pairs from ordinary prose (docstring promises `{}`). | A project doc starting with `---` + a `key:`-shaped prose line can silently override discipline config (gh target, main branch, bd auto-close). | issue |
-| F07 | Vacuous conditional assertion | `plugins/discipline/tests/test_coverage_boost.py:1256-1257`: `if result: assert _is_block(result)`. If the block path emits nothing, the assertion is skipped and the test passes without verifying anything. | A test that can pass without exercising its target — false coverage signal. | issue |
-| F08 | Two shipped modules have zero coverage | `plugins/discipline/hooks/todo_issue_hook.py`, `plugins/discipline/scripts/_inject_issues.py` — no test imports either (not even the catch-all suites). | Untested hook logic ships in a 1.1.0 plugin. | issue |
-| F09 | `env_flags.is_on()` undertested | `plugins/learning/scripts/env_flags.py:14-16` accepts 5 on-values; tests exercise 1, no dedicated test. | Flag-parsing regressions (case, `enabled`/`yes`) would pass CI. | issue |
-| F10 | `release.py` cannot compute a correct bump for a never-tagged plugin | `ci/release.py:132-193,264-274`. `delivery` has no `delivery-v*` tag; `--dry-run` proposes `0.2.1 → 0.3.0` over the plugin's **entire** history (no baseline), so the delta is not incremental. Confirms the `velvet-nygaard` retro claim. | The one un-released plugin cannot be released correctly through the standard path without a manual seed tag. | issue |
-| F11 | retrospective README omits a shipped command | `plugins/retrospective/README.md` — 0 hits for `pre-plan-brief`, though `commands/pre-plan-brief.md` and `skills/pre-plan-brief/` ship. | A shipped command is undiscoverable from its plugin's own docs. | issue |
-| F12 | `secret_scan` / `scope_bind` ignore `NotebookEdit` | `plugins/evidence/hooks/secret_scan.py:55-73`. `extract_text('NotebookEdit', {'new_source': '…AKIA…'})` returns `''` — notebook cell writes are never scanned. | Credentials written via `NotebookEdit` bypass the secret-scan hard block entirely. | issue |
-| F13 | Supply chain uses mutable tags / unpinned tooling | `.github/workflows/ci.yml:30-99`: `actions/*@v6`/`@v7`, `Install-Module PSScriptAnalyzer` unpinned, `npm install -g @anthropic-ai/claude-code` unpinned. | A compromised or shifted upstream tag changes CI behavior with no lockfile; standard hardening (SHA-pin) absent. | issue |
+| F04 | GateGuard eviction is hash-seed random, not recency | `plugins/discipline/scripts/gateguard.py:147-196`. Three identical runs evict three different sets — `save_state()` unions `checked` into a `set`, whose str iteration order depends on the (unset, randomized) `PYTHONHASHSEED`, then keeps a trailing slice. | On sessions touching >500 files, cleared files re-fire the fact-forcing gate at random — silent, non-reproducible friction contradicting the "first touch per file" contract. | issue #35 |
+| F05 | `release.py --apply` is non-atomic, no rollback | `ci/release.py:327-341`. `_set_version()` + `_prepend_changelog()` write to disk *inside* the loop; a later plugin's H1 check can `return 1` after earlier plugins are already mutated — while printing "refusing to commit". | A failed multi-plugin release leaves earlier plugins version-bumped on disk with no commit/tag; a re-run double-applies. Corrupts changelog/semver state. | issue #33 |
+| F06 | `_parse_frontmatter` treats prose as config when the fence never closes | `plugins/discipline/scripts/discipline_config.py:125-151`. A doc opening with `---` and no closing fence yields bogus `key: value` pairs from ordinary prose (docstring promises `{}`). | A project doc starting with `---` + a `key:`-shaped prose line can silently override discipline config (gh target, main branch, bd auto-close). | issue #34 |
+| F07 | Vacuous conditional assertion | `plugins/discipline/tests/test_coverage_boost.py:1256-1257`: `if result: assert _is_block(result)`. If the block path emits nothing, the assertion is skipped and the test passes without verifying anything. | A test that can pass without exercising its target — false coverage signal. | issue #39 |
+| F08 | Two shipped modules have zero coverage | `plugins/discipline/hooks/todo_issue_hook.py`, `plugins/discipline/scripts/_inject_issues.py` — no test imports either (not even the catch-all suites). | Untested hook logic ships in a 1.1.0 plugin. | issue #38 |
+| F09 | `env_flags.is_on()` undertested | `plugins/learning/scripts/env_flags.py:14-16` accepts 5 on-values; tests exercise 1, no dedicated test. | Flag-parsing regressions (case, `enabled`/`yes`) would pass CI. | issue #40 |
+| F10 | `release.py` cannot compute a correct bump for a never-tagged plugin | `ci/release.py:132-193,264-274`. `delivery` has no `delivery-v*` tag; `--dry-run` proposes `0.2.1 → 0.3.0` over the plugin's **entire** history (no baseline), so the delta is not incremental. Confirms the `velvet-nygaard` retro claim. | The one un-released plugin cannot be released correctly through the standard path without a manual seed tag. | issue #27 |
+| F11 | retrospective README omits a shipped command | `plugins/retrospective/README.md` — 0 hits for `pre-plan-brief`, though `commands/pre-plan-brief.md` and `skills/pre-plan-brief/` ship. | A shipped command is undiscoverable from its plugin's own docs. | issue #41 |
+| F12 | `secret_scan` / `scope_bind` ignore `NotebookEdit` | `plugins/evidence/hooks/secret_scan.py:55-73`. `extract_text('NotebookEdit', {'new_source': '…AKIA…'})` returns `''` — notebook cell writes are never scanned. | Credentials written via `NotebookEdit` bypass the secret-scan hard block entirely. | issue #32 |
+| F13 | Supply chain uses mutable tags / unpinned tooling | `.github/workflows/ci.yml:30-99`: `actions/*@v6`/`@v7`, `Install-Module PSScriptAnalyzer` unpinned, `npm install -g @anthropic-ai/claude-code` unpinned. | A compromised or shifted upstream tag changes CI behavior with no lockfile; standard hardening (SHA-pin) absent. | issue #36 |
 | F14 | macOS CI leg still `continue-on-error` | `.github/workflows/ci.yml:16-19`; workflow-reported green streak (not orchestrator-re-verified — needs run history). | A now-stable leg provides no signal; a real macOS regression would pass silently. | issue (verify streak first) |
-| F15 | Local gate runs no tests | `scripts/verify.sh` (0 pytest); `.githooks/pre-commit:11` comment confirms pytest is CI-only. | A committer passes the full local gate while breaking tests; the 90% coverage gate is invisible until CI. | issue |
+| F15 | Local gate runs no tests | `scripts/verify.sh` (0 pytest); `.githooks/pre-commit:11` comment confirms pytest is CI-only. | A committer passes the full local gate while breaking tests; the 90% coverage gate is invisible until CI. | issue #37 |
 
 ### MINOR (report-only unless a backlog item absorbs them)
 
@@ -101,23 +101,23 @@ Five trivial, confirmed, doc-level fixes landed on this branch, each its own con
 
 Filed as GitHub issues after this PR opens (so bodies link a real commit permalink). Ranked by severity; the two CRITICALs first.
 
-| Severity | Title | Finding |
-|----------|-------|---------|
-| CRITICAL | Completion-gate placeholder check fails open on `TODO: <prose>` | F01 |
-| CRITICAL | `scope_bind` path confinement defeated by `../` traversal | F02 |
-| IMPORTANT | secret-scan/scope-bind ignore `NotebookEdit` tool inputs | F12 |
-| IMPORTANT | `release.py --apply` is non-atomic; partial writes on abort | F05 |
-| IMPORTANT | `release.py` can't compute a correct bump for a never-tagged plugin | F10 |
-| IMPORTANT | `_parse_frontmatter` parses prose as config with no closing fence | F06 |
-| IMPORTANT | GateGuard checked-file eviction is hash-seed random | F04 |
-| IMPORTANT | Pin CI Actions/tooling by SHA (mutable tags today) | F13 |
-| IMPORTANT | Local gate runs no tests; decide the local pytest story | F15 |
-| IMPORTANT | Zero coverage: `todo_issue_hook.py`, `_inject_issues.py` | F08 |
-| IMPORTANT | Vacuous conditional assertion in coverage-boost suite | F07 |
-| IMPORTANT | `env_flags.is_on()` undertested (1 of 5 spellings) | F09 |
-| IMPORTANT | retrospective README omits shipped `/pre-plan-brief` | F11 |
-| IMPORTANT¹ | Root-changelog aggregation gate + catch-up | F03 |
-| IMPORTANT | Promote macOS CI leg from `continue-on-error` (verify streak first) | F14 |
+| Severity | Title | Finding | Issue |
+|----------|-------|----------------|
+| CRITICAL | Completion-gate placeholder check fails open on `TODO: <prose>` | F01 | #30 |
+| CRITICAL | `scope_bind` path confinement defeated by `../` traversal | F02 | #31 |
+| IMPORTANT | secret-scan/scope-bind ignore `NotebookEdit` tool inputs | F12 | #32 |
+| IMPORTANT | `release.py --apply` is non-atomic; partial writes on abort | F05 | #33 |
+| IMPORTANT | `release.py` can't compute a correct bump for a never-tagged plugin | F10 | #27 (pre-existing) |
+| IMPORTANT | `_parse_frontmatter` parses prose as config with no closing fence | F06 | #34 |
+| IMPORTANT | GateGuard checked-file eviction is hash-seed random | F04 | #35 |
+| IMPORTANT | Pin CI Actions/tooling by SHA (mutable tags today) | F13 | #36 |
+| IMPORTANT | Local gate runs no tests; decide the local pytest story | F15 | #37 |
+| IMPORTANT | Zero coverage: `todo_issue_hook.py`, `_inject_issues.py` | F08 | #38 |
+| IMPORTANT | Vacuous conditional assertion in coverage-boost suite | F07 | #39 |
+| IMPORTANT | `env_flags.is_on()` undertested (1 of 5 spellings) | F09 | #40 |
+| IMPORTANT | retrospective README omits shipped `/pre-plan-brief` | F11 | #41 |
+| IMPORTANT¹ | Root-changelog aggregation gate + catch-up | F03 | #42 |
+| IMPORTANT | Promote macOS CI leg from `continue-on-error` (verify streak first) | F14 | #43 |
 
 ¹ F03 is CRITICAL in Gaps; its acute part (the missing `delivery` entry) was fixed by quick-win `112fb69`, leaving only the IMPORTANT residual — the aggregation gate + full catch-up — as backlog.
 
