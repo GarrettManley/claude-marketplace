@@ -17,7 +17,7 @@ None of the CRITICAL/IMPORTANT findings block the repo's current use; all are fi
 | Implementation | **Adequate** | Clean, small, readable modules — but two CRITICAL fail-open bugs in gating code plus three correctness gaps (eviction non-determinism, non-atomic release, frontmatter mis-parse). |
 | Tests | **Adequate** | Excellent breadth and zero skips, undercut by coverage-padding suites, a vacuous conditional assertion, and two shipped modules with zero coverage. |
 | CI & release | **Adequate** | Strong 5-check matrix; weakened by a non-atomic release path, an incorrect never-tagged-plugin bump, unpinned Actions, and no local test gate. |
-| Documentation | **Adequate** | Strong ADR discipline and per-plugin READMEs; visible changelog drift (now fixed) and one README that omits a shipped command. |
+| Documentation | **Adequate** | Strong ADR discipline and per-plugin READMEs; visible changelog drift (partially fixed — the missing `delivery` entry is fixed here; the aggregation gate + full catch-up remain backlog) and one README that omits a shipped command. |
 | Security posture | **Needs attention** | For a repo that *ships security hooks*, a path-traversal escape, a NotebookEdit scan bypass, and mutable-tag supply chain are the sharpest cluster. |
 | Process & governance | **Strong** | ADRs, dual changelog, retrospectives, gate suite, release automation — above bar; the completion-gate bug is the one crack. |
 
@@ -31,7 +31,7 @@ None of the CRITICAL/IMPORTANT findings block the repo's current use; all are fi
 
 **Ledger counts:** 26 raw findings (3 CRITICAL, 12 IMPORTANT, 11 MINOR). The refute-lens **killed 4** MINOR findings. Of the 15 CRITICAL/IMPORTANT findings, **14 reproduced live** under orchestrator re-verification; 1 (macOS-CI promotion) is a lower-confidence possibility that needs CI run history to confirm and is flagged as such.
 
-**Killed claims (recorded honestly).** A first-pass exploration agent reported CodeQL as "inert" (guarded by `!repository.private`); re-verification refuted this — the repo *is* public, so `codeql.yml` is live. Four MINOR findings were dropped by the refute-lens (ADR status-vocabulary split, release.py H1 perpetuation, missing devcontainer, skill-index discoverability) as either non-defects or overstated. These are listed so the reader can see the filter working, not hidden.
+**Killed claims (recorded honestly).** A first-pass exploration agent reported CodeQL as "inert" (guarded by `!repository.private`); re-verification refuted this — the repo *is* public, so `codeql.yml` is live. Four MINOR findings (IDs F20, F21, F25, F26) were dropped by the refute-lens (ADR status-vocabulary split, release.py H1 perpetuation, missing devcontainer, skill-index discoverability) as either non-defects or overstated — which is why the MINOR list below skips those four IDs. These are listed so the reader can see the filter working, not hidden.
 
 **Limits — what this audit did NOT cover.** Live runtime behavior of hooks inside a real Claude Code session (only static + unit-level reproduction); the actual behavior of external consumers of the marketplace; performance/load; and the corporate/private repos deliberately out of scope. Findings are code-level and reproducible, not field-observed.
 
@@ -48,7 +48,7 @@ These are real and above-bar, verified during the sweep:
 
 ## Gaps
 
-Ranked CRITICAL → IMPORTANT → MINOR. Disposition: `fixed-here` (landed on this branch), `issue` (filed post-PR — see Backlog), `accepted/report-only`.
+Ranked CRITICAL → IMPORTANT → MINOR. Dispositions: `fixed-here` (landed on this branch), `quick-win` (a trivial `fixed-here`), `issue` (filed post-PR — see Backlog), `report-only` (recorded, no action proposed), `accepted-risk` (acknowledged, deliberately not fixed).
 
 ### CRITICAL
 
@@ -70,7 +70,7 @@ Ranked CRITICAL → IMPORTANT → MINOR. Disposition: `fixed-here` (landed on th
 | F09 | `env_flags.is_on()` undertested | `plugins/learning/scripts/env_flags.py:14-16` accepts 5 on-values; tests exercise 1, no dedicated test. | Flag-parsing regressions (case, `enabled`/`yes`) would pass CI. | issue |
 | F10 | `release.py` cannot compute a correct bump for a never-tagged plugin | `ci/release.py:132-193,264-274`. `delivery` has no `delivery-v*` tag; `--dry-run` proposes `0.2.1 → 0.3.0` over the plugin's **entire** history (no baseline), so the delta is not incremental. Confirms the `velvet-nygaard` retro claim. | The one un-released plugin cannot be released correctly through the standard path without a manual seed tag. | issue |
 | F11 | retrospective README omits a shipped command | `plugins/retrospective/README.md` — 0 hits for `pre-plan-brief`, though `commands/pre-plan-brief.md` and `skills/pre-plan-brief/` ship. | A shipped command is undiscoverable from its plugin's own docs. | issue |
-| F12 | secret-scan / scope-bind ignore `NotebookEdit` | `plugins/evidence/hooks/secret_scan.py:55-73`. `extract_text('NotebookEdit', {'new_source': '…AKIA…'})` returns `''` — notebook cell writes are never scanned. | Credentials written via `NotebookEdit` bypass the secret-scan hard block entirely. | issue |
+| F12 | `secret_scan` / `scope_bind` ignore `NotebookEdit` | `plugins/evidence/hooks/secret_scan.py:55-73`. `extract_text('NotebookEdit', {'new_source': '…AKIA…'})` returns `''` — notebook cell writes are never scanned. | Credentials written via `NotebookEdit` bypass the secret-scan hard block entirely. | issue |
 | F13 | Supply chain uses mutable tags / unpinned tooling | `.github/workflows/ci.yml:30-99`: `actions/*@v6`/`@v7`, `Install-Module PSScriptAnalyzer` unpinned, `npm install -g @anthropic-ai/claude-code` unpinned. | A compromised or shifted upstream tag changes CI behavior with no lockfile; standard hardening (SHA-pin) absent. | issue |
 | F14 | macOS CI leg still `continue-on-error` | `.github/workflows/ci.yml:16-19`; workflow-reported green streak (not orchestrator-re-verified — needs run history). | A now-stable leg provides no signal; a real macOS regression would pass silently. | issue (verify streak first) |
 | F15 | Local gate runs no tests | `scripts/verify.sh` (0 pytest); `.githooks/pre-commit:11` comment confirms pytest is CI-only. | A committer passes the full local gate while breaking tests; the 90% coverage gate is invisible until CI. | issue |
@@ -134,7 +134,7 @@ Each names its consumer and a first concrete step (findings without a named cons
 
 ## Appendix — evidence table
 
-Confirmed findings only; each was reproduced by a fresh command in the audit worktree (2026-07-01). Full commands and output excerpts are in the audit ledger (`.audit-findings.local.md`, untracked).
+14 confirmed findings, each reproduced by a fresh command in the audit worktree (2026-07-01); F14 is the one lower-confidence entry (workflow-reported, not orchestrator-re-verified — needs CI run history). Full commands and output excerpts are in the audit ledger (`.audit-findings.local.md`, untracked).
 
 | # | Sev | Reproduction (abbreviated) | Verdict |
 |---|-----|----------------------------|---------|
@@ -151,7 +151,7 @@ Confirmed findings only; each was reproduced by a fresh command in the audit wor
 | F11 | IMP | `grep -c pre-plan-brief plugins/retrospective/README.md` → 0 | CONFIRMED |
 | F12 | IMP | `secret_scan.extract_text('NotebookEdit', …)` → `''` | CONFIRMED |
 | F13 | IMP | `grep 'uses: actions/' ci.yml` → `@v6`/`@v7` | CONFIRMED |
-| F15 | IMP | `grep -c pytest scripts/verify.sh` → 0 | CONFIRMED |
 | F14 | IMP | macOS leg `continue-on-error` (streak workflow-reported) | LOWER-CONFIDENCE |
+| F15 | IMP | `grep -c pytest scripts/verify.sh` → 0 | CONFIRMED |
 
 **Refuted / killed claims** (checked, not confirmed — recorded for honesty): "CodeQL inert" (repo is public → CodeQL live); ADR status-vocabulary split (non-defect); `release.py` H1 perpetuation (refuted); missing devcontainer (overstated); skill-index discoverability (adequate for current traffic). Refute-lens dropped 4 of 26 raw findings; 1 of 15 verified findings is lower-confidence.
