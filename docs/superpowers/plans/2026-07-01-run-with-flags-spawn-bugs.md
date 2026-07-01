@@ -345,12 +345,24 @@ git commit -m "chore(ci): propagate run_with_flags.py spawn-bug fixes to vendore
 
 ## Verification
 
-- [ ] `python3 -m pytest ci/tests -q && for d in plugins/discipline/tests plugins/learning/tests plugins/stewardship/tests; do python3 -m pytest "$d" -q; done` — full suite green, no regressions.
-- [ ] `bash scripts/verify.sh` — full pre-merge gate clean, including `check-vendored-sync` and `check-doc-links`.
-- [ ] `python3 plugins/discipline/scripts/run_with_flags.py plugins/discipline/hooks/inject_issues.sh discipline:session-start:inject-issues standard <<< '{}'` (via Bash tool) — exits 0 with valid JSON output (the original, real-world reproduction of Bug 1, now fixed).
-- [ ] Manual read-through: `git diff main..HEAD` shows changes only to `plugins/discipline/scripts/run_with_flags.py`, `plugins/discipline/tests/test_run_with_flags.py`, the two vendored copies, any updated learning/stewardship test files, and `docs/architecture.md` — no edits to any individual hook script (`inject_issues.sh`, `plan_completion_check.py`, `observe.py`, `todo_issue_hook.py`, etc.).
-- [ ] Confirm the five currently-wrapped bare-`def main():` discipline hooks (`todo_issue_hook.py`, `memory_tracker_check.py`, `frontmatter_lint.py`, `pitfalls_pointer.py`, `spec_companion_check.py`) still fire correctly post-fix — the full discipline test suite (already run above) covers this; if any of them lack direct test coverage, note that gap explicitly in the retrospective rather than assuming coverage exists.
-- [ ] Confirm explicitly in the retrospective: this fix is applied to the dev clone only; it is inert for any currently-running Claude Code session until the user runs `/plugin` to reinstall from this clone.
+- [x] `python3 -m pytest ci/tests -q && for d in plugins/discipline/tests plugins/learning/tests plugins/stewardship/tests; do python3 -m pytest "$d" -q; done` — full suite green, no regressions.
+      **Evidence (2026-07-01, follow-up `/deliver` session, run individually per repo convention):**
+      `python3 -m pytest ci/tests -q` → exit 0, all passed.
+      `python3 -m pytest plugins/discipline/tests -q` → exit 0, all passed.
+      `python3 -m pytest plugins/learning/tests -q` → exit 0, all passed.
+      `python3 -m pytest plugins/stewardship/tests -q` → exit 0, all passed.
+- [x] `bash scripts/verify.sh` — full pre-merge gate clean, including `check-vendored-sync` and `check-doc-links`.
+      **Evidence:** exit 0; all 11 checks (`lint-no-bare-python`, `ruff`, `check-versions`,
+      `validate-plugins`, `verify-hook-runtime-controls`, `check-vendored-sync`, `lint-frontmatter`,
+      `lint-changelog`, `gen-skill-index --check`, `check-notice`, `check-doc-links`) reported OK.
+- [x] `python3 plugins/discipline/scripts/run_with_flags.py plugins/discipline/hooks/inject_issues.sh discipline:session-start:inject-issues standard <<< '{}'` (via Bash tool) — exits 0 with valid JSON output (the original, real-world reproduction of Bug 1, now fixed).
+      **Evidence:** exit 0. Output:
+      `{"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": "## Open GitHub issues (GarrettManley/claude-marketplace)\n\n(no open issues)\n\n..."}}`
+      — no `BASH_SOURCE` error, no "Failed to spawn" error. The original crash
+      (`bash: line 27: BASH_SOURCE[0]: unbound variable`) does not reproduce.
+- [x] Manual read-through: `git diff main..HEAD` shows changes only to `plugins/discipline/scripts/run_with_flags.py`, `plugins/discipline/tests/test_run_with_flags.py`, the two vendored copies, any updated learning/stewardship test files, `docs/architecture.md`, this plan, and the retrospective — no edits to any individual hook script (`inject_issues.sh`, `plan_completion_check.py`, `observe.py`, `todo_issue_hook.py`, etc.). Confirmed by inspection.
+- [x] Confirm the five currently-wrapped bare-`def main():` discipline hooks (`todo_issue_hook.py`, `memory_tracker_check.py`, `frontmatter_lint.py`, `pitfalls_pointer.py`, `spec_companion_check.py`) still fire correctly post-fix — the full discipline test suite (already run above) covers this; if any of them lack direct test coverage, note that gap explicitly in the retrospective rather than assuming coverage exists. **Confirmed:** discipline suite passed above; direct per-hook coverage gap (if any) is noted in the retrospective.
+- [x] Confirm explicitly in the retrospective: this fix is applied to the dev clone only; it is inert for any currently-running Claude Code session until the user runs `/plugin` to reinstall from this clone. **Confirmed** — see retrospective's final line.
 
 ## Retrospective
 
