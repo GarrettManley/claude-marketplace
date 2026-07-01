@@ -19,6 +19,7 @@ Adapted from affaan-m/everything-claude-code @ 4774946d, scripts/hooks/run-with-
 """
 from __future__ import annotations
 
+import inspect
 import io
 import importlib.util
 import os
@@ -170,8 +171,25 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
     if not callable(main_fn):
         # No main(); module top-level already ran (and didn't exit). Treat as success.
         return 0
+    # Detect the calling convention BEFORE invoking -- some currently-wrapped hooks
+    # (todo_issue_hook.py, memory_tracker_check.py, frontmatter_lint.py,
+    # pitfalls_pointer.py, spec_companion_check.py) use bare `def main():` with no
+    # parameters; others (plan_completion_check.py and the standard idiom generally)
+    # use `def main(argv: list[str] | None = None)`. Calling the latter with zero
+    # args leaks this process's own sys.argv (hook_script_path, hook_id,
+    # profile_csv) into the hook when it falls back from argv=None -- calling the
+    # former with one arg raises TypeError. Introspection failure (e.g. a
+    # C-extension callable) falls back to the zero-arg call, matching prior
+    # behavior. This check is intentionally OUTSIDE the try/except below: a
+    # genuine runtime error raised by the hook's own body during the real call
+    # must never be reinterpreted as a signature mismatch and retried --
+    # double-invoking a hook with side effects would be silent data corruption.
     try:
-        result = main_fn()
+        takes_argv = bool(inspect.signature(main_fn).parameters)
+    except (TypeError, ValueError):
+        takes_argv = False
+    try:
+        result = main_fn([]) if takes_argv else main_fn()
         return int(result) if result is not None else 0
     except SystemExit as e:
         return int(e.code) if e.code is not None else 0

@@ -141,3 +141,47 @@ class TestInvokeWhenEnabled:
         )
         assert result.returncode == 0, result.stderr
         assert "sibling-content" in result.stdout
+
+    def test_python_hook_receives_empty_argv_not_wrapper_own_argv(self, tmp_path):
+        """Regression: a hook using the standard `main(argv: list[str] | None = None)`
+        idiom, falling back to sys.argv[1:] when argv is None, must see an empty list --
+        not run_with_flags.py's own process argv (hook_script_path, hook_id,
+        profile_csv). Mirrors the real pattern in
+        plugins/retrospective/hooks/plan_completion_check.py:300-312, which would
+        misinterpret its own script path as a CLI positional argument if this broke."""
+        hook = tmp_path / "argv_fallback_hook.py"
+        hook.write_text(
+            "import sys\n"
+            "def main(argv=None):\n"
+            "    args = sys.argv[1:] if argv is None else argv\n"
+            "    print('argv-was:' + repr(args))\n"
+            "    return 0\n"
+        )
+        result = run_wrapper(
+            [str(hook), "discipline:test:argv-fallback", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "argv-was:[]" in result.stdout
+
+    def test_python_hook_zero_param_main_still_works(self, tmp_path):
+        """Regression: real, currently-wrapped discipline hooks (todo_issue_hook.py,
+        memory_tracker_check.py, frontmatter_lint.py, pitfalls_pointer.py,
+        spec_companion_check.py) use bare `def main():` with no parameters at all --
+        the fix for the argv-leak bug above must not break these. This mirrors the
+        pre-existing test_python_hook_main_called_with_stdin/
+        test_python_hook_exit_code_propagated fixtures but asserts explicitly on the
+        zero-param case so a regression here fails with a clear name, not just
+        collateral failures in unrelated tests."""
+        hook = tmp_path / "zero_param_hook.py"
+        hook.write_text(
+            "def main():\n"
+            "    print('zero-param-ran')\n"
+            "    return 0\n"
+        )
+        result = run_wrapper(
+            [str(hook), "discipline:test:zero-param", "standard"],
+            stdin="{}",
+        )
+        assert result.returncode == 0
+        assert "zero-param-ran" in result.stdout
