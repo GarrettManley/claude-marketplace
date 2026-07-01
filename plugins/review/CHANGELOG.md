@@ -1,5 +1,10 @@
 # review changelog
 
+## 1.3.2
+
+### Fixes
+- evolve --ingest: a deferred (unknown) persona in a batch no longer blocks valid personas in the same batch from being applied
+
 ## 1.3.1
 
 ### Fixes

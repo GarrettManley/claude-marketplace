@@ -164,7 +164,7 @@
       "name": "review",
       "source": "./plugins/review",
       "description": "Multi-lens review: the reviewer-personas skill maps an artifact (design docs, PRs, work items, wiki pages, or skill files) to a set of 16 archetype agents and dispatches them as sub-agents (security-auditor, observability-champion, data-architect, incident-commander, ecosystem-context-reviewer, new-engineer, skill-craft-reviewer, architect, contract-surface, performance-scalability, test-strategy, migration-safety, compliance, api-contract, error-handling, accessibility); each agent definition is the persona. SessionStart hook nags about review-triggering artifacts that completed without a review token. Includes persona-stub template for adopters to add their own archetype agents.",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "category": "review",
       "author": {
         "name": "Garrett Manley"
