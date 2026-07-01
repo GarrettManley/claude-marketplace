@@ -31,3 +31,8 @@ tiers.local.json
 
 # git worktree scratch (superpowers:using-git-worktrees convention)
 .worktrees/
+
+# Plan-retrospective pending markers (per-machine/per-session, not shared state;
+# retrospective:plan-retrospective convention — see retrospectives/done/ for the
+# committed retrospectives themselves)
+retrospectives/pending/
