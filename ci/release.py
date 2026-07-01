@@ -200,15 +200,37 @@ def _set_version(name: str, version: str) -> None:
     path.write_text(new, encoding="utf-8")
 
 
+_VERSION_HEADING_RE = re.compile(r"^## ", re.MULTILINE)
+
+
 def _prepend_changelog(name: str, section: str) -> None:
+    """Insert a new `## <version>` section, preserving the file's preamble verbatim.
+
+    Never adds or removes an H1 — it only ever inserts a `## ` section. Three cases:
+      1. File absent -> create `# <name> changelog` + the section.
+      2. File exists, no `## ` heading -> the whole file is the preamble; the
+         section is appended after it, body untouched (no data loss).
+      3. File exists, has `## ` headings -> the section is inserted between the
+         preamble (everything above the first `## `) and that first heading.
+    """
     path = PLUGINS_DIR / name / "CHANGELOG.md"
-    header = f"# {name} changelog\n\n"
-    if path.exists():
-        existing = path.read_text(encoding="utf-8")
-        body = existing[len(header):] if existing.startswith(header) else existing
-        path.write_text(header + section + "\n" + body, encoding="utf-8")
-    else:
-        path.write_text(header + section, encoding="utf-8")
+    section = section.strip("\n")
+    if not path.exists():
+        path.write_text(f"# {name} changelog\n\n{section}\n", encoding="utf-8")
+        return
+
+    existing = path.read_text(encoding="utf-8")
+    match = _VERSION_HEADING_RE.search(existing)
+    if match is None:
+        preamble = existing.rstrip("\n")
+        path.write_text(f"{preamble}\n\n{section}\n", encoding="utf-8")
+        return
+
+    preamble, rest = existing[: match.start()], existing[match.start():]
+    path.write_text(
+        preamble.rstrip("\n") + "\n\n" + section + "\n\n" + rest.lstrip("\n"),
+        encoding="utf-8",
+    )
 
 
 def _load_sync():
