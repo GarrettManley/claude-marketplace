@@ -51,7 +51,7 @@ There are **no flags.** Project-specific behavior binds from `<repo>/.claude/del
 
 ### Slots and resolution
 
-Three steps are configurable. Each resolves **2-level**:
+The steps below are configurable. Each resolves **2-level**:
 
 > `<repo>/.claude/delivery.local.md` frontmatter  >  generic default (or *skip*)
 
@@ -63,7 +63,7 @@ Three steps are configurable. Each resolves **2-level**:
 | `land-policy` | `finishing-a-development-branch` (Hybrid) | How work lands (see Landing policy) — unset hands the land off to `superpowers:finishing-a-development-branch`; a set value (`ff-only`/`pr`/`direct`/`ask`) is honored inline instead. |
 | `constitution` | *skip* | Per-repo governance doc (file path, not a `plugin:skill` slug) treated as binding context for the plan review (step 5) and code review (step 10) gates, in addition to the standard review. |
 
-The five **fixed** steps are not configurable — they are always the same generic skills:
+The fixed steps are not configurable — they are always the same generic skills:
 `retrospective:pre-plan-brief`, `docs:adversarial-review-plan`,
 `superpowers:subagent-driven-development` (+ the Workflow tool), `retrospective:plan-completion`,
 `docs:adversarial-review-code`, `retrospective:plan-retrospective`.
