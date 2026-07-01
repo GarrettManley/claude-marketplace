@@ -1043,6 +1043,21 @@ class TestLintChangelog:
         out = capsys.readouterr().out
         assert "clean" in out
 
+    def test_bom_prefixed_h1_still_counted(self, tmp_path, monkeypatch, capsys):
+        # A stray UTF-8 BOM on the first line must not hide a genuine H1 from
+        # the line-prefix count (Windows cp1252/BOM gotchas are a known hazard
+        # in this repo).
+        self._changelog(
+            tmp_path,
+            "bommed",
+            "﻿# bommed changelog\n\n## 1.0.0\n\n- thing\n",
+        )
+        monkeypatch.setattr(lint_changelog, "ROOT", tmp_path)
+        rc = lint_changelog.main()
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "clean (1 files)" in out
+
     def test_latent_style_single_h1_no_title_check(self, tmp_path, monkeypatch, capsys):
         # Single H1 but NOT the per-plugin title — the gate checks count only.
         self._changelog(

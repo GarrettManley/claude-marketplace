@@ -453,6 +453,38 @@ def test_prepend_changelog_file_absent_creates_header_and_section(git_repo):
     assert text == "# git changelog\n\n## 1.0.0\n\n### Fixes\n- a\n"
 
 
+def test_prepend_changelog_ignores_version_heading_inside_fenced_code_block(git_repo):
+    _write_plugin(git_repo, "git", "1.0.0")
+    path = git_repo / "plugins" / "git" / "CHANGELOG.md"
+    # A Keep-a-Changelog-style usage example embeds a `## ` line inside a fenced
+    # code block in the intro prose. The naive first-match regex used to wedge the
+    # new section right there instead of before the real first version heading.
+    path.write_text(
+        "# git changelog\n\n"
+        "Example usage:\n\n"
+        "```\n"
+        "## 9.9.9\n"
+        "```\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n",
+        encoding="utf-8",
+    )
+    release._prepend_changelog("git", "## 1.1.0\n\n### Features\n- b\n")
+    text = path.read_text(encoding="utf-8")
+    assert text == (
+        "# git changelog\n\n"
+        "Example usage:\n\n"
+        "```\n"
+        "## 9.9.9\n"
+        "```\n\n"
+        "## 1.1.0\n\n### Features\n- b\n\n"
+        "## 1.0.0\n\n### Fixes\n- a\n"
+    )
+    assert text.count("# git changelog") == 1
+    # The fenced example heading must remain inside the fence, untouched, and
+    # before the newly-inserted real section.
+    assert text.index("```\n## 9.9.9\n```") < text.index("## 1.1.0")
+
+
 def test_prepend_changelog_inserts_between_preamble_and_first_section(git_repo):
     _write_plugin(git_repo, "git", "1.0.0")
     path = git_repo / "plugins" / "git" / "CHANGELOG.md"
@@ -553,6 +585,38 @@ def test_main_apply_writes_commits_no_tag(git_repo, monkeypatch, capsys):
     assert "git-v1.1.0" not in _git_in(git_repo, "tag", "--list")
     # Working tree is clean (everything was committed by main()).
     assert _git_in(git_repo, "status", "--porcelain").strip() == ""
+
+
+def test_main_apply_aborts_before_commit_on_invalid_h1_count(git_repo, monkeypatch, capsys):
+    # Force case-2/headerless output from _prepend_changelog: an existing
+    # CHANGELOG.md with zero `# ` headings stays at zero H1s after the new
+    # `## ` section is appended (the section itself never adds an H1). The
+    # post-write guard must catch this and abort --apply before any commit.
+    _write_plugin(git_repo, "git", "1.0.0")
+    _git_in(git_repo, "tag", "git-v1.0.0")
+    _commit(git_repo, "feat(git): land the feature")
+    changelog = git_repo / "plugins" / "git" / "CHANGELOG.md"
+    changelog.write_text("legacy content with no header\n", encoding="utf-8")
+
+    monkeypatch.setattr(release, "_load_sync", lambda: (lambda: []))
+    commit_calls = []
+    orig_git = release._git
+
+    def spy_git(*args):
+        if args and args[0] == "commit":
+            commit_calls.append(args)
+        return orig_git(*args)
+
+    monkeypatch.setattr(release, "_git", spy_git)
+
+    rc = release.main(["release.py", "--apply"])
+    err = capsys.readouterr().err
+
+    assert rc != 0
+    assert commit_calls == []  # the tool must never commit a bad H1 count
+    assert "git" in err and "CHANGELOG.md" in err
+    # No release commit landed.
+    assert "chore(release):" not in _git_in(git_repo, "log", "--format=%s")
 
 
 # --- D6: orphan guard + --tag mode --------------------------------------------

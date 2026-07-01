@@ -29,7 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def count_h1s(path: Path) -> int:
     """Count lines that are an H1 (single `# `, not `## `)."""
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8").lstrip("﻿")  # defend against a stray BOM
     # Naive line-prefix check — not fence-aware (see module docstring); the
     # corpus has zero fenced `#` lines today, so this is deliberately simple.
     return sum(1 for line in text.splitlines() if line.startswith("# "))
