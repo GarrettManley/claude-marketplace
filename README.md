@@ -25,7 +25,7 @@ MIT licensed; portions adapted from [`affaan-m/everything-claude-code`](https://
 | `learning` | Learning | Atomic instinct storage, project-scoped observation hooks (default-off), `/analyze-observations` review report |
 | `delivery` | Workflow | `/deliver` lifecycle — plan, adversarial plan review, subagent execution, completion gate, adversarial code review, land, retrospective; composes superpowers + docs + retrospective; project steps bind per-repo via `.claude/delivery.local.md` |
 
-Each plugin ships its own README under `plugins/<name>/README.md` with full component, hook, and configuration detail. [`plugins/discipline/README.md`](plugins/discipline/README.md) is the most thorough.
+Each plugin ships its own README under `plugins/<name>/README.md` with full component, hook, and configuration detail.
 
 ## Install
 

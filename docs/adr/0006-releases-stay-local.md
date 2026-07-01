@@ -1,3 +1,10 @@
+---
+status: active
+author: Garrett Manley
+created: 2026-06-24
+diataxis: reference
+---
+
 # 0006. Releases stay local; CI is verify-only
 
 **Status:** Accepted
