@@ -27,7 +27,12 @@ The repo maintains **two** changelog surfaces:
   changes, with an `## [Unreleased]` section contributors append to in their PRs. It is
   **not** written by `ci/release.py`.
 - **Per-plugin `plugins/<name>/CHANGELOG.md`** — written by `ci/release.py` from
-  Conventional Commits, authoritative for each plugin's per-version release notes.
+  Conventional Commits, authoritative for each plugin's per-version release notes. The
+  canonical form is a **single H1** (e.g., `# <plugin> changelog`), followed by an intro
+  block (standard Keep a Changelog preamble), then `## <version>` sections in newest-first
+  order. `ci/release.py` preserves this structure by inserting new version sections
+  **between** the intro block and the first existing version section, so the newest changes
+  always appear first after the intro.
 
 These are complementary, not duplicative (see `docs/adr/0008-root-changelog.md`). When
 cutting a release, fold the relevant `## [Unreleased]` entries into a new versioned
@@ -102,8 +107,11 @@ python3 ci/release.py --apply
 `--apply`, for every plugin with a release-worthy change:
 
 1. Writes the new version into `plugins/<name>/.claude-plugin/plugin.json`.
-2. Prepends a `## <version>` section (grouped into Breaking / Features / Fixes) to
-   `plugins/<name>/CHANGELOG.md`.
+2. Inserts a new `## <version>` section (grouped into Breaking / Features / Fixes) into
+   `plugins/<name>/CHANGELOG.md` between the file's preamble (H1 + intro) and the first
+   existing version section, preserving the intro directly below the H1 and maintaining
+   newest-first ordering. Each changelog is validated to contain exactly one H1 via the
+   `ci/lint-changelog.py` gate, which runs in the pre-commit gate and in CI.
 3. After all plugins are bumped, runs `sync()` to propagate the new versions into
    `.claude-plugin/marketplace.json`.
 4. Creates **one** release commit: `chore(release): <name>@<ver>, <name>@<ver>, …`.

@@ -39,6 +39,10 @@ echo "[verify] lint-frontmatter"
 python3 "$ROOT/ci/lint-frontmatter.py"
 echo "[verify] OK"
 
+echo "[verify] lint-changelog"
+python3 "$ROOT/ci/lint-changelog.py"
+echo "[verify] OK"
+
 echo "[verify] gen-skill-index --check"
 python3 "$ROOT/ci/gen-skill-index.py" --check
 echo "[verify] OK"

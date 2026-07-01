@@ -1,5 +1,9 @@
 # review changelog
 
+All notable changes to the **review** plugin are documented here. The format is
+based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
+to [Semantic Versioning](https://semver.org/).
+
 ## 1.3.2
 
 ### Fixes
@@ -21,12 +25,6 @@
 - Add /review-evolve command (Post-Cycle protocol automation)
 - Add review_cli evolve ingester (validate + diff + apply)
 - Add persona parse/validate/diff helpers
-
-# Changelog
-
-All notable changes to the **review** plugin are documented here. The format is
-based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
-to [Semantic Versioning](https://semver.org/).
 
 ## 1.1.0 — 2026-06-24
 

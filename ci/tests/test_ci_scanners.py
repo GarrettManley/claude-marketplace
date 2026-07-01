@@ -34,6 +34,7 @@ lint_fm = _load("lint_frontmatter", "lint-frontmatter.py")
 gen_index = _load("gen_skill_index", "gen-skill-index.py")
 check_vendor = _load("check_vendored_sync", "check-vendored-sync.py")
 verify_hooks = _load("verify_hook_runtime_controls", "verify_hook_runtime_controls.py")
+lint_changelog = _load("lint_changelog", "lint-changelog.py")
 
 
 # ===========================================================================
@@ -1000,3 +1001,70 @@ class TestVerifyHookRuntimeControls:
         assert rc == 1
         err = capsys.readouterr().err
         assert "scripts/naked.py" in err
+
+
+# ===========================================================================
+# lint-changelog.py
+# ===========================================================================
+
+class TestLintChangelog:
+    """Tests for lint-changelog: exactly-one-H1-per-file, count only (no title check)."""
+
+    def _changelog(self, tmp_path: Path, plugin: str, content: str) -> Path:
+        d = tmp_path / "plugins" / plugin
+        d.mkdir(parents=True)
+        p = d / "CHANGELOG.md"
+        p.write_text(content, encoding="utf-8")
+        return p
+
+    def test_two_h1s_is_a_violation_naming_the_file(self, tmp_path, monkeypatch, capsys):
+        self._changelog(
+            tmp_path,
+            "broken",
+            "# broken changelog\n\n## 1.0.0\n\n- thing\n\n# Changelog\n\nOld intro.\n",
+        )
+        monkeypatch.setattr(lint_changelog, "ROOT", tmp_path)
+        rc = lint_changelog.main()
+        assert rc == 1
+        out = capsys.readouterr().out
+        assert "broken" in out
+        assert "CHANGELOG.md" in out
+        assert "2" in out
+
+    def test_clean_canonical_single_h1_passes(self, tmp_path, monkeypatch, capsys):
+        self._changelog(
+            tmp_path,
+            "clean",
+            "# clean changelog\n\nAll notable changes.\n\n## 1.0.0\n\n- thing\n",
+        )
+        monkeypatch.setattr(lint_changelog, "ROOT", tmp_path)
+        rc = lint_changelog.main()
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "clean" in out
+
+    def test_bom_prefixed_h1_still_counted(self, tmp_path, monkeypatch, capsys):
+        # A stray UTF-8 BOM on the first line must not hide a genuine H1 from
+        # the line-prefix count (Windows cp1252/BOM gotchas are a known hazard
+        # in this repo).
+        self._changelog(
+            tmp_path,
+            "bommed",
+            "﻿# bommed changelog\n\n## 1.0.0\n\n- thing\n",
+        )
+        monkeypatch.setattr(lint_changelog, "ROOT", tmp_path)
+        rc = lint_changelog.main()
+        assert rc == 0
+        out = capsys.readouterr().out
+        assert "clean (1 files)" in out
+
+    def test_latent_style_single_h1_no_title_check(self, tmp_path, monkeypatch, capsys):
+        # Single H1 but NOT the per-plugin title — the gate checks count only.
+        self._changelog(
+            tmp_path,
+            "latent",
+            "# Changelog\n\nAll notable changes.\n\n## 1.0.0\n\n- thing\n",
+        )
+        monkeypatch.setattr(lint_changelog, "ROOT", tmp_path)
+        rc = lint_changelog.main()
+        assert rc == 0

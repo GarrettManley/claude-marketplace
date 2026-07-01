@@ -200,15 +200,54 @@ def _set_version(name: str, version: str) -> None:
     path.write_text(new, encoding="utf-8")
 
 
+def _first_version_heading_offset(text: str) -> Optional[int]:
+    """Char offset of the first `## ` line that is not inside a fenced code block.
+
+    Tracks fence state by toggling on lines starting with ``` — a `## ` line
+    inside a fenced example (e.g. Keep-a-Changelog usage prose) must not be
+    mistaken for a real version heading. Returns None if no such line exists.
+    """
+    in_fence = False
+    offset = 0
+    for line in text.splitlines(keepends=True):
+        if line.startswith("```"):
+            in_fence = not in_fence
+        elif not in_fence and line.startswith("## "):
+            return offset
+        offset += len(line)
+    return None
+
+
 def _prepend_changelog(name: str, section: str) -> None:
+    """Insert a new `## <version>` section, preserving the file's preamble verbatim.
+
+    Never adds or removes an H1 — it only ever inserts a `## ` section. Three cases:
+      1. File absent -> create `# <name> changelog` + the section.
+      2. File exists, no `## ` heading outside a fenced code block -> the whole
+         file is the preamble; the section is appended after it, body untouched
+         (no data loss).
+      3. File exists, has a `## ` heading outside any fence -> the section is
+         inserted between the preamble (everything above that first heading)
+         and the heading itself.
+    """
     path = PLUGINS_DIR / name / "CHANGELOG.md"
-    header = f"# {name} changelog\n\n"
-    if path.exists():
-        existing = path.read_text(encoding="utf-8")
-        body = existing[len(header):] if existing.startswith(header) else existing
-        path.write_text(header + section + "\n" + body, encoding="utf-8")
-    else:
-        path.write_text(header + section, encoding="utf-8")
+    section = section.strip("\n")
+    if not path.exists():
+        path.write_text(f"# {name} changelog\n\n{section}\n", encoding="utf-8")
+        return
+
+    existing = path.read_text(encoding="utf-8")
+    offset = _first_version_heading_offset(existing)
+    if offset is None:
+        preamble = existing.rstrip("\n")
+        path.write_text(f"{preamble}\n\n{section}\n", encoding="utf-8")
+        return
+
+    preamble, rest = existing[:offset], existing[offset:]
+    path.write_text(
+        preamble.rstrip("\n") + "\n\n" + section + "\n\n" + rest.lstrip("\n"),
+        encoding="utf-8",
+    )
 
 
 def _load_sync():
@@ -288,6 +327,18 @@ def main(argv: List[str]) -> int:
     for name, _old, new, commits in releases:
         _set_version(name, new)
         _prepend_changelog(name, render_changelog_section(new, commits))
+        changelog_path = PLUGINS_DIR / name / "CHANGELOG.md"
+        h1_count = sum(
+            1 for line in changelog_path.read_text(encoding="utf-8").splitlines()
+            if line.startswith("# ")
+        )
+        if h1_count != 1:
+            print(
+                f"release: aborting — {name}'s {changelog_path} has {h1_count} "
+                "H1 title(s) (expected exactly 1); refusing to commit.",
+                file=sys.stderr,
+            )
+            return 1
     _load_sync()()  # propagate new versions into marketplace.json
     summary = ", ".join(f"{n}@{v}" for n, _o, v, _c in releases)
     _git("add", "-A")
