@@ -1,9 +1,21 @@
 # delivery@garrettmanley
 
 End-to-end value-delivery lifecycle in one orchestrated pass. The `/deliver` command + `deliver`
-skill run a fixed spine — pre-plan brief → write plan → adversarial plan review → approval →
-subagent execution → completion gate → adversarial code review → land → retrospective — composing
-existing `superpowers`, `docs`, and `retrospective` skills instead of reimplementing them.
+skill run a fixed spine — an optional design phase for work that isn't plan-ready yet, then pre-plan
+brief → write plan → adversarial plan review → approval → subagent execution → completion gate →
+adversarial code review → land → retrospective — composing existing `superpowers`, `docs`, and
+`retrospective` skills instead of reimplementing them. If a prior run left an in-progress
+`subagent-driven-development` ledger, the next run resumes Phase B execution directly instead of
+re-running plan authoring and review.
+
+The three gates (plan review, completion, code review) are hardened: each states "only proceed when
+this gate passes" against a concrete checklist, the completion gate requires fresh positive evidence
+(`superpowers:verification-before-completion`'s Iron Law — a clean terminal state is not evidence of
+a correct outcome when any silent-catch-and-continue path exists), and the code review runs a
+whole-branch pass at full model capability, distinct from the down-routed per-task reviews during
+execution. Landing is **Hybrid**: a repo with no `land-policy` configured gets
+`superpowers:finishing-a-development-branch`'s 4-option menu and worktree cleanup; a repo with an
+inline `land-policy` (`ff-only`/`pr`/`direct`) keeps that behavior unchanged.
 
 The spine is project-agnostic. The few steps that differ per repo — how a plan is authored, which
 companion docs must ship, the pre-commit checklist — are **slots** that bind from a per-repo
@@ -22,14 +34,17 @@ forks of the skill.
 /plugin install delivery@garrettmanley
 ```
 
-No init scripts. The `docs` and `retrospective` plugins are the composed dependencies;
-`superpowers` (external) is used best-effort with built-in fallbacks when it is absent.
+No init scripts. The `docs` and `retrospective` plugins are the composed dependencies (declared in
+`plugin.json` as advisory installer metadata, not a hard runtime check); `superpowers` (external,
+including `finishing-a-development-branch` and `verification-before-completion`) and
+`pr-review-toolkit` (external, composed internally by `docs:adversarial-review-code`) are used
+best-effort with built-in fallbacks when absent.
 
 ## Components
 
 | Component | Type | Trigger / Purpose |
 |-----------|------|-------------------|
-| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, then runs the plan → execute → review → land → retrospect arc. |
+| `deliver` | Skill | The lifecycle playbook: resolves project slots from config, echoes the resolved-slot table, optionally runs a Phase 0 design pass for vague work-targets, resumes Phase B from an existing SDD ledger when one exists, then runs the plan → execute → review → land → retrospect arc with hardened gates and Hybrid landing. |
 | `/deliver` | Command | Thin entry that takes an optional `<work-target>` and defers to the `deliver` skill. |
 
 ## Usage
@@ -42,7 +57,7 @@ No init scripts. The `docs` and `retrospective` plugins are the composed depende
 
 Every run first prints a **resolved-slot table** showing exactly which path it will take — the
 project-specific bindings (or generic defaults) for `plan-writer`, `doc-cluster`, `edit-checklist`,
-and `land-policy`.
+`land-policy`, and `constitution`.
 
 ### Per-project binding
 
@@ -57,10 +72,16 @@ Project bindings live in `<repo>/.claude/delivery.local.md` — schema and examp
 skill's `## Configuration` section (kept there so there is one source of truth). The plugin itself has
 no env vars or global config.
 
+## Developing this plugin
+
+See [`references/plugin-authoring.md`](references/plugin-authoring.md) for how to dev-test changes to
+this plugin locally (`--plugin-dir`, and the dependency-loading gotcha from `delivery`'s own
+`dependencies` array) before publishing them through the marketplace.
+
 ## What this is not
 
 - **Not an automated runner.** The approval and landing gates are deliberately human; the skill
   proposes commands and lands only on explicit authorization.
 - **Not a replacement** for the skills it composes — invoke `pre-plan-brief`, `adversarial-review-plan`,
-  `plan-completion`, `adversarial-review-code`, or `plan-retrospective` directly when you want just
-  that one step.
+  `plan-completion`, `adversarial-review-code`, `plan-retrospective`, or
+  `superpowers:finishing-a-development-branch` directly when you want just that one step.
