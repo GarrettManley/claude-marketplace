@@ -52,6 +52,10 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
   `~/.claude/stewardship/briefing/<date>.md`. Delivered both on-demand and as the
   steward's 4th nightly step. See `docs/adr/0011-morning-briefing-renderer.md`.
 - `delivery` plugin (`/deliver` end-to-end delivery lifecycle) — added to the marketplace as the 13th plugin; never previously recorded in this changelog.
+- `discipline`: `compact-plan` skill — mid-task guided compaction: saves a TTL'd
+  intent note and emits a ready-to-paste `/compact` preservation command; the
+  SessionStart resume hook now renders live workflow state (active plan, ledger
+  progress, pending retros) plus the note after every compaction.
 
 ### Fixed
 

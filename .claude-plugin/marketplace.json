@@ -13,7 +13,7 @@
     {
       "name": "discipline",
       "source": "./plugins/discipline",
-      "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills.",
+      "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills, and a compact-plan skill for plan-preserving context compaction.",
       "version": "1.1.0",
       "category": "quality",
       "author": {

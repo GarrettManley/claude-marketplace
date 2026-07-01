@@ -21,6 +21,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from snapshot import read_snapshot  # noqa: E402
+import plan_state  # noqa: E402
 
 MAX_FILES_SHOWN = 10
 
@@ -62,6 +63,31 @@ def format_snapshot(state: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _format_workflow(
+    workflow: dict[str, Any], note: dict[str, Any] | None
+) -> list[str]:
+    lines: list[str] = []
+    plan = workflow.get("active_plan") if isinstance(workflow, dict) else None
+    if isinstance(plan, dict) and plan.get("path"):
+        detail = f" (via {plan.get('source', 'unknown')})"
+        done = plan.get("tasks_done")
+        open_ = plan.get("tasks_open")
+        if isinstance(done, int) and isinstance(open_, int):
+            detail += f" - {done} done / {open_} open"
+        lines.append(f"**Active plan:** `{plan['path']}`{detail}")
+    retros = workflow.get("pending_retros") or [] if isinstance(workflow, dict) else []
+    slugs = [r.get("slug") for r in retros if isinstance(r, dict) and r.get("slug")]
+    if slugs:
+        # Cap at 5: this lands in every session start; the +N carries the rest.
+        shown = ", ".join(slugs[:5])
+        more = f" (+{len(slugs) - 5} more)" if len(slugs) > 5 else ""
+        lines.append(f"**Pending retros:** {shown}{more}")
+    if note:
+        when = _format_timestamp(float(note["timestamp"]))
+        lines.append(f"**Where you were** (as of {when}): {note['text']}")
+    return lines
+
+
 def main(argv: list[str] | None = None) -> int:
     # Drain stdin (SessionStart events include some metadata; we don't need it
     # but must consume it to avoid breaking pipelines).
@@ -69,14 +95,28 @@ def main(argv: list[str] | None = None) -> int:
         sys.stdin.read()
     except Exception:
         pass
+    parts: list[str] = []
     state = read_snapshot()
-    if state is None:
+    if state is not None:
+        parts.append(format_snapshot(state))
+    try:
+        workflow = plan_state.gather_workflow_state()
+        note = plan_state.read_note()
+    except Exception:
+        # Hook safety: live discovery must never break session start.
+        workflow, note = {}, None
+    wf_lines = _format_workflow(workflow, note)
+    if wf_lines:
+        if state is None:
+            parts.append("## Workflow context\n\n" + "\n".join(wf_lines))
+        else:
+            parts.append("\n".join(wf_lines))
+    if not parts:
         return 0
-    summary = format_snapshot(state)
     payload = {
         "hookSpecificOutput": {
             "hookEventName": "SessionStart",
-            "additionalContext": summary,
+            "additionalContext": "\n\n".join(parts),
         }
     }
     sys.stdout.write(json.dumps(payload))

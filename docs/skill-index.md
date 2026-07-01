@@ -4,7 +4,7 @@
 > `scripts/verify.sh` runs `--check` and fails when this file drifts from
 > the frontmatter it is generated from.
 
-## Skills (31)
+## Skills (32)
 
 | Plugin | Skill | Description |
 |---|---|---|
@@ -16,6 +16,7 @@
 | aether | `value-justify` | Generate the exact-format Value Justification block required by .claude/hooks/plan_issue_check.py. Use when writing a plan under docs/engineering/plans/ to… |
 | agentic | `agentic-app-setup` | Use when starting a new AI app project (Claude API integration, MCP server, custom agent) or when reviewing the foundations of an existing one. Routes to the… |
 | delivery | `deliver` | Use when you want to drive one body of work end-to-end through the full delivery lifecycle in a single orchestrated pass — plan, adversarial plan review,… |
+| discipline | `compact-plan` | Use when conversation context is nearly full mid-task and the work is governed by a plan, SDD ledger, or delivery run — saves a short intent note to disk and… |
 | discipline | `council` | Convene a four-voice council for ambiguous decisions, tradeoffs, and go/no-go calls. Use when multiple valid paths exist and you need structured disagreement… |
 | discipline | `finish-and-push` | Close out a feature branch using the standard rebase-onto-main + FF-merge + push routine. User-invocable only (disable-model-invocation true) because pushing… |
 | discipline | `session-handoff` | Write a thorough end-of-session handoff document using a structured 8-section schema (What We're Building / What WORKED / What Did NOT Work / What Has NOT… |
