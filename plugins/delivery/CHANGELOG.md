@@ -4,6 +4,17 @@ All notable changes to the **delivery** plugin are documented here. The format i
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.3.0
+
+### Features
+- triage the adversarial plan review (#28)
+- v0.2.0 â€” harden gates, hybrid landing, dogfood docs, resumability, design phase, governance key (#21)
+- add /deliver lifecycle plugin
+
+### Fixes
+- invoke writing-plans explicitly and suppress its execution hand-off (#26)
+- halt on unrecognized land-policy value (#25)
+
 ## 0.2.1
 
 Fix for a hand-authoring regression at Phase A step 3, found via real `/deliver` usage.

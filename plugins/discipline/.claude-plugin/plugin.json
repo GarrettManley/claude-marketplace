@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "discipline",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills, and a compact-plan skill for plan-preserving context compaction.",
   "author": {
     "name": "Garrett Manley",
