@@ -158,7 +158,11 @@ and let `verify.sh` / pre-commit / CI catch anything that drifted. Canonical tes
 A second gate, `ci/verify_hook_runtime_controls.py`, asserts that **every** command in
 `discipline`, `learning`, and `stewardship` plugins' `hooks.json` files routes through
 `run_with_flags.py`. Without it, a contributor could add a hook that silently bypasses
-the disable list for itself; CI rejection on first review is the cheapest fix.
+the disable list for itself; CI rejection on first review is the cheapest fix. The gate
+also cross-checks `GATED_PLUGINS` against the on-disk set of plugins shipping
+`scripts/run_with_flags.py`: a plugin that ships the wrapper without a matching
+`GATED_PLUGINS` entry (or is listed without shipping the wrapper) is itself a CI failure,
+so the two stay in sync.
 
 ## Runtime-control env vars
 

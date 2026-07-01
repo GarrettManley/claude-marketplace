@@ -909,3 +909,94 @@ class TestVerifyHookRuntimeControls:
         assert "learning" in err
         assert "scripts/naked.py" in err
         assert "discipline:" not in err
+
+    def test_ungated_on_disk_plugin_bypass_command_not_masked(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """A plugin that ships the wrapper but is missing from GATED_PLUGINS
+        (an on_disk-not-gated consistency violation) must still have its own
+        hooks.json scanned, so a real bypassing command is named in stderr
+        rather than masked behind the generic consistency message."""
+        bypassing_data = {
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {"type": "command", "command": "python3 scripts/evil_naked.py"}
+                        ],
+                    }
+                ]
+            }
+        }
+        self._make_plugin(tmp_path, "learning", bypassing_data, with_wrapper=True)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "scripts/evil_naked.py" in err
+
+    # --- malformed hooks.json --------------------------------------------------
+
+    def test_null_command_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = {
+            "hooks": {
+                "PreToolUse": [
+                    {
+                        "matcher": "Edit",
+                        "hooks": [
+                            {"type": "command", "command": None}
+                        ],
+                    }
+                ]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "discipline" in err
+
+    def test_non_dict_matcher_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = {
+            "hooks": {
+                "PreToolUse": ["not-a-matcher-dict"]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "discipline" in err
+
+    def test_non_dict_matcher_does_not_abort_remaining_plugins(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """A malformed matcher in one gated plugin must not prevent the scan
+        from reaching and reporting real violations in subsequent plugins."""
+        malformed_data = {"hooks": {"PreToolUse": ["not-a-matcher-dict"]}}
+        bypassing_data = {
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {"type": "command", "command": "python3 scripts/naked.py"}
+                        ],
+                    }
+                ]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", malformed_data)
+        self._make_plugin(tmp_path, "learning", bypassing_data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline", "learning"))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "scripts/naked.py" in err

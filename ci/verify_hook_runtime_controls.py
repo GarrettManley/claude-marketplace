@@ -63,7 +63,12 @@ def scan(root: Path) -> list[str]:
             "scripts/run_with_flags.py"
         )
 
-    for name in GATED_PLUGINS:
+    # Scan every plugin that is either gated or ships the wrapper on disk —
+    # not just GATED_PLUGINS — so a plugin whose listing is itself wrong
+    # (finding: wrapper-but-not-gated) still has its actual hooks.json
+    # commands enumerated instead of being masked behind the generic
+    # consistency-assertion message above.
+    for name in sorted(gated | on_disk):
         hooks_json = root / "plugins" / name / "hooks" / "hooks.json"
         if not hooks_json.is_file():
             violations.append(f"{name}: {hooks_json} missing")
@@ -75,14 +80,24 @@ def scan(root: Path) -> list[str]:
             violations.append(f"{name}: invalid JSON: {e}")
             continue
 
-        for event, matchers in data.get("hooks", {}).items():
-            for matcher in matchers:
-                for entry in matcher.get("hooks", []):
-                    cmd = entry.get("command", "")
-                    if WRAPPER_SUBSTR not in cmd:
-                        violations.append(
-                            f"{name}: {event} / matcher {matcher.get('matcher')!r} :: {cmd}"
-                        )
+        try:
+            for event, matchers in data.get("hooks", {}).items():
+                for matcher in matchers:
+                    for entry in matcher.get("hooks", []):
+                        cmd = entry.get("command")
+                        if not isinstance(cmd, str):
+                            violations.append(
+                                f"{name}: {event} / matcher {matcher.get('matcher')!r} "
+                                f":: non-string command: {cmd!r}"
+                            )
+                            continue
+                        if WRAPPER_SUBSTR not in cmd:
+                            violations.append(
+                                f"{name}: {event} / matcher {matcher.get('matcher')!r} :: {cmd}"
+                            )
+        except (TypeError, AttributeError) as e:
+            violations.append(f"{name}: malformed hooks.json structure: {e}")
+            continue
 
     return violations
 
