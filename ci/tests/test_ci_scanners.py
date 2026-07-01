@@ -690,22 +690,25 @@ class TestCheckVendoredSync:
 # ===========================================================================
 
 class TestVerifyHookRuntimeControls:
-    """Tests for verify_hook_runtime_controls: main on synthetic hooks.json."""
+    """Tests for verify_hook_runtime_controls: main on a synthetic plugins/ tree."""
 
     _WRAPPER = "scripts/run_with_flags.py"
 
-    def _make_hooks_json(self, tmp_path: Path, hooks_data: dict) -> Path:
-        hooks_dir = tmp_path / "plugins" / "discipline" / "hooks"
+    def _make_plugin(
+        self,
+        tmp_path: Path,
+        name: str,
+        hooks_data: dict,
+        with_wrapper: bool = True,
+    ) -> None:
+        plugin_dir = tmp_path / "plugins" / name
+        hooks_dir = plugin_dir / "hooks"
         hooks_dir.mkdir(parents=True)
-        p = hooks_dir / "hooks.json"
-        p.write_text(json.dumps(hooks_data), encoding="utf-8")
-        return p
-
-    def _point(self, monkeypatch, tmp_path: Path) -> None:
-        monkeypatch.setattr(
-            verify_hooks, "HOOKS_JSON",
-            tmp_path / "plugins" / "discipline" / "hooks" / "hooks.json",
-        )
+        (hooks_dir / "hooks.json").write_text(json.dumps(hooks_data), encoding="utf-8")
+        if with_wrapper:
+            scripts_dir = plugin_dir / "scripts"
+            scripts_dir.mkdir(parents=True)
+            (scripts_dir / "run_with_flags.py").touch()
 
     # --- clean / no-op -------------------------------------------------------
 
@@ -723,25 +726,25 @@ class TestVerifyHookRuntimeControls:
                 ]
             }
         }
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 0
         out = capsys.readouterr().out
         assert "clean" in out
 
     def test_empty_hooks_section_is_clean(self, tmp_path, monkeypatch, capsys):
         data = {"hooks": {}}
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 0
 
     def test_no_hooks_key_is_clean(self, tmp_path, monkeypatch, capsys):
         data = {}
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 0
 
     # --- violations ----------------------------------------------------------
@@ -759,9 +762,9 @@ class TestVerifyHookRuntimeControls:
                 ]
             }
         }
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 1
         err = capsys.readouterr().err
         assert "bypass" in err.lower() or "run_with_flags" in err
@@ -780,9 +783,9 @@ class TestVerifyHookRuntimeControls:
                 ]
             }
         }
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 1
         err = capsys.readouterr().err
         assert "scripts/a.py" in err
@@ -803,26 +806,106 @@ class TestVerifyHookRuntimeControls:
                 ]
             }
         }
-        self._make_hooks_json(tmp_path, data)
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 1
 
     # --- error handling -------------------------------------------------------
 
     def test_missing_hooks_json(self, tmp_path, monkeypatch, capsys):
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        plugin_dir = tmp_path / "plugins" / "discipline"
+        scripts_dir = plugin_dir / "scripts"
+        scripts_dir.mkdir(parents=True)
+        (scripts_dir / "run_with_flags.py").touch()
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 1
         err = capsys.readouterr().err
         assert "missing" in err
 
     def test_invalid_json(self, tmp_path, monkeypatch, capsys):
-        hooks_dir = tmp_path / "plugins" / "discipline" / "hooks"
+        plugin_dir = tmp_path / "plugins" / "discipline"
+        hooks_dir = plugin_dir / "hooks"
         hooks_dir.mkdir(parents=True)
         (hooks_dir / "hooks.json").write_text("{broken json", encoding="utf-8")
-        self._point(monkeypatch, tmp_path)
-        rc = verify_hooks.main()
+        scripts_dir = plugin_dir / "scripts"
+        scripts_dir.mkdir(parents=True)
+        (scripts_dir / "run_with_flags.py").touch()
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
         assert rc == 1
         err = capsys.readouterr().err
         assert "invalid JSON" in err
+
+    # --- consistency assertion -------------------------------------------------
+
+    def test_wrapper_present_but_plugin_not_gated_is_violation(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = {
+            "hooks": {
+                "PreToolUse": [
+                    {
+                        "matcher": "Edit",
+                        "hooks": [
+                            {"type": "command",
+                             "command": f"python3 ${{CLAUDE_PLUGIN_ROOT}}/{self._WRAPPER} todo.py"}
+                        ],
+                    }
+                ]
+            }
+        }
+        self._make_plugin(tmp_path, "learning", data, with_wrapper=True)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "learning" in err
+
+    def test_gated_plugin_without_wrapper_is_violation(self, tmp_path, monkeypatch, capsys):
+        data = {"hooks": {}}
+        self._make_plugin(tmp_path, "discipline", data, with_wrapper=False)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "discipline" in err
+
+    def test_multi_plugin_violation_names_offending_plugin(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        clean_data = {
+            "hooks": {
+                "PreToolUse": [
+                    {
+                        "matcher": "Edit",
+                        "hooks": [
+                            {"type": "command",
+                             "command": f"python3 ${{CLAUDE_PLUGIN_ROOT}}/{self._WRAPPER} todo.py"}
+                        ],
+                    }
+                ]
+            }
+        }
+        bypassing_data = {
+            "hooks": {
+                "PostToolUse": [
+                    {
+                        "matcher": "Bash",
+                        "hooks": [
+                            {"type": "command", "command": "python3 scripts/naked.py"}
+                        ],
+                    }
+                ]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", clean_data)
+        self._make_plugin(tmp_path, "learning", bypassing_data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline", "learning"))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "learning" in err
+        assert "scripts/naked.py" in err
+        assert "discipline:" not in err
