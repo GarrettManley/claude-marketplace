@@ -178,6 +178,13 @@ def check_path(path: str, scope: Scope | None = None) -> tuple[bool, str]:
     if not sc.path_prefixes:
         return True, f"scope {sc.name!r} has no path restrictions"
 
+    # Reject parent-traversal outright: a `..` segment can escape the prefix,
+    # and for a not-yet-created file the raw-string prefix check below never
+    # collapses it. Wholesale `..` rejection is standard confinement behavior
+    # (an in-scope `..` write path is pathological and correctly refused).
+    if ".." in path.replace("\\", "/").split("/"):
+        return False, f"path {path!r} contains a parent-traversal ('..') segment; rejected by scope {sc.name!r}"
+
     norm = str(Path(path).resolve()) if Path(path).exists() else path
     for prefix in sc.path_prefixes:
         if norm.startswith(prefix):
