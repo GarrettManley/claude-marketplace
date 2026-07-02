@@ -308,6 +308,19 @@ class TestCheckPath:
         ok, reason = check_path("/opt/data/report.txt", scope=sc)
         assert ok
 
+    def test_check_path_rejects_parent_traversal_escape(self, tmp_path):
+        # A non-existent path that climbs out of the prefix with ../ must be rejected,
+        # even though its raw string starts with the prefix. Path()/".." keeps this
+        # native-separator on each OS so the guard is exercised on both CI legs.
+        inside = tmp_path / "engagement"
+        inside.mkdir()
+        manifest = _make_scope(tmp_path, f"name: s\npath_prefixes:\n  - {str(inside)}\n")
+        sc = _fresh_scope(manifest)
+        escape = str(inside / ".." / "secret.txt")  # a ../ escape out of the prefix
+        ok, reason = check_path(escape, scope=sc)
+        assert not ok
+        assert "traversal" in reason.lower()
+
 
 # ---------------------------------------------------------------------------
 # _detect_repo_root — lines 90-98
