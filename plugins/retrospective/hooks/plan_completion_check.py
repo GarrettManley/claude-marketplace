@@ -97,13 +97,13 @@ def _is_placeholder_body(body: str) -> bool:
     """True if a section body is empty or only placeholder content.
 
     A body counts as real content when it has at least one non-blank line that
-    is not solely a placeholder token (TODO/TBD/<...>) or a template comment.
+    is not solely a placeholder token (placeholder keywords, <...>) or a template comment.
     """
     for raw in body.splitlines():
         line = raw.strip()
         if not line:
             continue
-        # Strip leading list/heading markers so "- TODO" still reads as placeholder.
+        # Strip leading list/heading markers so "- placeholder" still reads as placeholder.
         stripped = line.lstrip("-*+# >").strip()
         if not stripped:
             continue
@@ -111,7 +111,14 @@ def _is_placeholder_body(body: str) -> bool:
         # is placeholder even though it lacks a recognised keyword.
         if re.fullmatch(r"<[^>]*>", stripped):
             continue
-        # A line that is *entirely* a placeholder token doesn't count as content.
+        # A line that STARTS with a placeholder keyword (#30) is placeholder even if
+        # trailing prose follows it (the natural "keyword: fill this in" form).
+        # Reuses _PLACEHOLDER_RE (not a second constant) so the keyword set
+        # has one source of truth; .match() anchors at line start because the
+        # pattern leads with \b.
+        if _PLACEHOLDER_RE.match(stripped):
+            continue
+        # A line that is *entirely* a placeholder keyword (#30) doesn't count as content.
         without_placeholders = _PLACEHOLDER_RE.sub("", stripped).strip(" .:-")
         if without_placeholders:
             return False  # found real content
