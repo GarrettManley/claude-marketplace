@@ -97,7 +97,10 @@ def _is_placeholder_body(body: str) -> bool:
     """True if a section body is empty or only placeholder content.
 
     A body counts as real content when it has at least one non-blank line that
-    is not solely a placeholder token (placeholder keywords, <...>) or a template comment.
+    is neither (a) solely a placeholder token (a placeholder keyword or a
+    ``<...>`` template token) nor (b) a line whose *leading* token is a
+    placeholder keyword followed by prose (the ``keyword: fill this in`` form).
+    A line that merely mentions a keyword mid-sentence still counts as content.
     """
     for raw in body.splitlines():
         line = raw.strip()
