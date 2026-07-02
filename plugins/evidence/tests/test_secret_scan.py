@@ -93,6 +93,13 @@ class TestExtractText:
         assert extract_text("Glob", {"pattern": "**/*.py"}) == ""
 
 
+def test_extract_text_covers_notebook_edit():
+    secret = "AKIA" + "ABCDEFGHIJKLMNOP"
+    text = extract_text("NotebookEdit", {"new_source": secret, "notebook_path": "n.ipynb"})
+    assert secret in text
+    assert check_text(text)  # the secret is now detected
+
+
 def _run_main(monkeypatch, payload) -> int:
     monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
     return main()

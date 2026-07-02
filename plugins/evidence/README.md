@@ -30,8 +30,8 @@ stale memory, and accidental secret leakage are real risks.
 
 | Hook | Event | Matcher | Active by default |
 |------|-------|---------|-------------------|
-| `secret_scan.py` | `PreToolUse` | `Bash\|Edit\|Write\|MultiEdit\|WebFetch` | Yes |
-| `scope_bind.py` | `PreToolUse` | `WebFetch\|Edit\|Write\|MultiEdit` | No — opt-in via `EVIDENCE_SCOPE_ENFORCE` |
+| `secret_scan.py` | `PreToolUse` | `Bash\|Edit\|Write\|MultiEdit\|WebFetch\|NotebookEdit` | Yes |
+| `scope_bind.py` | `PreToolUse` | `WebFetch\|Edit\|Write\|MultiEdit\|NotebookEdit` | No — opt-in via `EVIDENCE_SCOPE_ENFORCE` |
 
 `secret_scan.py` scans tool inputs for 14 credential patterns: AWS access key IDs, AWS secrets,
 GitHub PATs (classic, OAuth, user, server, refresh), OpenAI API keys, Anthropic API keys, Stripe
@@ -44,8 +44,9 @@ valid token for action `secret_scan` is present.
 default** — a no-op unless `EVIDENCE_SCOPE_ENFORCE` is on **and** a `.claude/evidence-scope.yaml`
 manifest is loaded (the same env-gated opt-in the `learning` plugin uses, so enabling the plugin
 imposes nothing). When active it gates `WebFetch` (only when the manifest declares `hosts`) and
-`Edit`/`Write`/`MultiEdit` (only when it declares `path_prefixes`); out-of-scope ops exit `2` and
-can be bypassed with a valid `scope_binding` override token. Bash, WebSearch, and Read are not gated.
+`Edit`/`Write`/`MultiEdit`/`NotebookEdit` (only when it declares `path_prefixes`); out-of-scope ops
+exit `2` and can be bypassed with a valid `scope_binding` override token. Bash, WebSearch, and Read
+are not gated.
 
 ### Scripts / libraries
 
@@ -153,8 +154,9 @@ export EVIDENCE_SCOPE_ENFORCE=on
 ```
 
 With both the manifest and the gate on, `scope_bind.py` blocks `WebFetch` to disallowed hosts
-(only when the manifest declares `hosts`) and `Edit`/`Write`/`MultiEdit` to disallowed paths (only
-when it declares `path_prefixes`). Out-of-scope ops exit `2`; bypass a specific one with a
+(only when the manifest declares `hosts`) and `Edit`/`Write`/`MultiEdit`/`NotebookEdit` to
+disallowed paths (only when it declares `path_prefixes`). Out-of-scope ops exit `2`; bypass a
+specific one with a
 `scope_binding` override token (see [Override token mechanics](#override-token-mechanics)):
 
 ```bash

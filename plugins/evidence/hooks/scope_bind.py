@@ -9,6 +9,7 @@ the evidence plugin imposes nothing until a project explicitly opts in.
 Gates structured tools whose URL/path is an explicit input field:
   - WebFetch              -> check_url(url)        [only when the manifest declares `hosts`]
   - Edit/Write/MultiEdit  -> check_path(file_path) [only restrictive when `path_prefixes` set]
+  - NotebookEdit          -> check_path(notebook_path) [only restrictive when `path_prefixes` set]
 
 Returns 0 (allow) when enforcement is off, when no manifest is loaded, when the
 tool is not gated, or when an out-of-scope op carries a redeemed `scope_binding`
@@ -72,6 +73,11 @@ def main() -> int:
         if not url or not scope.hosts:
             return 0
         in_scope, reason = check_url(url, scope)
+    elif tool_name == "NotebookEdit":
+        path = tool_input.get("notebook_path")
+        if not path:
+            return 0
+        in_scope, reason = check_path(path, scope)
     elif tool_name in _PATH_TOOLS:
         path = tool_input.get("file_path")
         if not path:

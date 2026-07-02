@@ -3,7 +3,7 @@
   "hooks": {
     "PreToolUse": [
       {
-        "matcher": "Bash|Edit|Write|MultiEdit|WebFetch",
+        "matcher": "Bash|Edit|Write|MultiEdit|WebFetch|NotebookEdit",
         "hooks": [
           {
             "type": "command",
@@ -13,7 +13,7 @@
         ]
       },
       {
-        "matcher": "WebFetch|Edit|Write|MultiEdit",
+        "matcher": "WebFetch|Edit|Write|MultiEdit|NotebookEdit",
         "hooks": [
           {
             "type": "command",

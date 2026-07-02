@@ -138,3 +138,17 @@ def test_disabled_unless_enforce_env_on(scope_env, monkeypatch):
     scope_env(HOSTS)
     monkeypatch.delenv("EVIDENCE_SCOPE_ENFORCE", raising=False)
     assert _run("WebFetch", {"url": "https://evil.com"}, monkeypatch) == 0
+
+
+def test_notebook_edit_out_of_scope_blocked(scope_env, monkeypatch):
+    scope_env(PATHS)
+    assert _run("NotebookEdit",
+                {"notebook_path": "/etc/evil.ipynb", "new_source": "x"},
+                monkeypatch) == 2
+
+
+def test_notebook_edit_in_scope_allowed(scope_env, monkeypatch):
+    scope_env(PATHS)
+    assert _run("NotebookEdit",
+                {"notebook_path": "/eng/nb.ipynb", "new_source": "x"},
+                monkeypatch) == 0

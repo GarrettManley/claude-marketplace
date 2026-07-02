@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse hook: scan tool inputs for credential / secret patterns.
 
-Blocks Bash commands and Edit/Write/MultiEdit content that contain known
+Blocks Bash commands and Edit/Write/MultiEdit/NotebookEdit content that contain known
 secret patterns (AWS access keys, GitHub PATs, OpenAI keys, Anthropic
 keys, Stripe keys, generic high-entropy strings in obvious credential
 contexts).
@@ -70,6 +70,9 @@ def extract_text(tool_name: str, tool_input: dict) -> str:
     elif tool_name == "WebFetch":
         # URL might encode credentials but params/headers don't pass through here
         parts.append(tool_input.get("url", ""))
+    elif tool_name == "NotebookEdit":
+        parts.append(tool_input.get("new_source", ""))
+        parts.append(tool_input.get("notebook_path", ""))
     return "\n".join(parts)
 
 
