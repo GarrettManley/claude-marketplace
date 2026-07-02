@@ -230,7 +230,7 @@ def test_todo_prose_retrospective_is_placeholder():
 
 def test_mid_sentence_placeholder_keyword_is_real_content():
     # A line that merely mentions a placeholder keyword mid-sentence is real content.
-    body = "We resolved the issue in the parser and shipped it."
+    body = "We resolved the TODO in the parser and shipped it."
     assert pcc._is_placeholder_body(body) is False
 
 
