@@ -123,6 +123,16 @@ PLAN_NO_TRACKER = """\
 Shipped it, no issue tracked.
 """
 
+TODO_PROSE_RETRO = """\
+# Plan: Ship the widget
+
+- [x] Build the widget
+
+## Retrospective
+
+TODO (#30): fill in the details here
+"""
+
 
 def _write(tmp_path, body, name="my-plan.md"):
     f = tmp_path / name
@@ -210,6 +220,18 @@ def test_check_completion_section_empty_body_is_placeholder():
 def test_check_completion_section_angle_bracket_placeholder():
     text = "## Retrospective\n\n<fill this in>\n"
     assert pcc.check_completion_section(text) is not None
+
+
+def test_todo_prose_retrospective_is_placeholder():
+    # A Retrospective whose only line begins with a placeholder keyword must
+    # NOT pass the completion gate, even with trailing prose after the keyword.
+    assert pcc.check_completion_section(TODO_PROSE_RETRO) is not None
+
+
+def test_mid_sentence_placeholder_keyword_is_real_content():
+    # A line that merely mentions a placeholder keyword mid-sentence is real content.
+    body = "We resolved the issue in the parser and shipped it."
+    assert pcc._is_placeholder_body(body) is False
 
 
 def test_check_verification_absent_is_not_a_blocker():
