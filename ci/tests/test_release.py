@@ -227,9 +227,12 @@ def test_checkversions_main_bad_mode(capsys):
 
 
 def _git_in(repo: Path, *args: str, allow_fail: bool = False) -> str:
+    # stdin=DEVNULL: none of these git subcommands read stdin, and inheriting a
+    # closed/invalid parent stdin makes subprocess's DuplicateHandle fail with
+    # `[WinError 6] The handle is invalid` on Windows under some launchers.
     proc = subprocess.run(
         ["git", "-C", str(repo), *args],
-        capture_output=True, text=True, check=not allow_fail,
+        stdin=subprocess.DEVNULL, capture_output=True, text=True, check=not allow_fail,
     )
     return proc.stdout
 
@@ -389,6 +392,31 @@ def test_plan_spans_multiple_plugins(git_repo):
     plans = {p[0]: p[1:3] for p in release.plan()}
     # fix(git) => patch (1.0.1); feat(docs) => minor (0.6.0).
     assert plans == {"git": ("1.0.0", "1.0.1"), "docs": ("0.5.0", "0.6.0")}
+
+
+def test_plan_skips_never_tagged_plugin(git_repo):
+    # A plugin with NO <name>-v* tag has no baseline; its current version IS its
+    # first release (established later by --tag). It must not be bumped over full
+    # history (#27).
+    _write_plugin(git_repo, "delivery", "0.3.0")
+    _commit(git_repo, "feat(delivery): one")
+    _commit(git_repo, "fix(delivery): two")
+    assert release._last_tag("delivery") is None
+    assert release.plan() == []
+    assert release.never_tagged_plugins() == [("delivery", "0.3.0")]
+
+
+def test_plan_mixes_tagged_bump_and_never_tagged_skip(git_repo):
+    # One skipped never-tagged plugin must not suppress a sibling tagged plugin's
+    # bump in the same plan() call.
+    _write_plugin(git_repo, "git", "1.0.0")
+    _write_plugin(git_repo, "delivery", "0.3.0")
+    _git_in(git_repo, "tag", "git-v1.0.0")
+    _commit(git_repo, "fix(git): patch it")         # tagged => bumps
+    _commit(git_repo, "feat(delivery): new thing")  # never-tagged => skipped
+    plans = {p[0]: p[1:3] for p in release.plan()}
+    assert plans == {"git": ("1.0.0", "1.0.1")}
+    assert release.never_tagged_plugins() == [("delivery", "0.3.0")]
 
 
 # --- _set_version / _prepend_changelog ----------------------------------------
@@ -560,6 +588,17 @@ def test_main_dry_run_prints_plan_writes_nothing(git_repo, capsys):
     assert pj.read_text(encoding="utf-8") == before  # nothing written
 
 
+def test_main_dry_run_notes_never_tagged_without_bumping(git_repo, capsys):
+    _write_plugin(git_repo, "delivery", "0.3.0")
+    _commit(git_repo, "feat(delivery): thing")
+    rc = release.main(["release.py", "--dry-run"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "delivery" in out and "--tag" in out  # actionable notice
+    assert "fetch --tags" in out                 # stale-local-tags hint
+    assert "-> 0.4.0" not in out                  # NOT bumped over full history
+
+
 def test_main_apply_writes_commits_no_tag(git_repo, monkeypatch, capsys):
     _write_plugin(git_repo, "git", "1.0.0")
     _git_in(git_repo, "tag", "git-v1.0.0")
@@ -687,7 +726,8 @@ def test_main_tag_noop_when_all_tagged(git_repo, capsys):
 
 def test_main_tag_pushes_to_origin(git_repo, tmp_path):
     origin = tmp_path / "origin.git"
-    subprocess.run(["git", "init", "-q", "--bare", str(origin)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", str(origin)],
+                   stdin=subprocess.DEVNULL, capture_output=True, check=True)
     _git_in(git_repo, "remote", "add", "origin", str(origin))
     _git_in(git_repo, "push", "-q", "-u", "origin", "main")
     _write_plugin(git_repo, "git", "1.1.0")
@@ -695,5 +735,6 @@ def test_main_tag_pushes_to_origin(git_repo, tmp_path):
     rc = release.main(["release.py", "--tag"])  # default: push
     assert rc == 0
     pushed = subprocess.run(
-        ["git", "-C", str(origin), "tag", "--list"], capture_output=True, text=True).stdout
+        ["git", "-C", str(origin), "tag", "--list"],
+        stdin=subprocess.DEVNULL, capture_output=True, text=True).stdout
     assert "git-v1.1.0" in pushed

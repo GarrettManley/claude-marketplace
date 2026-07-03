@@ -6,12 +6,19 @@ scoped to each plugin, prepends a per-plugin CHANGELOG section, then syncs the n
 version into marketplace.json (reusing ci/check-versions.py's sync()).
 
 Per plugin <name>:
-  1. since = last tag matching "<name>-v*"  (else full history)
+  0. if there is no "<name>-v*" tag at all, the plugin has no baseline — plan()
+     skips it (no bump) and main() prints a --tag notice: its current version is
+     the first release, established on main via --tag (ADR-0012), not bumped over
+     full history (#27).
+  1. since = last tag matching "<name>-v*"
   2. commits = `git log since..HEAD` whose Conventional-Commit scope == <name>
   3. bump = breaking -> major | feat -> minor | (fix|perf) -> patch | else skip
   4. write plugin.json version, prepend CHANGELOG.md
-After all plugins: sync marketplace.json, one release commit (NO tag — tags are
-born on main post-merge to survive the squash; see docs/adr/0012-tag-after-merge.md).
+Before writing, --apply validates every plugin's would-be CHANGELOG H1 count and
+aborts (writing nothing) if any is invalid, so a failure never leaves a partial
+on-disk bump (#33). After all plugins: sync marketplace.json, one release commit
+(NO tag — tags are born on main post-merge to survive the squash; see
+docs/adr/0012-tag-after-merge.md).
 
   --dry-run  (default)  print the plan, write nothing
   --apply               write files + one release commit (no tag)
@@ -111,9 +118,11 @@ def render_changelog_section(version: str, commits: List[Commit]) -> str:
 # --- git / filesystem I/O -----------------------------------------------------
 
 def _git(*args: str) -> str:
+    # stdin=DEVNULL: these git calls never read stdin; inheriting a closed/invalid
+    # parent stdin makes subprocess's DuplicateHandle fail on Windows (WinError 6).
     return subprocess.run(
         ["git", "-C", str(REPO_ROOT), *args],
-        check=True, capture_output=True, text=True,
+        stdin=subprocess.DEVNULL, check=True, capture_output=True, text=True,
     ).stdout
 
 
@@ -138,7 +147,7 @@ def _is_ancestor(ref: str, of: str = "HEAD") -> bool:
     """True if `ref` is an ancestor of `of` (exit 0 from `merge-base --is-ancestor`)."""
     proc = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "merge-base", "--is-ancestor", ref, of],
-        capture_output=True, text=True,
+        stdin=subprocess.DEVNULL, capture_output=True, text=True,
     )
     return proc.returncode == 0
 
@@ -165,6 +174,13 @@ def untagged_releases() -> List[Tuple[str, str]]:
         if not _tag_exists(f"{name}-v{v}"):
             out.append((name, v))
     return out
+
+
+def never_tagged_plugins() -> List[Tuple[str, str]]:
+    """[(name, current_version)] for plugins with no <name>-v* tag at all. They
+    have no baseline to bump from; their current version is the first release,
+    established by --tag at HEAD (ADR-0012) — never bumped over full history (#27)."""
+    return [(n, _current_version(n)) for n in _ondisk_plugins() if _last_tag(n) is None]
 
 
 def tag_untagged() -> List[str]:
@@ -265,6 +281,8 @@ def plan() -> List[Tuple[str, str, str, List[Commit]]]:
     """Return [(name, old, new, commits)] for plugins with a release-worthy change."""
     out: List[Tuple[str, str, str, List[Commit]]] = []
     for name in _ondisk_plugins():
+        if _last_tag(name) is None:
+            continue  # never-tagged: no baseline; released via --tag, not a bump (#27)
         commits = _commits_for(name)
         kind = bump_for(commits)
         if kind is None:
@@ -311,6 +329,18 @@ def main(argv: List[str]) -> int:
         return 1
 
     releases = plan()
+    # Surface plugins with no tag at all: they are skipped by plan() (no baseline),
+    # but a genuinely-new plugin with real commits must not read as "nothing to do".
+    # Placed before the early-return so it fires even when releases is empty (#27).
+    untagged = never_tagged_plugins()
+    if untagged:
+        listing = ", ".join(f"{n}@{v}" for n, v in untagged)
+        print(
+            f"release: note — no release tag yet for {listing}; the current version "
+            "is the first release, established by `release.py --tag` on main (these are "
+            "not bumped here). If a listed plugin is already released, your local tags "
+            "may be stale — run `git fetch --tags` and re-check."
+        )
     if not releases:
         print("release: no release-worthy commits since last tags (nothing to do).")
         return 0
