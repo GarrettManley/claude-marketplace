@@ -40,8 +40,16 @@ def cap_tool_response(tool_response: Any, max_chars: int = RESPONSE_MAX_CHARS) -
     """Return tool_response unchanged if small, else a truncated marker dict.
 
     The marker keeps the head of the serialized payload so error/traceback
-    markers (which lead the payload) stay greppable.
+    markers (which lead the payload) stay greppable. Idempotent: an existing
+    marker passes through untouched, so the nightly compaction never nests
+    markers (which would push the greppable head out of the text field).
     """
+    if (
+        isinstance(tool_response, dict)
+        and tool_response.get("truncated") is True
+        and set(tool_response) == {"truncated", "text"}
+    ):
+        return tool_response
     serialized = json.dumps(tool_response, default=str)
     if len(serialized) <= max_chars:
         return tool_response

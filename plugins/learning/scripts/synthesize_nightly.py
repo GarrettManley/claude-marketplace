@@ -54,12 +54,24 @@ RETENTION_ENV = "LEARNING_OBS_RETENTION_DAYS"
 
 def retention_days() -> int:
     """Retention window in days; <=0 disables age-based dropping (size
-    truncation of oversized tool_response blobs still applies)."""
-    raw = os.environ.get(RETENTION_ENV, "")
+    truncation of oversized tool_response blobs still applies).
+
+    An unset var means the default; a SET but unparseable var fails safe to 0
+    (keep everything) with a stderr warning — silently substituting 30 would
+    delete data the user explicitly tried to configure retention for.
+    """
+    raw = os.environ.get(RETENTION_ENV)
+    if raw is None or raw == "":
+        return RETENTION_DAYS_DEFAULT
     try:
         return int(raw)
     except ValueError:
-        return RETENTION_DAYS_DEFAULT
+        print(
+            f"[synthesize-nightly] {RETENTION_ENV}={raw!r} is not an integer; "
+            "age-based dropping disabled for this run",
+            file=sys.stderr,
+        )
+        return 0
 
 
 def compact_observations(
@@ -73,6 +85,13 @@ def compact_observations(
     payloads in survivors, drop malformed lines. Atomic (tmp + os.replace) so a
     crash mid-rewrite can't lose the log. Returns compaction counters.
     """
+    # Sweep tmp files orphaned by a hard kill (power loss) mid-rewrite on a
+    # previous run — nothing else in the project dir uses the .tmp suffix.
+    for stale in path.parent.glob("*.tmp"):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
     bytes_before = path.stat().st_size
     counters = {"kept": 0, "dropped": 0, "malformed": 0, "truncated": 0}
     fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
@@ -176,10 +195,16 @@ def run_nightly(
         }
         if apply:
             # Compact only after the mine succeeded, and never on dry-run —
-            # a preview must leave the log byte-identical.
-            entry["compaction"] = compact_observations(
-                proj_dir / "observations.jsonl", cutoff_ts=cutoff_ts
-            )
+            # a preview must leave the log byte-identical. A per-project
+            # compaction failure (e.g. Windows PermissionError from os.replace
+            # while a live session's observe hook holds the log) must not
+            # abort the remaining projects or the report.
+            try:
+                entry["compaction"] = compact_observations(
+                    proj_dir / "observations.jsonl", cutoff_ts=cutoff_ts
+                )
+            except OSError as e:
+                entry["compaction_error"] = str(e)
         projects.append(entry)
     return {"totals": totals, "projects": projects}
 

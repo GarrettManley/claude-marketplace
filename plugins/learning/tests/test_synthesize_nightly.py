@@ -181,13 +181,17 @@ def _obs_path(data_root: Path, pid: str) -> Path:
     return data_root / "projects" / pid / "observations.jsonl"
 
 
-def test_retention_days_default_and_override(monkeypatch):
+def test_retention_days_default_and_override(monkeypatch, capsys):
     monkeypatch.delenv(RETENTION_ENV, raising=False)
     assert retention_days() == RETENTION_DAYS_DEFAULT
     monkeypatch.setenv(RETENTION_ENV, "7")
     assert retention_days() == 7
+    # A SET but unparseable value fails safe to 0 (keep everything) with a
+    # warning — silently substituting the default would delete data the user
+    # explicitly configured retention for.
     monkeypatch.setenv(RETENTION_ENV, "not-a-number")
-    assert retention_days() == RETENTION_DAYS_DEFAULT
+    assert retention_days() == 0
+    assert RETENTION_ENV in capsys.readouterr().err
 
 
 def test_compact_drops_old_keeps_recent_drops_malformed(tmp_data):
@@ -262,3 +266,61 @@ def test_run_nightly_apply_respects_retention_env(tmp_data, monkeypatch):
     monkeypatch.setenv(RETENTION_ENV, "0")
     report = run_nightly(apply=True)
     assert report["projects"][0]["compaction"]["dropped"] == 0
+
+
+def test_compact_is_idempotent_on_truncation_markers(tmp_data):
+    """A second nightly pass must not re-wrap already-truncated markers."""
+    now = time.time()
+    proj = tmp_data / "projects" / "p"
+    proj.mkdir(parents=True)
+    path = proj / "observations.jsonl"
+    path.write_text(json.dumps({"timestamp": now, "phase": "post", "tool_name": "Read",
+                                "session_id": "s", "tool_response": "x" * 50_000}) + "\n",
+                    encoding="utf-8")
+
+    compact_observations(path, cutoff_ts=0.0, response_max_chars=2000)
+    first = path.read_bytes()
+    counters = compact_observations(path, cutoff_ts=0.0, response_max_chars=2000)
+
+    assert path.read_bytes() == first
+    assert counters["truncated"] == 0  # marker passed through, not re-counted
+    rec = json.loads(first.decode("utf-8"))
+    assert set(rec["tool_response"]) == {"truncated", "text"}
+    assert not rec["tool_response"]["text"].startswith('{"truncated"')  # no nesting
+
+
+def test_compact_sweeps_orphaned_tmp_files(tmp_data):
+    now = time.time()
+    proj = tmp_data / "projects" / "p"
+    proj.mkdir(parents=True)
+    path = proj / "observations.jsonl"
+    path.write_text(json.dumps({"timestamp": now, "phase": "pre", "tool_name": "Edit",
+                                "session_id": "s"}) + "\n", encoding="utf-8")
+    (proj / "tmpdead123.tmp").write_text("orphan from a hard kill", encoding="utf-8")
+
+    compact_observations(path, cutoff_ts=0.0)
+
+    assert [p.name for p in proj.iterdir()] == ["observations.jsonl"]
+
+
+def test_run_nightly_survives_per_project_compaction_failure(tmp_data, monkeypatch):
+    """A compaction OSError (e.g. Windows PermissionError while a live hook
+    holds the log) must not abort remaining projects or suppress the report."""
+    import synthesize_nightly as sn
+
+    _seed_observations(tmp_data, "proj-aaa")
+    _seed_observations(tmp_data, "proj-bbb")
+
+    def _boom(path, *, cutoff_ts, response_max_chars=2000):
+        raise PermissionError("log held by another process")
+
+    monkeypatch.setattr(sn, "compact_observations", _boom)
+    rc = cmd_synthesize_nightly(apply=True)
+
+    assert rc == 0
+    payload = json.loads(default_report_path(tmp_data).read_text(encoding="utf-8"))
+    assert len(payload["projects"]) == 2  # second project still mined
+    for entry in payload["projects"]:
+        assert "compaction_error" in entry
+        assert "held by another process" in entry["compaction_error"]
+    assert payload["totals"]["written"] == 4  # mining unaffected
