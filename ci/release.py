@@ -15,8 +15,10 @@ Per plugin <name>:
   3. bump = breaking -> major | feat -> minor | (fix|perf) -> patch | else skip
   4. write plugin.json version, prepend CHANGELOG.md
 Before writing, --apply validates every plugin's would-be CHANGELOG H1 count and
-aborts (writing nothing) if any is invalid, so a failure never leaves a partial
-on-disk bump (#33). After all plugins: sync marketplace.json, one release commit
+aborts (writing nothing) if any is invalid, so an H1-invalid abort never leaves a
+partial on-disk bump (#33). (A sync()/commit failure after the write loop still
+raises loudly and can leave an uncommitted bump — a narrower residual tracked
+separately.) After all plugins: sync marketplace.json, one release commit
 (NO tag — tags are born on main post-merge to survive the squash; see
 docs/adr/0012-tag-after-merge.md).
 
@@ -354,8 +356,8 @@ def main(argv: List[str]) -> int:
         print("release: dry-run — no changes written. Re-run with --apply to ship.")
         return 0
 
-    # Validate the H1 invariant from the EXISTING changelog BEFORE any write, so a
-    # failure on any plugin leaves earlier plugins unwritten (#33). The prepended
+    # Validate the H1 invariant from the EXISTING changelog BEFORE any write, so an
+    # H1-invalid plugin aborts the run leaving every plugin unwritten (#33). The prepended
     # section never adds a `# ` H1 (render_changelog_section emits only `## `/`### `;
     # _prepend_changelog adds a single `# ` iff the file is absent), so the would-be
     # H1 count == the existing `# ` count, or 1 when absent — an invariant locked by
