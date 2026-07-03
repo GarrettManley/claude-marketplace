@@ -66,8 +66,10 @@ construction.
 
 For each plugin on disk (one `plugin.json` per `plugins/<name>/.claude-plugin/`):
 
-1. Find the last tag matching `<name>-v*` (sorted by version). If there is no tag, the
-   range is full history.
+1. Find the last tag matching `<name>-v*` (sorted by version). If there is **no** such
+   tag at all, the plugin has no baseline: `plan()` skips it (no bump) and the run
+   prints a notice to establish the baseline with `--tag` — its current `plugin.json`
+   version is the first release (ADR-0012), never bumped over full history.
 2. Collect commits in `<last-tag>..HEAD` whose Conventional-Commit **scope equals the
    plugin name**. A commit with no matching scope is ignored for that plugin — scope is
    how a commit is attributed to a plugin.
