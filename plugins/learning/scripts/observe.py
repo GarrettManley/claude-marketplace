@@ -25,9 +25,35 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from env_flags import is_on  # noqa: E402
 from storage import get_observations_file, get_project_id  # noqa: E402
 
+# Cap for stored tool_response payloads. Uncapped, verbatim responses (full
+# Read outputs, command dumps) dominate observations.jsonl — measured ~90% of
+# a 106 MB file. The only consumer that looks inside tool_response is
+# detect._looks_like_error's substring scan, which works fine on a head slice.
+RESPONSE_MAX_CHARS = 2000
+
 
 def _is_enabled() -> bool:
     return is_on("LEARNING_OBSERVE")
+
+
+def cap_tool_response(tool_response: Any, max_chars: int = RESPONSE_MAX_CHARS) -> Any:
+    """Return tool_response unchanged if small, else a truncated marker dict.
+
+    The marker keeps the head of the serialized payload so error/traceback
+    markers (which lead the payload) stay greppable. Idempotent: an existing
+    marker passes through untouched, so the nightly compaction never nests
+    markers (which would push the greppable head out of the text field).
+    """
+    if (
+        isinstance(tool_response, dict)
+        and tool_response.get("truncated") is True
+        and set(tool_response) == {"truncated", "text"}
+    ):
+        return tool_response
+    serialized = json.dumps(tool_response, default=str)
+    if len(serialized) <= max_chars:
+        return tool_response
+    return {"truncated": True, "text": serialized[:max_chars]}
 
 
 def _build_observation(event: dict[str, Any], phase: str) -> dict[str, Any]:
@@ -46,7 +72,7 @@ def _build_observation(event: dict[str, Any], phase: str) -> dict[str, Any]:
     if phase == "post":
         tool_response = event.get("tool_response")
         if tool_response is not None:
-            obs["tool_response"] = tool_response
+            obs["tool_response"] = cap_tool_response(tool_response)
     return obs
 
 

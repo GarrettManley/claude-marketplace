@@ -32,6 +32,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from analyze import load_observations  # noqa: E402
+from env_flags import force_utf8  # noqa: E402
+from observe import RESPONSE_MAX_CHARS, cap_tool_response  # noqa: E402
 from storage import get_data_root, get_project_instincts_dir  # noqa: E402
 from synthesize import (  # noqa: E402
     MIN_CONSISTENCY,
@@ -42,6 +44,94 @@ from synthesize import (  # noqa: E402
 
 REPORT_NAME = "last_mine_report.json"
 _SAMPLE_LIMIT = 5
+
+# Observation retention. Analysis only uses 30 s pre/post pairing plus
+# frequency counts whose confidence saturates (n/(n+5), capped) long before a
+# month of support, so records older than the window add bytes, not signal.
+RETENTION_DAYS_DEFAULT = 30
+RETENTION_ENV = "LEARNING_OBS_RETENTION_DAYS"
+
+
+def retention_days() -> int:
+    """Retention window in days; <=0 disables age-based dropping (size
+    truncation of oversized tool_response blobs still applies).
+
+    An unset var means the default; a SET but unparseable var fails safe to 0
+    (keep everything) with a stderr warning — silently substituting 30 would
+    delete data the user explicitly tried to configure retention for.
+    """
+    raw = os.environ.get(RETENTION_ENV)
+    if raw is None or raw == "":
+        return RETENTION_DAYS_DEFAULT
+    try:
+        return int(raw)
+    except ValueError:
+        print(
+            f"[synthesize-nightly] {RETENTION_ENV}={raw!r} is not an integer; "
+            "age-based dropping disabled for this run",
+            file=sys.stderr,
+        )
+        return 0
+
+
+def compact_observations(
+    path: Path,
+    *,
+    cutoff_ts: float,
+    response_max_chars: int = RESPONSE_MAX_CHARS,
+) -> dict:
+    """Rewrite observations.jsonl in place: drop records older than cutoff_ts
+    (or with a missing/invalid timestamp), truncate oversized tool_response
+    payloads in survivors, drop malformed lines. Atomic (tmp + os.replace) so a
+    crash mid-rewrite can't lose the log. Returns compaction counters.
+    """
+    # Sweep tmp files orphaned by a hard kill (power loss) mid-rewrite on a
+    # previous run — nothing else in the project dir uses the .tmp suffix.
+    for stale in path.parent.glob("*.tmp"):
+        try:
+            stale.unlink()
+        except OSError:
+            pass
+    bytes_before = path.stat().st_size
+    counters = {"kept": 0, "dropped": 0, "malformed": 0, "truncated": 0}
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as out, \
+                open(path, encoding="utf-8") as src:
+            for line in src:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError:
+                    counters["malformed"] += 1
+                    continue
+                if not isinstance(rec, dict):
+                    counters["malformed"] += 1
+                    continue
+                ts = rec.get("timestamp")
+                if not isinstance(ts, (int, float)) or ts < cutoff_ts:
+                    counters["dropped"] += 1
+                    continue
+                resp = rec.get("tool_response")
+                if resp is not None:
+                    capped = cap_tool_response(resp, response_max_chars)
+                    if capped is not resp:
+                        rec["tool_response"] = capped
+                        counters["truncated"] += 1
+                out.write(json.dumps(rec) + "\n")
+                counters["kept"] += 1
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+    counters["bytes_before"] = bytes_before
+    counters["bytes_after"] = path.stat().st_size
+    return counters
 
 
 def iter_project_dirs(data_root: Path) -> list[Path]:
@@ -81,6 +171,8 @@ def run_nightly(
     data_root = get_data_root()
     totals = {"written": 0, "updated": 0, "skipped": 0}
     projects: list[dict] = []
+    days = retention_days()
+    cutoff_ts = (time.time() - days * 86400) if days > 0 else 0.0
     for proj_dir in iter_project_dirs(data_root):
         pid = proj_dir.name
         records = load_observations(pid)
@@ -91,7 +183,7 @@ def run_nightly(
         counts = write_instincts(candidates, target, dry_run=not apply)
         for key in totals:
             totals[key] += counts[key]
-        projects.append({
+        entry = {
             "id": pid,
             "written": counts["written"],
             "updated": counts["updated"],
@@ -100,7 +192,20 @@ def run_nightly(
                 {"id": c.id, "title": c.title, "confidence": c.confidence}
                 for c in candidates[:_SAMPLE_LIMIT]
             ],
-        })
+        }
+        if apply:
+            # Compact only after the mine succeeded, and never on dry-run —
+            # a preview must leave the log byte-identical. A per-project
+            # compaction failure (e.g. Windows PermissionError from os.replace
+            # while a live session's observe hook holds the log) must not
+            # abort the remaining projects or the report.
+            try:
+                entry["compaction"] = compact_observations(
+                    proj_dir / "observations.jsonl", cutoff_ts=cutoff_ts
+                )
+            except OSError as e:
+                entry["compaction_error"] = str(e)
+        projects.append(entry)
     return {"totals": totals, "projects": projects}
 
 
@@ -156,6 +261,7 @@ def cmd_synthesize_nightly(
 
 
 def main(argv: list[str] | None = None) -> int:
+    force_utf8()
     parser = argparse.ArgumentParser(
         prog="synthesize_nightly",
         description="Headless nightly Phase 2b synthesis across all observed projects.",

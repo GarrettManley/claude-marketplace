@@ -142,6 +142,14 @@ def archive_file(stale: StaleFile) -> Path:
 
 
 def main(argv=None) -> int:
+    # The apply path prints 'archived → …'; on a cp1252 Windows stdout (console
+    # or the nightly Out-File pipe) that arrow raises UnicodeEncodeError. Same
+    # idiom as render_briefing.main. No-op where reconfigure is unavailable.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):  # pragma: no cover - capture buffers
+        pass
+
     p = argparse.ArgumentParser(description="Rotate stale auto-memory files.")
     p.add_argument("--days", type=int, default=90, help="Stale threshold in days (default 90)")
     p.add_argument("--apply", action="store_true", help="Actually archive (default: dry-run)")

@@ -19,7 +19,7 @@ _SCRIPTS_DIR = Path(__file__).parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from env_flags import is_on  # noqa: E402
+from env_flags import force_utf8, is_on  # noqa: E402
 from instinct_schema import Instinct  # noqa: E402
 
 DEFAULT_MIN_CONFIDENCE = 0.6
@@ -66,6 +66,7 @@ def render(instincts: list[Instinct]) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    force_utf8()
     if not is_on("LEARNING_SURFACE"):
         return 0
     selected = select(collect_instincts(), min_conf=_min_confidence(), cap=SURFACE_CAP)

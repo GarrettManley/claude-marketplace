@@ -181,22 +181,38 @@ The nightly steward also pre-renders one at 03:00 (its 4th step). When the night
 
 ### Register the nightly task (Windows, manual)
 
+**Run the script from the live marketplace checkout, not a dev clone or the
+versioned install cache.** The generated wrapper bakes absolute paths to this
+plugin's scripts (and to the resolved Python interpreter); a dev clone moves
+and a versioned cache path changes on every release, silently breaking every
+nightly step until re-registered. The marketplace checkout
+(`~/.claude/plugins/marketplaces/<marketplace>/plugins/stewardship`) tracks
+updates in place and never moves — the script warns when registered from
+anywhere else.
+
 ```powershell
+$steward = "$HOME\.claude\plugins\marketplaces\garrettmanley\plugins\stewardship"
+
 # Register at 03:00 daily (dry-run housekeep)
-.\scripts\register_nightly.ps1
+& "$steward\scripts\register_nightly.ps1"
 
 # Custom time
-.\scripts\register_nightly.ps1 -At "02:30"
+& "$steward\scripts\register_nightly.ps1" -At "02:30"
 
 # Enable archival mode in the scheduled run
-.\scripts\register_nightly.ps1 -ApplyHousekeep
+& "$steward\scripts\register_nightly.ps1" -ApplyHousekeep
+
+# Also mine learning-plugin instincts nightly (closes the headless loop;
+# point at the learning plugin in the SAME marketplace checkout)
+& "$steward\scripts\register_nightly.ps1" -LearningScript `
+    "$HOME\.claude\plugins\marketplaces\garrettmanley\plugins\learning\scripts\synthesize_nightly.py"
 
 # Smoke test
 Start-ScheduledTask -TaskName "stewardship-nightly-steward"
 Get-Content "$env:LOCALAPPDATA\stewardship-plugin\logs\nightly.log" -Tail 40
 
 # Remove
-.\scripts\register_nightly.ps1 -Unregister
+& "$steward\scripts\register_nightly.ps1" -Unregister
 ```
 
 ### Invoke the harness optimizer

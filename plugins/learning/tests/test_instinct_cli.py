@@ -204,3 +204,24 @@ def test_main_synthesize_nightly_apply_writes_report(tmp_data):
     rc = main(["synthesize-nightly", "--apply"])
     assert rc == 0
     assert (tmp_data / "last_mine_report.json").is_file()
+
+
+# --- cp1252 Windows stdout regression (/instinct-status bars: █░) ---
+
+
+def test_status_survives_cp1252_stdout(tmp_data, monkeypatch):
+    """`status` prints █░ confidence bars; a cp1252 stdout must not crash it."""
+    import io
+    import sys as _sys
+
+    g = get_global_instincts_dir() / "personal"
+    g.mkdir(parents=True)
+    (g / "g.yaml").write_text(format_instinct(_make_instinct("g", 0.9)), encoding="utf-8")
+    buf = io.BytesIO()
+    wrapper = io.TextIOWrapper(buf, encoding="cp1252")
+    monkeypatch.setattr(_sys, "stdout", wrapper)
+    rc = main(["status"])
+    wrapper.flush()
+    assert rc == 0
+    out = buf.getvalue().decode("utf-8")
+    assert "█" in out
