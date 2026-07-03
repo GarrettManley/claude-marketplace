@@ -324,21 +324,30 @@ def main(argv: List[str]) -> int:
         print("release: dry-run — no changes written. Re-run with --apply to ship.")
         return 0
 
-    for name, _old, new, commits in releases:
-        _set_version(name, new)
-        _prepend_changelog(name, render_changelog_section(new, commits))
+    # Validate the H1 invariant from the EXISTING changelog BEFORE any write, so a
+    # failure on any plugin leaves earlier plugins unwritten (#33). The prepended
+    # section never adds a `# ` H1 (render_changelog_section emits only `## `/`### `;
+    # _prepend_changelog adds a single `# ` iff the file is absent), so the would-be
+    # H1 count == the existing `# ` count, or 1 when absent — an invariant locked by
+    # the test_prepend_changelog_* / test_render_changelog_* suite.
+    for name, _old, _new, _commits in releases:
         changelog_path = PLUGINS_DIR / name / "CHANGELOG.md"
-        h1_count = sum(
-            1 for line in changelog_path.read_text(encoding="utf-8").splitlines()
-            if line.startswith("# ")
+        h1_count = (
+            sum(1 for line in changelog_path.read_text(encoding="utf-8").splitlines()
+                if line.startswith("# "))
+            if changelog_path.exists() else 1
         )
         if h1_count != 1:
             print(
-                f"release: aborting — {name}'s {changelog_path} has {h1_count} "
-                "H1 title(s) (expected exactly 1); refusing to commit.",
+                f"release: aborting — {name}'s {changelog_path} would have {h1_count} "
+                "H1 title(s) (expected exactly 1); refusing to write or commit.",
                 file=sys.stderr,
             )
             return 1
+
+    for name, _old, new, commits in releases:
+        _set_version(name, new)
+        _prepend_changelog(name, render_changelog_section(new, commits))
     _load_sync()()  # propagate new versions into marketplace.json
     summary = ", ".join(f"{n}@{v}" for n, _o, v, _c in releases)
     _git("add", "-A")

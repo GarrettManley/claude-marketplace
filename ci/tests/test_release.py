@@ -619,6 +619,30 @@ def test_main_apply_aborts_before_commit_on_invalid_h1_count(git_repo, monkeypat
     assert "chore(release):" not in _git_in(git_repo, "log", "--format=%s")
 
 
+def test_main_apply_is_atomic_across_plugins_on_h1_abort(git_repo, monkeypatch, capsys):
+    # Two release-worthy plugins. The second (alphabetically later => processed
+    # second) has a headerless CHANGELOG that yields H1==0 and must abort the run.
+    # The FIRST plugin must be left completely unwritten -- no partial mutation (#33).
+    _write_plugin(git_repo, "aaa", "1.0.0")
+    _write_plugin(git_repo, "zzz", "1.0.0")
+    _git_in(git_repo, "tag", "aaa-v1.0.0")
+    _git_in(git_repo, "tag", "zzz-v1.0.0")
+    _commit(git_repo, "feat(aaa): good change")
+    _commit(git_repo, "feat(zzz): bad changelog shape")
+    (git_repo / "plugins" / "zzz" / "CHANGELOG.md").write_text(
+        "legacy content with no header\n", encoding="utf-8")
+    aaa_pj = git_repo / "plugins" / "aaa" / ".claude-plugin" / "plugin.json"
+    before = aaa_pj.read_text(encoding="utf-8")
+
+    monkeypatch.setattr(release, "_load_sync", lambda: (lambda: []))
+    rc = release.main(["release.py", "--apply"])
+
+    assert rc != 0
+    assert aaa_pj.read_text(encoding="utf-8") == before  # untouched -- the #33 proof
+    assert not (git_repo / "plugins" / "aaa" / "CHANGELOG.md").exists()  # #33 proof
+    assert "chore(release):" not in _git_in(git_repo, "log", "--format=%s")  # belt-and-suspenders
+
+
 # --- D6: orphan guard + --tag mode --------------------------------------------
 
 def test_is_ancestor_true_and_false(git_repo):
