@@ -17,6 +17,7 @@ _SCRIPTS_DIR = Path(__file__).parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from env_flags import force_utf8  # noqa: E402
 from instinct_schema import (  # noqa: E402
     Instinct,
     format_instinct,
@@ -249,6 +250,7 @@ def cmd_synthesize(
 
 
 def main(argv: list[str] | None = None) -> int:
+    force_utf8()
     parser = argparse.ArgumentParser(prog="instinct_cli")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("status", help="show all instincts")

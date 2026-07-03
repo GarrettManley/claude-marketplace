@@ -32,6 +32,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from analyze import load_observations  # noqa: E402
+from env_flags import force_utf8  # noqa: E402
 from storage import get_data_root, get_project_instincts_dir  # noqa: E402
 from synthesize import (  # noqa: E402
     MIN_CONSISTENCY,
@@ -156,6 +157,7 @@ def cmd_synthesize_nightly(
 
 
 def main(argv: list[str] | None = None) -> int:
+    force_utf8()
     parser = argparse.ArgumentParser(
         prog="synthesize_nightly",
         description="Headless nightly Phase 2b synthesis across all observed projects.",

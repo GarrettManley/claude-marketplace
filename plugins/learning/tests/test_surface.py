@@ -104,3 +104,30 @@ def test_main_respects_min_confidence_env(tmp_data, monkeypatch, capsys):
     assert rc == 0
     out = capsys.readouterr().out
     assert out.strip() == ""  # nothing meets the raised threshold → no block
+
+
+# --- cp1252 Windows stdout regression (surfacing crashed silently for weeks) ---
+
+
+def test_main_survives_cp1252_stdout(tmp_data, monkeypatch):
+    """A cp1252-encoded stdout (Windows console/pipe) must not crash main.
+
+    Pre-fix this raised UnicodeEncodeError on the `→` in render(); the
+    run_with_flags wrapper swallowed it (exit 0), so SessionStart surfacing
+    silently never worked on Windows.
+    """
+    import io
+
+    monkeypatch.setenv("LEARNING_SURFACE", "on")
+    g = get_global_instincts_dir() / "personal"
+    g.mkdir(parents=True)
+    (g / "g.yaml").write_text(format_instinct(_inst("g", 0.9, trigger="after Grep")))
+    buf = io.BytesIO()
+    wrapper = io.TextIOWrapper(buf, encoding="cp1252")
+    monkeypatch.setattr(sys, "stdout", wrapper)
+    rc = main([])
+    wrapper.flush()
+    assert rc == 0
+    out = buf.getvalue().decode("utf-8")
+    assert "after Grep" in out
+    assert "→" in out
