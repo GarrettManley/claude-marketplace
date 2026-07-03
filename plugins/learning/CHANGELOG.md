@@ -4,6 +4,15 @@ All notable changes to the **learning** plugin are documented here. The format i
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.6.0
+
+### Features
+- bound observation growth â€” capture-time cap + nightly retention compaction (#51)
+
+### Fixes
+- harden compaction + nightly wrapper per adversarial review (#51)
+- force UTF-8 stdout in every printing entry point (#51)
+
 ## 1.5.0
 
 ### Features

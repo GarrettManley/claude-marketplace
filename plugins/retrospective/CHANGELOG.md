@@ -4,6 +4,12 @@ All notable changes to the **retrospective** plugin are documented here. The for
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.1
+
+### Fixes
+- restore mid-sentence TODO in regression-guard test
+- treat leading-placeholder lines as incomplete (closes #30)
+
 ## 1.2.0
 
 ### Features
