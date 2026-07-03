@@ -44,15 +44,29 @@ $logFile = Join-Path $logDir "nightly.log"
 $housekeepFlag = if ($ApplyHousekeep) { "--apply" } else { "" }
 
 # Resolve a Python launcher. Windows typically ships `python`/`py`; macOS and
-# Linux ship `python3`. Bake the resolved command into the wrapper so the
-# scheduled task does not depend on PATH ordering at run time.
+# Linux ship `python3`. Bake the resolved ABSOLUTE path into the wrapper so the
+# scheduled task does not depend on PATH ordering at run time — a bare name can
+# resolve to a different (or vanished) interpreter at 03:00 than it did here,
+# failing with no output in the log.
 $pythonExe = $null
 foreach ($cand in @('python3', 'python', 'py')) {
-    if (Get-Command $cand -ErrorAction SilentlyContinue) { $pythonExe = $cand; break }
+    $cmd = Get-Command $cand -ErrorAction SilentlyContinue
+    if ($cmd) { $pythonExe = $cmd.Source; break }
 }
 if (-not $pythonExe) {
     Write-Error "No Python interpreter found on PATH (tried python3, python, py). Install Python 3 and re-run."
     exit 1
+}
+
+# The wrapper bakes absolute paths to this plugin's scripts. If this script is
+# running from a movable location (a dev clone, a versioned install cache),
+# those baked paths rot when the source moves or the version bumps — the
+# stable choice is the live marketplace checkout under ~/.claude/plugins/marketplaces/.
+$marketplacesRoot = Join-Path $HOME ".claude\plugins\marketplaces"
+if (-not $pluginRoot.StartsWith($marketplacesRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+    Write-Warning ("Registering from a movable checkout: {0}" -f $pluginRoot)
+    Write-Warning ("Baked paths break if this directory moves or is re-versioned. Prefer running this script from the marketplace checkout, e.g.:")
+    Write-Warning ("  $marketplacesRoot\<marketplace>\plugins\stewardship\scripts\register_nightly.ps1")
 }
 
 # The ps1 wrapper that the scheduler invokes. We write it once into the log dir
