@@ -197,3 +197,39 @@ def test_phase_via_run_with_flags_production_path(tmp_data, monkeypatch):
     from storage import get_project_id, get_observations_file
     rec = json.loads(get_observations_file(get_project_id()).read_text().splitlines()[0])
     assert rec["phase"] == "pre"
+
+
+# --- tool_response capture cap ---
+
+
+def test_oversized_tool_response_truncated_on_append(tmp_data, monkeypatch):
+    from observe import RESPONSE_MAX_CHARS
+
+    monkeypatch.setenv("LEARNING_OBSERVE", "on")
+    rc = _call({
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Read",
+        "tool_input": {"file_path": "/big.txt"},
+        "tool_response": "x" * (RESPONSE_MAX_CHARS * 10),
+        "session_id": "test",
+    }, monkeypatch)
+    assert rc == 0
+    from storage import get_project_id, get_observations_file
+    rec = json.loads(get_observations_file(get_project_id()).read_text().splitlines()[0])
+    assert rec["tool_response"]["truncated"] is True
+    assert len(rec["tool_response"]["text"]) == RESPONSE_MAX_CHARS
+
+
+def test_small_tool_response_stored_verbatim(tmp_data, monkeypatch):
+    monkeypatch.setenv("LEARNING_OBSERVE", "on")
+    rc = _call({
+        "hook_event_name": "PostToolUse",
+        "tool_name": "Bash",
+        "tool_input": {"command": "git status"},
+        "tool_response": {"stdout": "clean"},
+        "session_id": "test",
+    }, monkeypatch)
+    assert rc == 0
+    from storage import get_project_id, get_observations_file
+    rec = json.loads(get_observations_file(get_project_id()).read_text().splitlines()[0])
+    assert rec["tool_response"] == {"stdout": "clean"}
