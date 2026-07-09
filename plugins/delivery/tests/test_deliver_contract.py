@@ -423,3 +423,68 @@ class TestReviewTriage:
         assert "plan-review-policy" in extract_config_yaml_keys()
         assert "plan-review-policy" in extract_with_config_echo()
         assert "plan-review-policy" in extract_no_config_echo()
+
+
+# ---------------------------------------------------------------------------
+# Invariant 8 -- Phase B dispatch carries a cwd/worktree confirmation guardrail
+# ---------------------------------------------------------------------------
+
+
+def extract_step7_body() -> str:
+    """Return step 7's body: from its list marker up to (not including) step 8.
+
+    Step 7 is a numbered list item inside "### Phase B", not its own markdown
+    heading, so section() (heading-anchored) doesn't apply -- anchor on the list
+    marker text itself, mirroring extract_step5_body above.
+    """
+    phase_b = section(SKILL_TEXT, "### Phase B — Execute")
+    start = phase_b.index("7. **Subagent-driven execution")
+    end = phase_b.index("8. **Edit checklist", start)
+    return phase_b[start:end]
+
+
+def extract_cwd_guardrail_bullet() -> str:
+    """Return just the cwd-confirmation bullet within step 7, scoped to its own
+    bold marker up to the next top-level bullet.
+
+    Scoping the assertions to the bullet itself (not all of step 7) stops them
+    being satisfied cross-bullet by unrelated step-7 text or a future sibling
+    bullet after a guardrail rewrite. Raises loudly (str.index) if the guardrail
+    marker ever disappears, rather than passing vacuously.
+    """
+    body = extract_step7_body()
+    start = body.index("**Confirm each subagent's working directory")
+    nxt = re.search(r"\n   - \*\*", body[start:])
+    end = start + nxt.start() if nxt else len(body)
+    return body[start:end]
+
+
+class TestImplementerCwdGuardrail:
+    """Step 7 must instruct dispatched implementers to confirm their working
+    directory/branch before editing -- a prose 'Work from: <path>' is not an
+    enforced cwd (claude-marketplace PR #26: an implementer silently edited the
+    main checkout instead of its worktree, self-reporting a plausible test
+    transcript). Structural guard, not a restatement of a drifting fact --
+    cf. TestReviewTriage / TestComposedHandoffsAreSuppressed. Assertions scope to
+    the guardrail bullet itself so they cannot pass cross-bullet.
+    """
+
+    def test_bullet_names_the_cwd_confirmation_commands(self):
+        bullet = extract_cwd_guardrail_bullet()
+        assert "git rev-parse" in bullet, "the guardrail must tell the subagent to run git rev-parse"
+        assert "git branch" in bullet, "the guardrail must tell the subagent to run git branch"
+
+    def test_bullet_requires_confirming_before_editing(self):
+        collapsed = re.sub(r"\s+", " ", extract_cwd_guardrail_bullet()).lower()
+        assert "confirm" in collapsed, "the guardrail must require the subagent to confirm its cwd"
+        assert re.search(r"before (touch|edit)", collapsed), (
+            "the guardrail must require confirmation BEFORE touching/editing a file"
+        )
+
+    def test_bullet_cites_the_mislocation_incident(self):
+        # The incident citation is the non-negotiable anchor: it ties the
+        # guardrail to the documented PR #26 failure so a future edit can't
+        # reduce it to a bare one-liner and still pass.
+        bullet = extract_cwd_guardrail_bullet()
+        assert "#26" in bullet, "the guardrail must cite the PR #26 mislocation incident"
+        assert "Work from" in bullet, "the guardrail must name the 'Work from:' anti-pattern"
