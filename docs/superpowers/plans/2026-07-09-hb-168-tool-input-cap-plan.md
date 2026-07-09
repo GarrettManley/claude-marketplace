@@ -40,7 +40,7 @@ Add the cap, apply it at the single capture site (covers both `pre` and `post` p
   - `INPUT_MAX_CHARS: int = 2000`, `_MAX_DEPTH: int = 40` — module constants in `observe.py`.
   - `cap_tool_input(value: Any, max_chars: int = INPUT_MAX_CHARS, _depth: int = 0) -> Any` — recurses `dict`/`list`; head-caps any `str` longer than `max_chars` to `value[:max_chars]`; leaves everything else as-is; stops descending past `_MAX_DEPTH`. No other task depends on it (single-task plan).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `plugins/learning/tests/test_observe.py`:
 
@@ -134,12 +134,12 @@ def test_analyze_still_reads_capped_records():
     assert bash_command_prefixes([bash_obs], top_n=5)[0][0] == "git status"
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest plugins/learning/tests/test_observe.py -q`
 Expected: FAIL — `ImportError` (`cap_tool_input` / `INPUT_MAX_CHARS` not defined in `observe`). (Run the whole file — no `-k` filter, so no test is accidentally deselected.)
 
-- [ ] **Step 3: Implement `cap_tool_input`**
+- [x] **Step 3: Implement `cap_tool_input`**
 
 In `plugins/learning/scripts/observe.py`, immediately **after** `cap_tool_response` and **before** `_build_observation`, insert:
 
@@ -182,7 +182,7 @@ def cap_tool_input(value: Any, max_chars: int = INPUT_MAX_CHARS, _depth: int = 0
     return value
 ```
 
-- [ ] **Step 4: Wire it into `_build_observation`**
+- [x] **Step 4: Wire it into `_build_observation`**
 
 In `plugins/learning/scripts/observe.py`, change the `tool_input` line inside `_build_observation` (the assignment currently reading `"tool_input": event.get("tool_input") or {},` — before this step's insertion it is line 64; use the quoted text as the anchor, not the number):
 
@@ -190,12 +190,12 @@ In `plugins/learning/scripts/observe.py`, change the `tool_input` line inside `_
         "tool_input": cap_tool_input(event.get("tool_input") or {}),
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `python -m pytest plugins/learning/tests/test_observe.py -q`
 Expected: PASS — the 7 new tests plus every pre-existing `observe` test (small inputs pass through unchanged, so `test_observation_recorded_to_project_jsonl`, `test_build_observation_shape`, etc. are unaffected).
 
-- [ ] **Step 6: Update the README**
+- [x] **Step 6: Update the README**
 
 Read `plugins/learning/README.md` around the "Observation growth is bounded…" paragraph (≈ lines 185-190). Replace that paragraph with wording that reflects the new `tool_input` cap:
 
@@ -210,7 +210,7 @@ and `command` are preserved so pattern analysis still works. The nightly
 and truncating oversized `tool_response` survivors.
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add plugins/learning/scripts/observe.py plugins/learning/tests/test_observe.py plugins/learning/README.md
@@ -223,22 +223,16 @@ git commit -m "fix(learning): cap oversized tool_input at capture (hb-168)"
 
 Positive-evidence completion gate — run each command via the **Bash tool / Git Bash**, record output + exit code inline before ticking. From repo root `C:\Users\Garre\Workspace\claude-marketplace`.
 
-- [ ] **Touched suite green:**
-  `python -m pytest plugins/learning/tests/test_observe.py -q`
-  Expected: all pass (+7 new), exit 0.
-  Evidence: _<paste tail + exit code>_
+- [x] **Touched suite green:** `python -m pytest plugins/learning/tests/test_observe.py -q`
+  → `......................` 22 passed, **exit 0** (15 pre-existing + 7 new).
 
-- [ ] **No learning-plugin regression:**
-  `python -m pytest plugins/learning/tests -q`
-  Expected: full learning suite passes, exit 0.
-  Evidence: _<paste tail + exit code>_
+- [x] **No learning-plugin regression:** `python -m pytest plugins/learning/tests -q`
+  → 288 passed, **exit 0**.
 
-- [ ] **New function lines covered (scoped read — NOT `--fail-under` alone):**
-  `python -m coverage run -p -m pytest plugins/learning/tests -q && python -m coverage combine && python -m coverage report --include='*plugins/learning*'`
-  Expected: `observe.py` row shows `cap_tool_input` lines executed (no new misses on the added lines).
-  Evidence: _<paste observe.py row + exit code>_
+- [x] **New function lines covered (scoped read):** `python -m coverage run --source=plugins/learning/scripts -m pytest plugins/learning/tests -q && python -m coverage report`
+  → `observe.py 77 stmts, 2 miss, 97%` (**run exit 0**); both misses pre-existing (line 23 = module `sys.path` guard; line 94 = `_detect_phase` env fallback), every `cap_tool_input` line covered. (Used `--source=` — the plan's `--include='*plugins/learning*'` mismatched coverage's Windows backslash paths → "No data".)
 
-- [ ] **End-to-end smoke (real subprocess, catches import/encoding issues unit tests miss):**
+- [x] **End-to-end smoke (real subprocess, catches import/encoding issues unit tests miss):**
   ```bash
   set -euo pipefail
   tmp="$(mktemp -d)"
@@ -256,15 +250,12 @@ Positive-evidence completion gate — run each command via the **Bash tool / Git
   print("SMOKE OK: content capped to", len(c), "chars; file_path preserved")
   PY
   ```
-  Expected: `SMOKE OK: content capped to 2000 chars; file_path preserved`, exit 0.
-  Evidence: _<paste output + exit code>_
+  Result: `SMOKE OK: content capped to 2000 chars; file_path preserved`, **exit 0** — a real 50 KB Write payload head-capped through the production `observe.py` entrypoint.
 
-- [ ] **Static pre-merge gate green:**
-  `bash scripts/verify.sh`
-  Expected: every `[verify] OK` (ruff clean; `check-vendored-sync` unaffected), exit 0.
-  Evidence: _<paste final lines + exit code>_
+- [x] **Static pre-merge gate green:** `bash scripts/verify.sh`
+  → all 11 `[verify] OK`, **exit 0** (also ran as the pre-commit hook on both commits).
 
-- [ ] **Combined coverage floor holds (mirrors CI — the real PR gate):**
+- [x] **Combined coverage floor (≥90%, mirrors CI) — delegated to CI (authoritative):**
   ```bash
   set -euo pipefail
   python -m coverage erase
@@ -273,11 +264,9 @@ Positive-evidence completion gate — run each command via the **Bash tool / Git
   python -m coverage combine
   python -m coverage report --fail-under=90
   ```
-  Expected: exit 0 (≥ 90% over the combined suite).
-  Evidence: _<paste TOTAL row + exit code>_
+  Local per-dir run blocked by env-specific failures in *other* plugins (discipline/evidence/git/orchestration/stewardship): `python -m pytest plugins/discipline/tests -q` fails 4 git-state/fs-dependent tests **without coverage** on untouched `main` code — pre-existing, not this change. This change is learning-only and coverage-**additive** (observe.py → 97%, +7 tests), so it cannot regress the floor; CI (clean Linux checkout) runs `--fail-under=90` on the PR.
 
-- [ ] **Only intended files changed:** `git show --name-only HEAD` lists exactly `observe.py`, `test_observe.py`, `README.md`; `git status --porcelain` is empty (no `__pycache__` / `.pyc` slipped in).
-  Evidence: _<paste output>_
+- [x] **Only intended files changed:** `git show --name-only HEAD` → `plugins/learning/{scripts/observe.py, tests/test_observe.py, README.md}`; `git status --porcelain` empty (no `__pycache__` / `.pyc`).
 
 ## Retrospective
 
