@@ -80,12 +80,24 @@ def cap_tool_input(value: Any, max_chars: int = INPUT_MAX_CHARS, _depth: int = 0
     marker dict — so analyze.py's structural reads keep working: `command` stays
     a str whose first two tokens (all bash_command_prefixes uses) are preserved,
     and `file_path` is short enough to pass through untouched. No consumer reads
-    content / old_string / new_string, so no truncation signal is needed. The
-    _depth gate bounds recursion so arbitrary nesting can't crash the hook.
+    content / old_string / new_string, so no truncation signal is needed.
+
+    The `_depth` gate bounds this function's own recursion — and collapses any
+    container nested past it to a short marker — so it is safe to call on any
+    structure and never returns anything deeper than `_MAX_DEPTH`. It does not by
+    itself make the whole hook immune to adversarial input: `main`'s upstream
+    `json.loads` already rejects stdin nested past the interpreter's recursion
+    limit before this runs.
     """
     if isinstance(value, str):
         return value[:max_chars] if len(value) > max_chars else value
     if _depth >= _MAX_DEPTH:
+        # A still-nested container this deep is pathological (real tool_input is
+        # 1-2 deep). Collapse it to a short marker so a deep payload can't leak
+        # uncapped bytes — or nesting that would later blow json.dumps(obs) —
+        # into the record. Scalars are already small; pass them through.
+        if isinstance(value, (dict, list)):
+            return "<capped: nesting too deep>"
         return value
     if isinstance(value, dict):
         return {k: cap_tool_input(v, max_chars, _depth + 1) for k, v in value.items()}

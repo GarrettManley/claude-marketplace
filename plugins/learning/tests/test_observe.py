@@ -322,3 +322,18 @@ def test_analyze_still_reads_capped_records():
     )
     assert file_hotspots([write_obs], top_n=5)[0][0] == "/hot.py"
     assert bash_command_prefixes([bash_obs], top_n=5)[0][0] == "git status"
+
+
+def test_cap_tool_input_collapses_beyond_max_depth():
+    from observe import cap_tool_input
+
+    node = deep = {}
+    for _ in range(200):
+        child: dict = {}
+        node["k"] = child
+        node = child
+    node["huge"] = "z" * 10000          # a big string buried past _MAX_DEPTH
+    out = cap_tool_input(deep)
+    # Everything past the depth gate collapses, so the record stays small and the
+    # buried 10 KB string never leaks in uncapped.
+    assert len(json.dumps(out)) < 1000

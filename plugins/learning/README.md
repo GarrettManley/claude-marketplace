@@ -187,7 +187,7 @@ Observation growth is bounded at capture and by nightly compaction. At capture,
 (to a `{"truncated": true, "text": <head>}` marker — error/traceback markers
 lead the payload, so `detect`'s failure scan still works) and head-caps any
 oversized string inside `tool_input` (Write/Edit file bodies) to 2000 chars,
-leaving `file_path` and `command` intact so pattern analysis still works. The
+preserving `file_path` and the `command` prefix so pattern analysis still works. The
 nightly apply run then rewrites each project's `observations.jsonl` atomically,
 dropping records outside the retention window and truncating oversized
 `tool_response` survivors. Analysis only uses 30 s pre/post pairing and
