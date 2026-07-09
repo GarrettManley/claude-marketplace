@@ -233,3 +233,92 @@ def test_small_tool_response_stored_verbatim(tmp_data, monkeypatch):
     from storage import get_project_id, get_observations_file
     rec = json.loads(get_observations_file(get_project_id()).read_text().splitlines()[0])
     assert rec["tool_response"] == {"stdout": "clean"}
+
+
+# --- tool_input capture cap ---
+
+
+def test_oversized_string_value_head_capped():
+    from observe import INPUT_MAX_CHARS, cap_tool_input
+
+    big = "x" * (INPUT_MAX_CHARS * 10)
+    out = cap_tool_input({"file_path": "/big.py", "content": big})
+    assert out["file_path"] == "/big.py"            # short → passes through
+    assert isinstance(out["content"], str)          # plain string head, NOT a marker dict
+    assert len(out["content"]) == INPUT_MAX_CHARS
+
+
+def test_long_command_head_capped_but_stays_string():
+    from observe import INPUT_MAX_CHARS, cap_tool_input
+
+    long_cmd = "grep " + "a" * (INPUT_MAX_CHARS * 2)
+    out = cap_tool_input({"command": long_cmd})
+    assert isinstance(out["command"], str)          # analyze.py needs isinstance str
+    assert len(out["command"]) == INPUT_MAX_CHARS
+    assert out["command"].startswith("grep ")       # first two tokens preserved
+
+
+def test_multiedit_nested_strings_capped_file_path_kept():
+    from observe import INPUT_MAX_CHARS, cap_tool_input
+
+    big = "y" * (INPUT_MAX_CHARS * 5)
+    out = cap_tool_input(
+        {"file_path": "/x.py",
+         "edits": [{"file_path": "/x.py", "old_string": big, "new_string": big}]}
+    )
+    edit = out["edits"][0]
+    assert edit["file_path"] == "/x.py"             # per-edit file_path survives
+    assert len(edit["old_string"]) == INPUT_MAX_CHARS
+    assert len(edit["new_string"]) == INPUT_MAX_CHARS
+
+
+def test_small_tool_input_unchanged():
+    from observe import cap_tool_input
+
+    payload = {"file_path": "/x.py", "command": "git status"}
+    assert cap_tool_input(payload) == payload       # nothing over the cap
+
+
+def test_cap_tool_input_depth_bounded_no_recursionerror():
+    from observe import cap_tool_input
+
+    # Pathologically deep payload (arbitrary MCP tool_input could be). The
+    # _MAX_DEPTH gate must stop descent so this returns instead of raising.
+    deep: dict = {}
+    node = deep
+    for _ in range(5000):
+        child: dict = {}
+        node["k"] = child
+        node = child
+    out = cap_tool_input(deep)
+    assert isinstance(out, dict)                     # returned, did not raise
+
+
+def test_build_observation_caps_tool_input():
+    from observe import INPUT_MAX_CHARS, _build_observation
+
+    big = "w" * (INPUT_MAX_CHARS * 4)
+    obs = _build_observation(
+        {"tool_name": "Write", "tool_input": {"file_path": "/f", "content": big}},
+        phase="pre",
+    )
+    assert obs["tool_input"]["file_path"] == "/f"
+    assert len(obs["tool_input"]["content"]) == INPUT_MAX_CHARS
+
+
+def test_analyze_still_reads_capped_records():
+    # Crux contract: the two keys analyze.py extracts survive capping.
+    from observe import INPUT_MAX_CHARS, _build_observation
+    from analyze import bash_command_prefixes, file_hotspots
+
+    big = "c" * (INPUT_MAX_CHARS * 6)
+    write_obs = _build_observation(
+        {"tool_name": "Write", "tool_input": {"file_path": "/hot.py", "content": big}},
+        phase="pre",
+    )
+    bash_obs = _build_observation(
+        {"tool_name": "Bash", "tool_input": {"command": "git status --porcelain"}},
+        phase="pre",
+    )
+    assert file_hotspots([write_obs], top_n=5)[0][0] == "/hot.py"
+    assert bash_command_prefixes([bash_obs], top_n=5)[0][0] == "git status"

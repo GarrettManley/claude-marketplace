@@ -56,12 +56,50 @@ def cap_tool_response(tool_response: Any, max_chars: int = RESPONSE_MAX_CHARS) -
     return {"truncated": True, "text": serialized[:max_chars]}
 
 
+# Cap for stored tool_input payloads. Uncapped, Write/Edit tool_input embeds
+# full file bodies (content / old_string / new_string) — a multi-MB-per-record
+# bloat vector that regrows observations.jsonl, and file size taxes every hook
+# append (Defender re-scans the file on each write). 2000 chars is ample: the
+# only structural read is analyze.bash_command_prefixes, which uses a command's
+# first two tokens (well within the head); file_path is short. Mirrors
+# RESPONSE_MAX_CHARS. Unlike the response cap, this is per-string (not
+# whole-blob) so analyze.py's by-key reads keep working.
+INPUT_MAX_CHARS = 2000
+
+# Recursion bound. tool_input is arbitrary JSON from any tool (incl. MCP), so a
+# pathologically nested payload must not raise RecursionError out of this
+# per-tool-call hook. Real tool_input nests 1-2 deep; 40 is far above that and
+# far below Python's ~1000 limit.
+_MAX_DEPTH = 40
+
+
+def cap_tool_input(value: Any, max_chars: int = INPUT_MAX_CHARS, _depth: int = 0) -> Any:
+    """Recursively head-cap oversized strings in a tool_input payload.
+
+    Over-length strings become a plain string head (value[:max_chars]) — NOT a
+    marker dict — so analyze.py's structural reads keep working: `command` stays
+    a str whose first two tokens (all bash_command_prefixes uses) are preserved,
+    and `file_path` is short enough to pass through untouched. No consumer reads
+    content / old_string / new_string, so no truncation signal is needed. The
+    _depth gate bounds recursion so arbitrary nesting can't crash the hook.
+    """
+    if isinstance(value, str):
+        return value[:max_chars] if len(value) > max_chars else value
+    if _depth >= _MAX_DEPTH:
+        return value
+    if isinstance(value, dict):
+        return {k: cap_tool_input(v, max_chars, _depth + 1) for k, v in value.items()}
+    if isinstance(value, list):
+        return [cap_tool_input(v, max_chars, _depth + 1) for v in value]
+    return value
+
+
 def _build_observation(event: dict[str, Any], phase: str) -> dict[str, Any]:
     obs: dict[str, Any] = {
         "timestamp": time.time(),
         "phase": phase,
         "tool_name": event.get("tool_name") or "",
-        "tool_input": event.get("tool_input") or {},
+        "tool_input": cap_tool_input(event.get("tool_input") or {}),
         "session_id": event.get("session_id") or "",
     }
     # Phase 2a additions: capture outcome data on PostToolUse + a per-call ID

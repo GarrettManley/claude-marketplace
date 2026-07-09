@@ -182,14 +182,17 @@ When observation is enabled, each tool invocation appends one JSON line to `obse
 | `LEARNING_DATA_ROOT` | path | Override the default data directory |
 | `LEARNING_OBS_RETENTION_DAYS` | int (default `30`; `<=0` disables age-dropping) | Retention window for `observations.jsonl`, enforced by the nightly `synthesize-nightly --apply` compaction after a successful mine |
 
-Observation growth is bounded twice: `observe.py` truncates any `tool_response`
-payload over 2000 serialized chars at capture time (to a `{"truncated": true,
-"text": <head>}` marker — error/traceback markers lead the payload, so
-`detect`'s failure scan still works), and the nightly apply run rewrites each
-project's `observations.jsonl` atomically, dropping records outside the
-retention window and truncating oversized survivors. Analysis only uses 30 s
-pre/post pairing and frequency counts whose confidence saturates long before
-30 days of support, so the window costs no signal.
+Observation growth is bounded at capture and by nightly compaction. At capture,
+`observe.py` truncates any `tool_response` payload over 2000 serialized chars
+(to a `{"truncated": true, "text": <head>}` marker — error/traceback markers
+lead the payload, so `detect`'s failure scan still works) and head-caps any
+oversized string inside `tool_input` (Write/Edit file bodies) to 2000 chars,
+leaving `file_path` and `command` intact so pattern analysis still works. The
+nightly apply run then rewrites each project's `observations.jsonl` atomically,
+dropping records outside the retention window and truncating oversized
+`tool_response` survivors. Analysis only uses 30 s pre/post pairing and
+frequency counts whose confidence saturates long before 30 days of support, so
+the window costs no signal.
 
 The observation and surfacing hooks are each gated by two independent controls that must both be open:
 
