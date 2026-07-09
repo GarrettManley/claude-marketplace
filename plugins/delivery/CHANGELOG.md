@@ -4,6 +4,11 @@ All notable changes to the **delivery** plugin are documented here. The format i
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.3.1
+
+### Fixes
+- require dispatched subagents to confirm cwd before editing (hb-ice)
+
 ## 0.3.0
 
 ### Features
