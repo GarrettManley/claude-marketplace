@@ -21,8 +21,9 @@ Invoke the `deliver` skill and follow it exactly. It will:
    directly instead of re-running plan authoring and review.
 2. Run the lifecycle: pre-plan brief → write plan (invoke writing-plans; suppress its execution hand-off; + project plan-writer) → doc cluster → adversarial
    plan review (gated: CRITICAL/IMPORTANT resolved or deferred) → approval → subagent execution (with
-   a worktree-freshness guard and an instruction telling subagent-driven-development to stop after its
-   final review rather than auto-handing off) → edit checklist → completion gate (positive-evidence
+   a worktree-freshness guard, a per-implementer cwd/branch confirmation preamble, and an instruction
+   telling subagent-driven-development to stop after its final review rather than auto-handing off) →
+   edit checklist → completion gate (positive-evidence
    only — fresh command output and exit code, not a clean terminal state) → whole-branch adversarial
    code review (wider scope, no down-routed model) → land (Hybrid: `finishing-a-development-branch`'s
    menu when no `land-policy` is set, the inline policy verbatim when set to a recognized verb, halt

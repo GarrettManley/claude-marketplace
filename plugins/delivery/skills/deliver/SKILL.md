@@ -289,6 +289,18 @@ enough that `writing-plans` would have nothing concrete to work from.
      the branch `deliver` was invoked from. If the local branch has commits not yet in the worktree's
      branch point, **stop and warn** — present the missing commits and ask whether to rebase the
      worktree or proceed knowingly. Do not silently continue.
+   - **Confirm each subagent's working directory before it edits.** A prose
+     `Work from: <path>` line in an implementer prompt is **not** an enforced cwd — the
+     harness does not guarantee a dispatched subagent inherits the orchestrating session's
+     worktree, and a relative path can resolve against a different checkout (claude-marketplace
+     PR #26: an implementer silently edited the main checkout on `main` instead of its isolated
+     worktree, and self-reported success with a plausible test transcript). Open every implementer
+     (and task-reviewer) dispatch with an explicit confirmation step — instruct the subagent to run
+     `git rev-parse --show-toplevel` and `git branch --show-current` **first** and confirm both
+     match the intended worktree and branch **before touching any file**, not relying on the
+     `Work from:` line alone. This is load-bearing dispatch text, not something to re-add ad hoc
+     per session. (Distinct from the freshness guard above: that checks whether the worktree's
+     base is current; this checks that the dispatched subagent is actually operating inside it.)
    - **Stop SDD before its own hand-off.** Instruct `subagent-driven-development` to stop after its
      final whole-branch review and **not** trigger its documented auto-hand-off into
      `superpowers:finishing-a-development-branch`. This is a real conflict: SDD's process chains

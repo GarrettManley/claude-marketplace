@@ -423,3 +423,52 @@ class TestReviewTriage:
         assert "plan-review-policy" in extract_config_yaml_keys()
         assert "plan-review-policy" in extract_with_config_echo()
         assert "plan-review-policy" in extract_no_config_echo()
+
+
+# ---------------------------------------------------------------------------
+# Invariant 8 -- Phase B dispatch carries a cwd/worktree confirmation guardrail
+# ---------------------------------------------------------------------------
+
+
+def extract_step7_body() -> str:
+    """Return step 7's body: from its list marker up to (not including) step 8.
+
+    Step 7 is a numbered list item inside "### Phase B", not its own markdown
+    heading, so section() (heading-anchored) doesn't apply -- anchor on the list
+    marker text itself, mirroring extract_step5_body above.
+    """
+    phase_b = section(SKILL_TEXT, "### Phase B — Execute")
+    start = phase_b.index("7. **Subagent-driven execution")
+    end = phase_b.index("8. **Edit checklist", start)
+    return phase_b[start:end]
+
+
+class TestImplementerCwdGuardrail:
+    """Step 7 must instruct dispatched implementers to confirm their working
+    directory/branch before editing -- a prose 'Work from: <path>' is not an
+    enforced cwd (claude-marketplace PR #26: an implementer silently edited the
+    main checkout instead of its worktree, self-reporting a plausible test
+    transcript). Structural guard, not a restatement of a drifting fact --
+    cf. TestReviewTriage / TestComposedHandoffsAreSuppressed.
+    """
+
+    def test_step_7_names_the_cwd_confirmation_commands(self):
+        body = extract_step7_body()
+        assert "git rev-parse" in body, "step 7 must tell the subagent to run git rev-parse"
+        assert "git branch" in body, "step 7 must tell the subagent to run git branch"
+
+    def test_step_7_requires_confirming_before_editing(self):
+        body = extract_step7_body()
+        collapsed = re.sub(r"\s+", " ", body).lower()
+        assert "confirm" in collapsed, "step 7 must require the subagent to confirm its cwd"
+        assert re.search(r"before (touch|edit)", collapsed), (
+            "the guardrail must require confirmation BEFORE touching/editing a file"
+        )
+
+    def test_step_7_cites_the_mislocation_counterexample(self):
+        # Non-vacuous anchor: tie the guardrail to its documented incident so a
+        # future edit can't reduce it to a bare one-liner and still pass.
+        body = extract_step7_body()
+        assert "Work from" in body or "#26" in body, (
+            "the guardrail must cite the enforced-cwd rationale / PR #26 counter-example"
+        )
