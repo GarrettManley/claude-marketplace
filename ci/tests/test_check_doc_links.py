@@ -29,14 +29,14 @@ cdl = _load("check_doc_links", "check-doc-links.py")
 
 
 def _git_init(root: Path) -> None:
-    subprocess.run(["git", "init", str(root)], capture_output=True, check=True)
+    subprocess.run(["git", "init", str(root)], capture_output=True, check=True, stdin=subprocess.DEVNULL)
 
 
 def _add(root: Path, rel: str, body: str) -> Path:
     p = root / rel
     p.parent.mkdir(parents=True, exist_ok=True)
     p.write_text(body, encoding="utf-8")
-    subprocess.run(["git", "-C", str(root), "add", rel], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(root), "add", rel], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     return p
 
 

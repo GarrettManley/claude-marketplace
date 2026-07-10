@@ -31,6 +31,9 @@ def triggering_files() -> list[str]:
          ".", ":(exclude)NOTICE", ":(exclude)ci/check-notice.py"],
         capture_output=True,
         text=True,
+        # git grep never reads stdin; pin it to DEVNULL so a pytest-capture-mangled
+        # inherited stdin handle can't fail Popen on Windows (hb-lv9).
+        stdin=subprocess.DEVNULL,
     )
     return [line for line in out.stdout.splitlines() if line.strip()]
 
