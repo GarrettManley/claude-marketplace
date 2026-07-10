@@ -4,6 +4,14 @@ All notable changes to the **learning** plugin are documented here. The format i
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.6.1
+
+### Fixes
+- re-sync vendored run_with_flags UTF-8 defense (hb-zxg)
+- sync vendored run_with_flags (hb-rap CR)
+- sync vendored run_with_flags + isolate hook-error log in tests (hb-rap)
+- cap oversized tool_input at capture (hb-168) (#55)
+
 ## 1.6.0
 
 ### Features

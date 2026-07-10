@@ -14,7 +14,7 @@
       "name": "discipline",
       "source": "./plugins/discipline",
       "description": "Generic dev hygiene: TODO+issue enforcement, frontmatter lint, plan validation (issue+value+retrospective), spec-code drift checker, finish-and-push workflow, and pitfalls-pointer routing, plus a fact-forcing edit gate, git-state checkpoint/snapshot tooling, and council + session-handoff skills, and a compact-plan skill for plan-preserving context compaction.",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "category": "quality",
       "author": {
         "name": "Garrett Manley"
@@ -88,7 +88,7 @@
       "name": "stewardship",
       "source": "./plugins/stewardship",
       "description": "Autonomous maintenance toolkit: drift-check runner against context-file verification commands, morning-briefing template, Windows Task Scheduler registration helper, auto-memory housekeeping for ~/.claude/projects/*/memory/.",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "category": "automation",
       "author": {
         "name": "Garrett Manley"
@@ -220,7 +220,7 @@
       "name": "learning",
       "source": "./plugins/learning",
       "description": "Continuous-learning toolkit: atomic instinct storage plus project-scoped observation hooks (default-off) and an /analyze-observations review report. Adapted from affaan-m/everything-claude-code @ 4774946d.",
-      "version": "1.6.0",
+      "version": "1.6.1",
       "category": "learning",
       "author": {
         "name": "Garrett Manley"
