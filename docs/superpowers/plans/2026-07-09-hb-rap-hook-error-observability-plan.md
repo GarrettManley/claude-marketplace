@@ -35,7 +35,7 @@
 **Interfaces:**
 - Produces: `_learning_data_root() -> Path` (replica of `render_briefing.learning_data_root`), `_append_hook_error(hook_name: str, error: str) -> None` (best-effort bounded append), and the log contract `<learning_data_root>/hooks-errors.jsonl` (JSONL of `{"ts","hook","error"}`) that Task 2 reads.
 
-- [ ] **Step 1: Add the autouse isolation fixtures (do this FIRST — prevents real-log pollution while running the new tests)**
+- [x] **Step 1: Add the autouse isolation fixtures (do this FIRST — prevents real-log pollution while running the new tests)**
 
 In `plugins/discipline/tests/test_run_with_flags.py`, add (module level, near the top):
 
@@ -49,7 +49,7 @@ def _isolate_hook_error_log(monkeypatch, tmp_path):
 
 (If the file's subprocess tests build `env=` explicitly rather than inheriting `os.environ`, thread `LEARNING_DATA_ROOT` into that dict instead — read the existing `test_python_hook_runtime_error_does_not_break_chain` to see how env is passed, and match it.) Add the same autouse fixture to `plugins/learning/tests/test_coverage_gaps.py` for its `TestRunWithFlags` class (as a method-level `@pytest.fixture(autouse=True)` inside the class, or a module fixture if the tests are functions). Ensure `pytest` is imported.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 Append to `plugins/discipline/tests/test_run_with_flags.py` (use the existing wrapper-path constant — it is named **`WRAPPER`** in this file, not `RUN_WITH_FLAGS`; reuse the same subprocess idiom the sibling runtime-error test uses):
 
@@ -98,12 +98,12 @@ Append to `plugins/discipline/tests/test_run_with_flags.py` (use the existing wr
 
 (Match `_run_wrapper`/`WRAPPER` to whatever the file actually defines — the second and third tests import the wrapper module directly, which works because `run_with_flags` self-inserts its `scripts/` dir on `sys.path` at import. `os`, `Path`, `pytest`, `WRAPPER` must be importable in the test module.)
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `python -m pytest plugins/discipline/tests/test_run_with_flags.py -q -k "hook_error_log or is_bounded or never_breaks_chain"`
 Expected: FAIL — `AttributeError: module '_rwf' has no attribute '_append_hook_error'` / `_MAX_HOOK_ERRORS`.
 
-- [ ] **Step 4: Implement the resolver + bounded append**
+- [x] **Step 4: Implement the resolver + bounded append**
 
 In `plugins/discipline/scripts/run_with_flags.py`, add `import json`, `import time`, `import tempfile` to the import block. Then add (after `MAX_STDIN_BYTES`):
 
@@ -153,7 +153,7 @@ def _append_hook_error(hook_name: str, error: str) -> None:
         pass
 ```
 
-- [ ] **Step 5: Call it at both runtime swallow points**
+- [x] **Step 5: Call it at both runtime swallow points**
 
 In `_import_and_run_python`, add the append before each `print(...)`:
 
@@ -170,7 +170,7 @@ In `_import_and_run_python`, add the append before each `print(...)`:
         return 0
 ```
 
-- [ ] **Step 6: Sync the vendored copies + run the tests**
+- [x] **Step 6: Sync the vendored copies + run the tests**
 
 ```bash
 python3 ci/check-vendored-sync.py --fix   # updates learning + stewardship copies
@@ -179,7 +179,7 @@ python -m pytest plugins/discipline/tests/test_run_with_flags.py plugins/learnin
 ```
 Expected: `clean`; all pass (new + pre-existing; the isolation fixtures keep the real log untouched).
 
-- [ ] **Step 7: Commit — per-plugin scope (discipline canonical, then learning sync)**
+- [x] **Step 7: Commit — per-plugin scope (discipline canonical, then learning sync)**
 
 ```bash
 git add plugins/discipline/scripts/run_with_flags.py plugins/discipline/tests/test_run_with_flags.py
@@ -205,7 +205,7 @@ git commit -m "fix(learning): sync vendored run_with_flags + isolate hook-error 
 - Consumes: `<learning_data_root>/hooks-errors.jsonl` from Task 1.
 - Produces: `read_hook_errors(path=None) -> list[dict]`, `render_hook_errors_section(errors: list[dict]) -> str`.
 
-- [ ] **Step 1: Isolation fixture + failing tests**
+- [x] **Step 1: Isolation fixture + failing tests**
 
 Add the autouse isolation fixture (as in Task 1 Step 1) to `plugins/stewardship/tests/test_run_with_flags.py`. Then append to `plugins/stewardship/tests/test_render_briefing.py`:
 
@@ -242,12 +242,12 @@ def test_writer_reader_resolve_same_root(monkeypatch, tmp_path):
 
 Also extend `test_render_substitutes_all_tokens`: add `{{HOOK_ERRORS_SECTION}}` to that test's local template string **and** a `"hook_errors"` entry to its `sections` dict — otherwise the token is either a `KeyError` in `render` or never exercised (it currently passes vacuously if only the dict is extended).
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `python -m pytest plugins/stewardship/tests/test_render_briefing.py -q -k "hook_error or same_root or substitutes_all_tokens"`
 Expected: FAIL — `AttributeError: ... render_hook_errors_section`.
 
-- [ ] **Step 3: Add reader + renderer (reuse the existing `learning_data_root`)**
+- [x] **Step 3: Add reader + renderer (reuse the existing `learning_data_root`)**
 
 In `plugins/stewardship/scripts/render_briefing.py`, after `read_instinct_report` (~L112), add:
 
@@ -291,7 +291,7 @@ def render_hook_errors_section(errors: list[dict]) -> str:
     return "\n".join(lines)
 ```
 
-- [ ] **Step 4: Wire the section (template + render + build_sections + collect). No `derive_actions` rule.**
+- [x] **Step 4: Wire the section (template + render + build_sections + collect). No `derive_actions` rule.**
 
 - Template (`plugins/stewardship/templates/morning-briefing.md`) — after `## Horizon Scan`, before `## Learned Instincts`:
   ```markdown
@@ -305,12 +305,12 @@ def render_hook_errors_section(errors: list[dict]) -> str:
 - **Do not** add a `derive_actions` rule — the section already shows the count (review: gold-plating).
 - `plugins/stewardship/README.md`: add "Hook Errors" to the morning-briefing section list.
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `python -m pytest plugins/stewardship/tests/test_render_briefing.py plugins/stewardship/tests/test_run_with_flags.py -q`
 Expected: PASS — new section/reader/agreement tests, the extended token test, and all pre-existing briefing + wrapper tests.
 
-- [ ] **Step 6: Commit — `fix(stewardship)` (sync copy + read-side together)**
+- [x] **Step 6: Commit — `fix(stewardship)` (sync copy + read-side together)**
 
 ```bash
 git add plugins/stewardship/scripts/run_with_flags.py plugins/stewardship/scripts/render_briefing.py plugins/stewardship/templates/morning-briefing.md plugins/stewardship/README.md plugins/stewardship/tests/test_render_briefing.py plugins/stewardship/tests/test_run_with_flags.py
@@ -321,29 +321,25 @@ git commit -m "fix(stewardship): sync run_with_flags + surface hook errors in th
 
 ## Verification
 
-Positive-evidence completion gate — run via the **Bash tool / Git Bash**, record output + exit code inline before ticking.
+Completion evidence captured 2026-07-09 via the Bash tool / Git Bash. Tests run **per-plugin-dir** — a single invocation across dirs collides on the duplicate `test_run_with_flags.py` basename (the plan's original multi-dir command was wrong; corrected here).
 
-- [ ] **All touched suites green:**
-  `python -m pytest plugins/discipline/tests/test_run_with_flags.py plugins/learning/tests/test_coverage_gaps.py plugins/stewardship/tests/test_render_briefing.py plugins/stewardship/tests/test_run_with_flags.py -q`
-  Expected: pass, exit 0. Evidence: _<paste tail + exit>_
+- [x] **All touched suites green** (per-dir): `pytest plugins/discipline/tests/test_run_with_flags.py` (72✓), learning `TestRunWithFlags` (via `plugins/learning/tests`, exit 0), `plugins/stewardship/tests` (48✓, exit 0). Every hb-rap test passes.
 
-- [ ] **No regression in the three touched plugins:**
-  `python -m pytest plugins/discipline/tests plugins/learning/tests plugins/stewardship/tests -q`
-  Expected: pass, exit 0. Evidence: _<paste tail + exit>_
+- [x] **No regression in the three touched plugins** (per-dir): learning **exit 0**, stewardship **exit 0**. Discipline's 2 failures (`test_note_key_matches_across_hook_and_cli_contexts`, `test_writes_snapshot_to_disk`) are **pre-existing** git-state/filesystem env failures (same set diagnosed in hb-168), in files hb-rap never touched (the discipline commit is only `run_with_flags.py` + its test).
 
-- [ ] **Vendored sync clean:** `python3 ci/check-vendored-sync.py` → `clean`, exit 0. Evidence: _<…>_
+- [x] **Vendored sync clean:** `python3 ci/check-vendored-sync.py` → `clean`, **exit 0**.
 
-- [ ] **Real log NOT polluted by the test run:** after the full run above, `test -f "$LOCALAPPDATA/claude-marketplace/learning/hooks-errors.jsonl" && echo POLLUTED || echo clean` (Git Bash: `ls "$LOCALAPPDATA/claude-marketplace/learning/hooks-errors.jsonl"`). Expected: the real log is absent or unchanged (isolation held). Evidence: _<…>_
+- [x] **Real log NOT polluted (the C1 fix):** after the full test run, `ls "$LOCALAPPDATA/claude-marketplace/learning/hooks-errors.jsonl"` → absent (`clean`). The isolation fixtures held.
 
-- [ ] **Per-plugin release commits present:** `git log --oneline main..HEAD` shows `fix(discipline)`, `fix(learning)`, `fix(stewardship)` commits (so `release.py` bumps all three). Optionally `python3 ci/release.py --dry-run` shows all three queued. Evidence: _<…>_
+- [x] **Per-plugin release commits (the C2 fix):** `release.py --dry-run` → `discipline 1.2.0→1.2.1 (1)`, `learning 1.6.0→1.6.1 (2)`, `stewardship 1.4.1→1.4.2 (3)`. All three bump — the single-commit bug (learning never bumping) is fixed.
 
-- [ ] **End-to-end smoke:** point `LEARNING_DATA_ROOT` at a temp dir, run the real `run_with_flags.py` on a hook that raises, then `render_briefing.read_hook_errors()` + `render_hook_errors_section()` — confirm the raised error appears in the rendered section. Evidence: _<…>_
+- [x] **End-to-end smoke:** real `run_with_flags.py` on a raising hook (temp `LEARNING_DATA_ROOT`) → `render_briefing.read_hook_errors()` + `render_hook_errors_section()` → `**1 hook error(s) logged**` naming `broken.py` / `smoke-boom`. **exit 0**.
 
-- [ ] **Static gate:** `bash scripts/verify.sh` → all `[verify] OK`, exit 0. Evidence: _<…>_
+- [x] **Static gate:** `bash scripts/verify.sh` → all `[verify] OK`, **exit 0**.
 
-- [ ] **Coverage of new lines (scoped):** `python -m coverage run --source=plugins/discipline/scripts,plugins/stewardship/scripts -m pytest plugins/discipline/tests plugins/stewardship/tests -q && python -m coverage report` → `run_with_flags.py` + `render_briefing.py` new lines covered. (Combined ≥90% floor delegated to CI.) Evidence: _<…>_
+- [x] **Coverage of new lines (scoped, per-dir):** `render_briefing.py` **95%** (misses are pre-existing platform/error branches); `run_with_flags.py` covered via stewardship's in-process tests (**89%**; the discipline copy reads 34% only because its tests drive the wrapper as a subprocess, which coverage doesn't instrument). Scoped TOTAL 92%. Combined ≥90% floor delegated to CI.
 
-- [ ] **Only intended files changed:** `git show --name-only` per commit; `git status --porcelain` empty. Evidence: _<…>_
+- [x] **Only intended files changed:** the 3 `fix()` commits touch exactly `run_with_flags.py` (×3, byte-identical), `render_briefing.py`, `morning-briefing.md`, `README.md`, and the 3 test files; `git status --porcelain` empty.
 
 ## Retrospective
 
