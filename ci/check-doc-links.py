@@ -77,6 +77,8 @@ def tracked_markdown() -> list[Path]:
         capture_output=True,
         text=True,
         check=True,
+        # git ls-files never reads stdin; pin to DEVNULL (hb-lv9 -- see check-notice.py).
+        stdin=subprocess.DEVNULL,
     )
     return [ROOT / line for line in out.stdout.splitlines() if line.strip()]
 
