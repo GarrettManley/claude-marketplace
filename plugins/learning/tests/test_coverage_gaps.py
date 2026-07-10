@@ -717,6 +717,14 @@ from run_with_flags import (
 class TestRunWithFlags:
     """Full coverage of run_with_flags.py."""
 
+    @pytest.fixture(autouse=True)
+    def _isolate_hook_error_log(self, monkeypatch, tmp_path):
+        # run_with_flags appends hook errors under LEARNING_DATA_ROOT; isolate
+        # this class (its exception tests hit the swallow points) from the real
+        # log. Class-scoped, NOT module-wide — test_home_fallback_when_no_env
+        # (outside this class) needs LEARNING_DATA_ROOT unset.
+        monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "learning-data"))
+
     def test_main_too_few_args_returns_2(self, capsys):
         rc = rwf_main(["run_with_flags.py"])
         assert rc == 2
