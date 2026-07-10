@@ -1,3 +1,5 @@
+import pytest
+
 import render_briefing as rb
 
 _DRIFT_OK = {"checks": [{"file": "/c/a.md", "cmd": "true", "passed": True, "exit_code": 0,
@@ -219,10 +221,7 @@ def test_read_hook_errors_reads_and_skips_malformed(tmp_path):
     assert [r["hook"] for r in rb.read_hook_errors(p)] == ["a.py", "b.py"]
 
 
-def test_writer_reader_resolve_same_root(monkeypatch, tmp_path):
-    # The writer (run_with_flags) and reader (render_briefing) must resolve the
-    # same data root — the whole cross-plugin contract hinges on it.
-    monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "shared"))
+def _load_run_with_flags():
     from importlib.util import spec_from_file_location, module_from_spec
     from pathlib import Path
     rwf_path = (Path(rb.__file__).parent.parent.parent
@@ -230,4 +229,31 @@ def test_writer_reader_resolve_same_root(monkeypatch, tmp_path):
     spec = spec_from_file_location("_rwf_probe", rwf_path)
     rwf = module_from_spec(spec)
     spec.loader.exec_module(rwf)
-    assert rb.learning_data_root() == rwf._learning_data_root()
+    return rwf
+
+
+@pytest.mark.parametrize("plat,env", [
+    ("win32", {"LOCALAPPDATA": "/win/local"}),
+    ("linux", {"XDG_DATA_HOME": "/xdg/data"}),
+    ("linux", {}),  # home fallback
+])
+def test_writer_reader_resolve_same_root(monkeypatch, plat, env):
+    # Writer (run_with_flags) and reader (render_briefing) must resolve the SAME
+    # data root — the cross-plugin contract hinges on it. Cover the platform
+    # branches (not just the explicit-env short-circuit) where drift hides.
+    for k in ("LEARNING_DATA_ROOT", "LOCALAPPDATA", "XDG_DATA_HOME"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr("sys.platform", plat)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    assert rb.learning_data_root() == _load_run_with_flags()._learning_data_root()
+
+
+def test_read_hook_errors_unreadable_returns_none(tmp_path):
+    p = tmp_path / "hooks-errors.jsonl"
+    p.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    assert rb.read_hook_errors(p) is None
+
+
+def test_render_hook_errors_section_unreadable():
+    assert "unreadable" in rb.render_hook_errors_section(None).lower()

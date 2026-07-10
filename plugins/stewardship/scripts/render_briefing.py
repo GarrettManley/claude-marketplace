@@ -112,19 +112,21 @@ def read_instinct_report(path=None) -> dict | None:
         return None
 
 
-def read_hook_errors(path=None) -> list[dict]:
-    """Read hook-error records from hooks-errors.jsonl; [] if absent/unreadable.
+def read_hook_errors(path=None) -> list[dict] | None:
+    """Read hook-error records from hooks-errors.jsonl.
 
-    Bounded at the source (run_with_flags keeps a ring buffer), so this reads a
-    small file. A large count is itself the signal the briefing exists to raise.
+    Returns [] when the log is absent (genuinely no errors) and None when it
+    exists but can't be read (rendered as 'unavailable' rather than a false
+    all-clear). Malformed individual lines are skipped. Bounded at the source
+    (run_with_flags keeps a ring buffer), so this reads a small file.
     """
     p = Path(path) if path else (learning_data_root() / "hooks-errors.jsonl")
     if not p.is_file():
         return []
     try:
         lines = p.read_text(encoding="utf-8").splitlines()
-    except OSError:
-        return []
+    except (OSError, UnicodeDecodeError):
+        return None
     out: list[dict] = []
     for line in lines:
         line = line.strip()
@@ -139,7 +141,9 @@ def read_hook_errors(path=None) -> list[dict]:
     return out
 
 
-def render_hook_errors_section(errors: list[dict]) -> str:
+def render_hook_errors_section(errors: list[dict] | None) -> str:
+    if errors is None:
+        return "_(hook-error log present but unreadable)_"
     if not errors:
         return "No hook errors logged."
     lines = [f"**{len(errors)} hook error(s) logged** (most recent shown):"]
@@ -256,7 +260,7 @@ def build_sections(data: dict) -> dict:
         "drift": _section(drift, render_drift_section, "drift check"),
         "housekeeping": _section(data["housekeeping"], render_housekeeping_section, "memory housekeeping"),
         "horizon": _section(data["horizon"], render_horizon_section, "horizon scan"),
-        "hook_errors": render_hook_errors_section(data.get("hook_errors") or []),
+        "hook_errors": render_hook_errors_section(data.get("hook_errors", [])),
         "instinct": render_instinct_section(data.get("instinct")),
         "actions": derive_actions(drift, data["housekeeping"], data["horizon"], data.get("instinct")),
     }
