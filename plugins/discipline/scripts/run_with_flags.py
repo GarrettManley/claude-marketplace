@@ -22,10 +22,13 @@ from __future__ import annotations
 import inspect
 import io
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 # Make the plugin's scripts/ importable so we can use hook_flags
@@ -33,6 +36,69 @@ sys.path.insert(0, str(Path(__file__).parent))
 from hook_flags import is_hook_enabled  # noqa: E402
 
 MAX_STDIN_BYTES = 1024 * 1024  # 1 MiB; bigger payloads get truncated
+
+_MAX_HOOK_ERRORS = 200  # ring-buffer cap: a hook that fails every call can't grow the log unbounded
+
+
+def _learning_data_root() -> Path:
+    """Resolve the learning plugin's data root — a replica of
+    stewardship/render_briefing.py's learning_data_root(). Replicated not
+    imported: run_with_flags is vendored into every plugin and must stay
+    self-contained. A test pins this equal to the render_briefing copy.
+    """
+    explicit = os.environ.get("LEARNING_DATA_ROOT")
+    if explicit:
+        return Path(explicit)
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            return Path(local) / "claude-marketplace" / "learning"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return Path(xdg) / "claude-marketplace" / "learning"
+    return Path.home() / ".local" / "share" / "claude-marketplace" / "learning"
+
+
+def _append_hook_error(hook_name: str, error: str) -> None:
+    """Best-effort, bounded, atomic append of a swallowed hook error.
+
+    Never raises (every path in this wrapper returns 0). Keeps the last
+    _MAX_HOOK_ERRORS records so a hook failing on every invocation can't grow
+    the file without bound. A lost record under concurrent appends is acceptable
+    for telemetry; the tempfile + os.replace makes each write corruption-free.
+    """
+    tmp = None
+    try:
+        root = _learning_data_root()
+        root.mkdir(parents=True, exist_ok=True)
+        log = root / "hooks-errors.jsonl"
+        prior = log.read_text(encoding="utf-8").splitlines() if log.is_file() else []
+        # Strip lone surrogates / non-UTF-8-encodable chars (e.g. a surrogateescaped
+        # byte in an exception message) before persisting, so a downstream strict-UTF-8
+        # reader -- the stewardship briefing's write_text -- can't crash on this record.
+        safe_hook = hook_name.encode("utf-8", "backslashreplace").decode("utf-8")
+        safe_error = error.encode("utf-8", "backslashreplace").decode("utf-8")
+        rec = json.dumps({"ts": time.time(), "hook": safe_hook, "error": safe_error})
+        lines = prior[-(_MAX_HOOK_ERRORS - 1):] + [rec]
+        fd, tmp = tempfile.mkstemp(dir=str(root), suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(tmp, log)
+        tmp = None  # consumed by os.replace
+    except Exception as e:  # noqa: BLE001 -- never break the chain; report, don't vanish
+        # A persistently-unwritable log is itself a problem worth seeing, not
+        # another silent failure -- surface it on the same stderr channel the
+        # swallow points already use.
+        try:
+            print(f"run_with_flags: could not persist hook error: {e}", file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        if tmp is not None:  # write/replace failed -- don't leak the mkstemp file
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 def _read_stdin() -> str:
@@ -58,7 +124,36 @@ def _passthrough(stdin_text: str) -> int:  # noqa: ARG001
     return 0
 
 
+def _force_utf8() -> None:
+    """Reconfigure stdin/stdout/stderr to UTF-8 before importing or running a hook.
+
+    A wrapped hook that writes non-ASCII to stdout (e.g. surface.py's `->` arrow)
+    raises UnicodeEncodeError on a cp1252 Windows console -- stdout defaults to a
+    strict cp1252 codec -- and the crash is then swallowed at the except sites in
+    _import_and_run_python below, so the hook silently never runs. Reconfiguring
+    stdout here defends every imported Python hook in one place; the shell/generic
+    spawn paths decode child output as UTF-8 directly (see _spawn_shell).
+
+    `errors=stream.errors` preserves each stream's existing error handler across the
+    reconfigure -- critically, stderr keeps its default `backslashreplace` so the
+    wrapper's own diagnostic prints can never raise. Passing only `encoding=` would
+    silently reset the handler to `strict` (CPython behavior), letting a hook-error
+    message that contains a lone surrogate crash the swallow-site stderr print and
+    break the hook chain -- the opposite of fail-open. stdin is included so a
+    non-ASCII hook payload decodes as UTF-8 in _read_stdin(). No-op where a stream
+    can't be reconfigured (StringIO under pytest, exotic streams). Stream reconfigure
+    is preferred over PYTHONUTF8 / -X utf8 because it leaves each hook's own open()
+    default encoding untouched.
+    """
+    for stream in (sys.stdin, sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors=stream.errors)  # type: ignore[union-attr]
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv: list[str]) -> int:
+    _force_utf8()
     if len(argv) < 4:
         print(
             "usage: run_with_flags.py <hook_script> <hook_id> <profile_csv>",
@@ -129,7 +224,8 @@ def _spawn_shell(script_path: Path, stdin_text: str) -> int:
         [_resolve_bash(), str(script_path)],
         input=stdin_text,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     sys.stdout.write(result.stdout)
     sys.stderr.write(result.stderr)
@@ -141,7 +237,8 @@ def _spawn_generic(script_path: Path, stdin_text: str) -> int:
         [str(script_path)],
         input=stdin_text,
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     sys.stdout.write(result.stdout)
     sys.stderr.write(result.stderr)
@@ -164,6 +261,7 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
         # Hook called sys.exit() at module top level (legacy style)
         return int(e.code) if e.code is not None else 0
     except Exception as e:  # noqa: BLE001
+        _append_hook_error(script_path.name, f"import error: {e}")
         print(f"run_with_flags: import error in {script_path.name}: {e}", file=sys.stderr)
         return 0  # don't break the chain
 
@@ -206,6 +304,7 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
     except SystemExit as e:
         return int(e.code) if e.code is not None else 0
     except Exception as e:  # noqa: BLE001
+        _append_hook_error(script_path.name, f"runtime error: {e}")
         print(f"run_with_flags: runtime error in {script_path.name}: {e}", file=sys.stderr)
         return 0  # don't break the chain
 

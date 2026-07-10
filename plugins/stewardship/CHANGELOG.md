@@ -4,6 +4,13 @@ All notable changes to the **stewardship** plugin are documented here. The forma
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.4.2
+
+### Fixes
+- re-sync vendored run_with_flags + isolate learning data root in briefing tests (hb-zxg)
+- distinguish unreadable hook-error log + pin resolver drift (hb-rap CR)
+- sync run_with_flags + surface hook errors in the morning briefing (hb-rap)
+
 ## 1.4.1
 
 ### Fixes

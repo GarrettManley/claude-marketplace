@@ -3,7 +3,7 @@
 
 Collects fresh data from the three steward source scripts via their `--json`
 interfaces (drift_check, auto_memory_housekeep, horizon_scan_schedule), derives a
-status line + rule-based suggested actions, and substitutes the six `{{TOKEN}}`
+status line + rule-based suggested actions, and substitutes the seven `{{TOKEN}}`
 placeholders. A source whose subprocess fails (the only realistic failure for
 these in-repo, contract-guaranteed scripts) degrades to an `_(… unavailable)_`
 section — handled once in build_sections, not threaded through the renderers.
@@ -112,6 +112,49 @@ def read_instinct_report(path=None) -> dict | None:
         return None
 
 
+def read_hook_errors(path=None) -> list[dict] | None:
+    """Read hook-error records from hooks-errors.jsonl.
+
+    Returns [] when the log is absent (genuinely no errors) and None when it
+    exists but can't be read (rendered as 'unavailable' rather than a false
+    all-clear). Malformed individual lines are skipped. Bounded at the source
+    (run_with_flags keeps a ring buffer), so this reads a small file.
+    """
+    p = Path(path) if path else (learning_data_root() / "hooks-errors.jsonl")
+    if not p.is_file():
+        return []
+    try:
+        lines = p.read_text(encoding="utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return None
+    out: list[dict] = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            rec = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(rec, dict):
+            out.append(rec)
+    return out
+
+
+def render_hook_errors_section(errors: list[dict] | None) -> str:
+    if errors is None:
+        return "_(hook-error log present but unreadable)_"
+    if not errors:
+        return "No hook errors logged."
+    lines = [f"**{len(errors)} hook error(s) logged** (most recent shown):"]
+    for rec in errors[-5:]:
+        hook = rec.get("hook", "?")
+        raw = str(rec.get("error", ""))
+        err = raw.splitlines()[0][:160] if raw else ""
+        lines.append(f"- `{hook}` — {err}")
+    return "\n".join(lines)
+
+
 def render_instinct_section(report: dict | None) -> str:
     if not report:
         return "No recent instinct-synthesis run."
@@ -166,6 +209,7 @@ def render(template: str, sections: dict, date_str: str) -> str:
         "{{DRIFT_SECTION}}": sections["drift"],
         "{{HOUSEKEEPING_SECTION}}": sections["housekeeping"],
         "{{HORIZON_SCAN_SECTION}}": sections["horizon"],
+        "{{HOOK_ERRORS_SECTION}}": sections["hook_errors"],
         "{{INSTINCT_SECTION}}": sections["instinct"],
         "{{ACTIONS_SECTION}}": sections["actions"],
     }.items():
@@ -187,7 +231,8 @@ def run_json(scripts_dir, script, *args) -> dict:
 
 
 def collect(scripts_dir, *, context_dir=None, projects_dir=None, state=None,
-            max_age_days=None, interval_days=None, instinct_report=None) -> dict:
+            max_age_days=None, interval_days=None, instinct_report=None,
+            hook_errors_path=None) -> dict:
     drift_args = (["--dir", str(context_dir)] if context_dir else []) \
         + (["--max-age-days", str(max_age_days)] if max_age_days is not None else [])
     house_args = ["--projects-dir", str(projects_dir)] if projects_dir else []
@@ -200,6 +245,7 @@ def collect(scripts_dir, *, context_dir=None, projects_dir=None, state=None,
         # The learning report is a file read (the learning plugin writes it), not a
         # subprocess like the three steward sources.
         "instinct": read_instinct_report(instinct_report),
+        "hook_errors": read_hook_errors(hook_errors_path),
     }
 
 
@@ -214,6 +260,7 @@ def build_sections(data: dict) -> dict:
         "drift": _section(drift, render_drift_section, "drift check"),
         "housekeeping": _section(data["housekeeping"], render_housekeeping_section, "memory housekeeping"),
         "horizon": _section(data["horizon"], render_horizon_section, "horizon scan"),
+        "hook_errors": render_hook_errors_section(data.get("hook_errors", [])),
         "instinct": render_instinct_section(data.get("instinct")),
         "actions": derive_actions(drift, data["housekeeping"], data["horizon"], data.get("instinct")),
     }

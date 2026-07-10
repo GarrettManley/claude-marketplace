@@ -19,3 +19,14 @@ def clean_env(monkeypatch):
         if key.startswith("STEWARDSHIP_"):
             monkeypatch.delenv(key, raising=False)
     yield monkeypatch
+
+
+@pytest.fixture(autouse=True)
+def _isolate_learning_data_root(monkeypatch, tmp_path):
+    """Point LEARNING_DATA_ROOT (the hook-error sink + instinct report the briefing
+    reads via render_briefing) at a throwaway dir, so no test reads the developer's
+    real ~/.../claude-marketplace/learning files. Without this, a real sink polluted
+    with surrogate content makes the briefing subprocess tests crash and flake
+    (the hb-rap retro's test-pollution scar). Tests that need a specific path still
+    override with their own monkeypatch/--flag, which runs after this fixture."""
+    monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "learning-data-iso"))

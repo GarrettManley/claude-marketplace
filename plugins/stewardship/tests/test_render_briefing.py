@@ -1,3 +1,5 @@
+import pytest
+
 import render_briefing as rb
 
 _DRIFT_OK = {"checks": [{"file": "/c/a.md", "cmd": "true", "passed": True, "exit_code": 0,
@@ -68,9 +70,10 @@ def test_actions_derives_each_rule():
 
 def test_render_substitutes_all_tokens():
     template = ("date: {{DATE}}\n# {{DATE}}\n{{AUDIT_STATUS}}\n{{DRIFT_SECTION}}\n"
-                "{{HOUSEKEEPING_SECTION}}\n{{HORIZON_SCAN_SECTION}}\n{{INSTINCT_SECTION}}\n{{ACTIONS_SECTION}}")
+                "{{HOUSEKEEPING_SECTION}}\n{{HORIZON_SCAN_SECTION}}\n{{HOOK_ERRORS_SECTION}}\n"
+                "{{INSTINCT_SECTION}}\n{{ACTIONS_SECTION}}")
     sections = {"audit_status": "OK", "drift": "D", "housekeeping": "H", "horizon": "Z",
-                "instinct": "I", "actions": "A"}
+                "hook_errors": "HE", "instinct": "I", "actions": "A"}
     out = rb.render(template, sections, "2026-06-25")
     assert "{{" not in out and "2026-06-25" in out and "OK" in out
 
@@ -185,7 +188,11 @@ def test_stdout_handles_non_ascii_under_cp1252(tmp_path):
     mdir = tmp_path / "p" / "memory"
     mdir.mkdir(parents=True)
     (mdir / "MEMORY.md").write_text("- [gone](missing.md)\n", encoding="utf-8")  # broken pointer -> emits →
-    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    # Isolate the hook-error sink + instinct report explicitly (belt-and-suspenders
+    # over the autouse fixture) so this subprocess never reads the developer's real
+    # learning data — a polluted real sink would otherwise crash the briefing write.
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252",
+           "LEARNING_DATA_ROOT": str(tmp_path / "iso-learning")}
     proc = subprocess.run(
         [sys.executable, rb.__file__, "--stdout", "--date", "2026-06-25",
          "--context-dir", str(tmp_path / "noctx"),
@@ -193,3 +200,64 @@ def test_stdout_handles_non_ascii_under_cp1252(tmp_path):
         capture_output=True, env=env)
     assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
     assert "→".encode("utf-8") in proc.stdout
+
+
+# --- Hook Errors section (hb-rap: consumes hooks-errors.jsonl) ---
+
+
+def test_render_hook_errors_section_empty():
+    assert "no hook errors" in rb.render_hook_errors_section([]).lower()
+
+
+def test_render_hook_errors_section_lists_recent():
+    s = rb.render_hook_errors_section([{"ts": 1.0, "hook": "surface.py",
+                                        "error": "runtime error: boom"}])
+    assert "1 hook error" in s and "surface.py" in s
+
+
+def test_read_hook_errors_missing_returns_empty(tmp_path):
+    assert rb.read_hook_errors(tmp_path / "nope.jsonl") == []
+
+
+def test_read_hook_errors_reads_and_skips_malformed(tmp_path):
+    p = tmp_path / "hooks-errors.jsonl"
+    p.write_text('{"hook": "a.py"}\nnot-json\n{"hook": "b.py"}\n', encoding="utf-8")
+    assert [r["hook"] for r in rb.read_hook_errors(p)] == ["a.py", "b.py"]
+
+
+def _load_run_with_flags():
+    from importlib.util import spec_from_file_location, module_from_spec
+    from pathlib import Path
+    rwf_path = (Path(rb.__file__).parent.parent.parent
+                / "discipline" / "scripts" / "run_with_flags.py")
+    spec = spec_from_file_location("_rwf_probe", rwf_path)
+    rwf = module_from_spec(spec)
+    spec.loader.exec_module(rwf)
+    return rwf
+
+
+@pytest.mark.parametrize("plat,env", [
+    ("win32", {"LOCALAPPDATA": "/win/local"}),
+    ("linux", {"XDG_DATA_HOME": "/xdg/data"}),
+    ("linux", {}),  # home fallback
+])
+def test_writer_reader_resolve_same_root(monkeypatch, plat, env):
+    # Writer (run_with_flags) and reader (render_briefing) must resolve the SAME
+    # data root — the cross-plugin contract hinges on it. Cover the platform
+    # branches (not just the explicit-env short-circuit) where drift hides.
+    for k in ("LEARNING_DATA_ROOT", "LOCALAPPDATA", "XDG_DATA_HOME"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr("sys.platform", plat)
+    for k, v in env.items():
+        monkeypatch.setenv(k, v)
+    assert rb.learning_data_root() == _load_run_with_flags()._learning_data_root()
+
+
+def test_read_hook_errors_unreadable_returns_none(tmp_path):
+    p = tmp_path / "hooks-errors.jsonl"
+    p.write_bytes(b"\xff\xfe not valid utf-8 \x80\x81")
+    assert rb.read_hook_errors(p) is None
+
+
+def test_render_hook_errors_section_unreadable():
+    assert "unreadable" in rb.render_hook_errors_section(None).lower()

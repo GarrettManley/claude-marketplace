@@ -137,8 +137,12 @@ interpreter cold-start); shell hooks are spawned by passing the real script path
 directly to `bash` — an earlier version piped the script's content through `bash -c`
 to dodge Windows path-mangling, but that broke any hook using `dirname
 "${BASH_SOURCE[0]}"` for self-location (`BASH_SOURCE` is unset under `bash -c`), so it
-was replaced with direct-path invocation. It fails open: import or runtime errors in a
-hook print to stderr and return 0, so a broken hook never breaks the hook chain. When a
+was replaced with direct-path invocation. Before dispatching, it reconfigures
+stdin/stdout/stderr to UTF-8 so a hook writing non-ASCII (e.g. a `→`) can't crash on a
+cp1252 Windows console. It fails open: import or runtime errors in a hook are printed to
+stderr, persisted to a bounded `<learning-data-root>/hooks-errors.jsonl` log (surfaced in
+the stewardship morning briefing), and swallowed with a 0 exit, so a broken hook never
+breaks the hook chain. When a
 hook is disabled, the wrapper exits 0 **without writing stdout** — important because
 SessionStart treats stdout as `additionalContext`, and echoing the raw event JSON would
 leak `session_id` / `transcript_path` into the model's context.

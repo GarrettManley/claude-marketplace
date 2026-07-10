@@ -44,7 +44,7 @@ They fire under `standard` and `strict` profiles; they are off under `minimal`.
 
 | Command | Description |
 |---------|-------------|
-| `/morning-briefing` | Renders today's briefing — drift-check, memory-housekeeping, and horizon-scan status plus rule-based suggested actions — from live data, writing `~/.claude/stewardship/briefing/<date>.md` |
+| `/morning-briefing` | Renders today's briefing — drift-check, memory-housekeeping, horizon-scan, and hook-error status plus rule-based suggested actions — from live data, writing `~/.claude/stewardship/briefing/<date>.md` |
 
 ### Scripts
 
@@ -62,7 +62,7 @@ They fire under `standard` and `strict` profiles; they are off under `minimal`.
 
 | Template | Purpose |
 |----------|---------|
-| `templates/morning-briefing.md` | Daily-briefing template with `{{TOKEN}}` placeholders, filled by `render_briefing.py` (`/morning-briefing` + the nightly steward) from drift-check, housekeep, and horizon-scan data |
+| `templates/morning-briefing.md` | Daily-briefing template with `{{TOKEN}}` placeholders, filled by `render_briefing.py` (`/morning-briefing` + the nightly steward) from drift-check, housekeep, horizon-scan, and hook-error data |
 
 ## Init / Setup
 
@@ -167,7 +167,7 @@ State lives at `~/.claude/stewardship/horizon-scan-state.json` (a `last_scan` ti
 
 ### Generate the morning briefing on demand
 
-`render_briefing.py` fills `templates/morning-briefing.md` from live data: it invokes the three source scripts with `--json`, derives the status line + rule-based suggested actions, and substitutes the six `{{TOKEN}}` placeholders. The same subprocess `--json` contract is each script's single source of truth for its structured output — the renderer is a thin composer (see `docs/adr/0011-morning-briefing-renderer.md`). A source whose subprocess fails degrades to an `_(… unavailable)_` section rather than crashing the briefing.
+`render_briefing.py` fills `templates/morning-briefing.md` from live data: it invokes the three source scripts with `--json`, derives the status line + rule-based suggested actions, and substitutes the seven `{{TOKEN}}` placeholders. The same subprocess `--json` contract is each script's single source of truth for its structured output — the renderer is a thin composer (see `docs/adr/0011-morning-briefing-renderer.md`). A source whose subprocess fails degrades to an `_(… unavailable)_` section rather than crashing the briefing.
 
 ```bash
 # Render today's briefing to ~/.claude/stewardship/briefing/<date>.md and print it

@@ -4,6 +4,13 @@ All notable changes to the **discipline** plugin are documented here. The format
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.1
+
+### Fixes
+- reconfigure stdio to UTF-8 + sanitize hook-error sink in run_with_flags (hb-zxg)
+- report hook-error-log write failures instead of vanishing (hb-rap CR)
+- persist swallowed hook errors to a bounded log (hb-rap)
+
 ## 1.2.0
 
 ### Features
