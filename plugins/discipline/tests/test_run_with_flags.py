@@ -28,6 +28,13 @@ def run_wrapper(args: list[str], stdin: str, env_overrides: dict[str, str] | Non
     )
 
 
+@pytest.fixture(autouse=True)
+def _isolate_hook_error_log(monkeypatch, tmp_path):
+    # run_with_flags appends hook errors under LEARNING_DATA_ROOT; keep every
+    # test in this file (all invoke the wrapper) off the developer's real log.
+    monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "learning-data"))
+
+
 class TestPassthroughWhenDisabled:
     def test_disabled_hook_produces_no_stdout(self, tmp_path):
         # The wrapper should never invoke the inner script when disabled
@@ -230,3 +237,45 @@ class TestInvokeWhenEnabled:
         )
         assert result.returncode == 0
         assert "zero-param-ran" in result.stdout
+
+
+class TestHookErrorLog:
+    """hb-rap: run_with_flags persists swallowed hook errors to a bounded log."""
+
+    def _load_module(self):
+        from importlib.util import spec_from_file_location, module_from_spec
+        spec = spec_from_file_location("_rwf_probe", WRAPPER)
+        mod = module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod
+
+    def test_runtime_error_appended_to_hook_error_log(self, tmp_path):
+        import json as _json
+        hook = tmp_path / "boom.py"
+        hook.write_text("def main():\n    raise ValueError('kaboom')\n")
+        result = run_wrapper([str(hook), "id", "standard"], stdin="{}")
+        assert result.returncode == 0
+        assert "runtime error" in result.stderr
+        log = self._load_module()._learning_data_root() / "hooks-errors.jsonl"
+        rec = _json.loads(log.read_text(encoding="utf-8").splitlines()[-1])
+        assert rec["hook"] == "boom.py"
+        assert "kaboom" in rec["error"]
+
+    def test_hook_error_log_append_is_bounded(self, tmp_path):
+        rwf = self._load_module()
+        for i in range(rwf._MAX_HOOK_ERRORS + 50):
+            rwf._append_hook_error("h.py", f"e{i}")
+        log = rwf._learning_data_root() / "hooks-errors.jsonl"
+        lines = [ln for ln in log.read_text(encoding="utf-8").splitlines() if ln.strip()]
+        assert len(lines) == rwf._MAX_HOOK_ERRORS
+
+    def test_hook_error_log_write_failure_never_breaks_chain(self, tmp_path):
+        hook = tmp_path / "boom2.py"
+        hook.write_text("def main():\n    raise ValueError('x')\n")
+        blocker = tmp_path / "blocker"
+        blocker.write_text("i am a file, not a dir")
+        result = run_wrapper(
+            [str(hook), "id", "standard"], stdin="{}",
+            env_overrides={"LEARNING_DATA_ROOT": str(blocker / "sub")},
+        )
+        assert result.returncode == 0

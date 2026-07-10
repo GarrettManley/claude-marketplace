@@ -22,10 +22,13 @@ from __future__ import annotations
 import inspect
 import io
 import importlib.util
+import json
 import os
 import shutil
 import subprocess
 import sys
+import tempfile
+import time
 from pathlib import Path
 
 # Make the plugin's scripts/ importable so we can use hook_flags
@@ -33,6 +36,50 @@ sys.path.insert(0, str(Path(__file__).parent))
 from hook_flags import is_hook_enabled  # noqa: E402
 
 MAX_STDIN_BYTES = 1024 * 1024  # 1 MiB; bigger payloads get truncated
+
+_MAX_HOOK_ERRORS = 200  # ring-buffer cap: a hook that fails every call can't grow the log unbounded
+
+
+def _learning_data_root() -> Path:
+    """Resolve the learning plugin's data root — a replica of
+    stewardship/render_briefing.py's learning_data_root(). Replicated not
+    imported: run_with_flags is vendored into every plugin and must stay
+    self-contained. A test pins this equal to the render_briefing copy.
+    """
+    explicit = os.environ.get("LEARNING_DATA_ROOT")
+    if explicit:
+        return Path(explicit)
+    if sys.platform == "win32":
+        local = os.environ.get("LOCALAPPDATA")
+        if local:
+            return Path(local) / "claude-marketplace" / "learning"
+    xdg = os.environ.get("XDG_DATA_HOME")
+    if xdg:
+        return Path(xdg) / "claude-marketplace" / "learning"
+    return Path.home() / ".local" / "share" / "claude-marketplace" / "learning"
+
+
+def _append_hook_error(hook_name: str, error: str) -> None:
+    """Best-effort, bounded, atomic append of a swallowed hook error.
+
+    Never raises (every path in this wrapper returns 0). Keeps the last
+    _MAX_HOOK_ERRORS records so a hook failing on every invocation can't grow
+    the file without bound. A lost record under concurrent appends is acceptable
+    for telemetry; the tempfile + os.replace makes each write corruption-free.
+    """
+    try:
+        root = _learning_data_root()
+        root.mkdir(parents=True, exist_ok=True)
+        log = root / "hooks-errors.jsonl"
+        prior = log.read_text(encoding="utf-8").splitlines() if log.is_file() else []
+        rec = json.dumps({"ts": time.time(), "hook": hook_name, "error": error})
+        lines = prior[-(_MAX_HOOK_ERRORS - 1):] + [rec]
+        fd, tmp = tempfile.mkstemp(dir=str(root), suffix=".tmp")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        os.replace(tmp, log)
+    except Exception:  # noqa: BLE001 -- best-effort telemetry, never break the chain
+        pass
 
 
 def _read_stdin() -> str:
@@ -164,6 +211,7 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
         # Hook called sys.exit() at module top level (legacy style)
         return int(e.code) if e.code is not None else 0
     except Exception as e:  # noqa: BLE001
+        _append_hook_error(script_path.name, f"import error: {e}")
         print(f"run_with_flags: import error in {script_path.name}: {e}", file=sys.stderr)
         return 0  # don't break the chain
 
@@ -206,6 +254,7 @@ def _import_and_run_python(script_path: Path, stdin_text: str) -> int:
     except SystemExit as e:
         return int(e.code) if e.code is not None else 0
     except Exception as e:  # noqa: BLE001
+        _append_hook_error(script_path.name, f"runtime error: {e}")
         print(f"run_with_flags: runtime error in {script_path.name}: {e}", file=sys.stderr)
         return 0  # don't break the chain
 
