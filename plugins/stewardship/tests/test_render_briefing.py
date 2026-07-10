@@ -188,7 +188,11 @@ def test_stdout_handles_non_ascii_under_cp1252(tmp_path):
     mdir = tmp_path / "p" / "memory"
     mdir.mkdir(parents=True)
     (mdir / "MEMORY.md").write_text("- [gone](missing.md)\n", encoding="utf-8")  # broken pointer -> emits →
-    env = {**os.environ, "PYTHONIOENCODING": "cp1252"}
+    # Isolate the hook-error sink + instinct report explicitly (belt-and-suspenders
+    # over the autouse fixture) so this subprocess never reads the developer's real
+    # learning data — a polluted real sink would otherwise crash the briefing write.
+    env = {**os.environ, "PYTHONIOENCODING": "cp1252",
+           "LEARNING_DATA_ROOT": str(tmp_path / "iso-learning")}
     proc = subprocess.run(
         [sys.executable, rb.__file__, "--stdout", "--date", "2026-06-25",
          "--context-dir", str(tmp_path / "noctx"),
