@@ -69,15 +69,32 @@ class _StaleStdin:
             raise ctypes.WinError(ctypes.get_last_error())
 
 
+def _stale_stdin_reproduces() -> "int | None":
+    """Return the OSError.winerror an inherited-stdin capture_output call raises under
+    a stale STD_INPUT_HANDLE, or None if this interpreter tolerates it. CPython >= 3.13
+    fails DuplicateHandle (WinError 6); 3.12 does not exhibit the failure at all, so the
+    mechanism this file guards is not reproducible there (the stdin=DEVNULL fix still
+    applies to every version regardless)."""
+    with _StaleStdin():
+        try:
+            subprocess.run(["git", "--version"], capture_output=True, text=True)
+        except OSError as e:
+            return e.winerror
+    return None
+
+
 def test_stale_stdin_handle_is_actually_broken():
     """Control: with a stale STD_INPUT_HANDLE, an inherited-stdin capture_output call
-    really raises WinError 6 -- so the two assertions below can't pass vacuously."""
-    with _StaleStdin():
-        with pytest.raises(OSError) as excinfo:
-            subprocess.run(["git", "--version"], capture_output=True, text=True)
+    really raises WinError 6 -- so the survives-tests can't pass vacuously. Skips on
+    interpreters that tolerate the stale handle (CPython 3.12), where there is no
+    failure to guard against."""
+    winerror = _stale_stdin_reproduces()
+    if winerror is None:
+        pytest.skip("this CPython build tolerates a stale inherited stdin handle; "
+                    "the WinError-6 mechanism is not reproducible here (e.g. CPython 3.12)")
     # Assert the specific WinError: a bare OSError could be FileNotFoundError (git
     # absent), which would let this control pass without the stale-handle firing.
-    assert excinfo.value.winerror == 6
+    assert winerror == 6
 
 
 def test_check_notice_survives_stale_stdin_handle():
