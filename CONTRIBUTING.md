@@ -87,6 +87,14 @@ only**, run `python3 ci/check-vendored-sync.py --fix` to propagate, and let
 `plugins/discipline/tests/` cover all copies — don't re-add per-plugin duplicates
 (duplicate test basenames also break repo-root pytest collection).
 
+**Hook-error sink (discipline/learning write → stewardship reads).** `run_with_flags.py`
+persists swallowed hook import/runtime errors to a bounded `hooks-errors.jsonl` under the
+learning data root; stewardship's `render_briefing.py` reads that same file to surface a
+"Hook Errors" section. The cross-plugin contract is a JSONL file at a conventional path,
+not a Python import — each side resolves the path independently (a test pins the resolvers
+equal). The wrapper also reconfigures stdio to UTF-8 before dispatch so a hook's non-ASCII
+output can't crash on a cp1252 console.
+
 **Runtime-control env vars.** Every hook routed through `run_with_flags.py` obeys
 `<PREFIX>_HOOK_PROFILE=minimal|standard|strict` and `<PREFIX>_DISABLED_HOOKS=<csv>`,
 where `<PREFIX>` is the hook id's namespace uppercased. Exception: the retrospective
