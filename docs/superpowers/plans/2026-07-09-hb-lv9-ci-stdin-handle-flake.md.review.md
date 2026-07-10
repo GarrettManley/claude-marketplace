@@ -33,3 +33,15 @@ Gate is `scripts/verify.sh`, not `verify.sh`.
 
 ## Signal (accepted, no action)
 The auditor's original SIGNAL (delivery suite running twice per CI cell) applied only to the abandoned meta-test design; the deterministic guard adds no cross-suite coupling.
+
+---
+
+# Whole-branch adversarial code review (Phase C, step 10)
+
+Dispatched `pr-review-toolkit:code-reviewer` + `silent-failure-hunter` in parallel at full session-model tier on the committed diff `main..HEAD`. No CRITICAL. Both independently confirmed the ctypes save/restore signatures are correct (`GetStdHandle.restype=c_void_p` prevents 64-bit handle truncation), isolation-on-raise is sound (`__exit__` restores `STD_INPUT_HANDLE` before propagating), the win32 skip guard keeps `ctypes.windll`/`msvcrt` off the non-Windows import path, and the six `stdin=DEVNULL` additions are behaviorally inert.
+
+- **IMPORTANT (both) — control could pass vacuously.** `pytest.raises(OSError)` accepts `FileNotFoundError` (git absent). **Fixed:** control now asserts `excinfo.value.winerror == 6`, proving the stale-handle mechanism fired.
+- **MINOR — `SetStdHandle` return unchecked.** A failed restore would silently leave later tests with a broken stdin. **Fixed:** `_StaleStdin._set` now binds kernel32 with `use_last_error=True` and raises `ctypes.WinError` on a zero return (fails loud).
+- **IMPORTANT — `check-notice.py` swallows `git grep` exit >=2.** Pre-existing: a real git error (corrupt/not-a-repo) is indistinguishable from exit 1 (no matches), so the NOTICE gate returns 0 falsely. **Deferred with reason:** orthogonal to the stdin-handle flake; changing the gate's exit-code semantics is a distinct behavioral change deserving its own test. **Filed as bead `hb-duz`.**
+
+Re-verified after fixes: regression test `3 passed`, combined invocation `319 passed, 0 failed`.
