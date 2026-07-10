@@ -33,6 +33,13 @@ The combined local pytest invocation `pytest ci/tests/ plugins/delivery/tests/` 
   - *Fix:* Replaced with a deterministic `_StaleStdin` context manager (`SetStdHandle` → stale handle → restore) that reproduces the *mechanism*, not the finicky *collection*, and exercises the real gate functions plus a non-vacuous control.
   - *Rule:* When guarding a heisenbug, reproduce the underlying mechanism deterministically — don't pin a regression test on the fragile emergent condition that first surfaced it.
 
+- **CPython 3.12 tolerates the stale stdin handle — CI caught the test's false universal.**
+  - *What happened:* The deterministic control (`test_stale_stdin_handle_is_actually_broken`) passed locally on 3.14 and on the Windows/3.13 CI cell, but **failed on Windows/3.12** with `Failed: DID NOT RAISE OSError`.
+  - *Root cause:* Between CPython 3.12 and 3.13, Windows `subprocess` handle-inheritance changed — 3.13+ fails `DuplicateHandle` on a stale inherited `STD_INPUT_HANDLE` (WinError 6); 3.12 tolerates it and the subprocess succeeds. The control asserted the failure *universally*, which is false on 3.12.
+  - *How caught:* The tri-OS × py3.12/3.13 CI matrix on the PR — local dev is 3.14 only, so this was invisible until CI ran. (CI runs tests *per-directory*, so it never hits the real combined-invocation flake; the value here was purely the version spread.)
+  - *Fix:* The control now probes at runtime and `pytest.skip`s when the mechanism isn't reproducible, instead of hard-coding a `>= 3.13` version gate — self-adapting to whatever the interpreter does. The `stdin=DEVNULL` fix itself is version-independent and unaffected.
+  - *Rule:* A regression test that reproduces a platform/runtime-specific failure should assert the failure *conditionally* (detect-and-skip), not universally — CPython's Windows subprocess internals differ enough across minor versions that a "this always raises" control is a portability trap. Push the PR and let the full CI matrix run before assuming a Windows-specific guard is portable.
+
 ## Concrete improvements
 
 - **`stdin=subprocess.DEVNULL` at the six git subprocess sites** (`ci/check-notice.py`, `ci/check-doc-links.py`, `ci/tests/test_ci_gates.py`, `ci/tests/test_check_doc_links.py`) — done, landed. Extends the pattern already shipping in `ci/release.py`.
