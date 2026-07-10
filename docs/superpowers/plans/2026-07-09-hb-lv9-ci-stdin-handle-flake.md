@@ -121,6 +121,10 @@ git commit -m "fix(ci): pin stdin=DEVNULL on gate-script git subprocesses (hb-lv
 
 ---
 
+## Completion
+
+**Done.** All six `subprocess.run` sites that the combined-invocation flake hit now pass `stdin=subprocess.DEVNULL` (2 production gate scripts + 4 git test-helpers), and a deterministic Windows-only regression guard reproduces the exact stale-`STD_INPUT_HANDLE` state via `SetStdHandle` and asserts the real gate functions survive it. The bead repro `pytest ci/tests/ plugins/delivery/tests/` went from **18 failed → 319 passed, 0 failed**; per-directory CI shape stays green; `scripts/verify.sh` exits 0. Landed on branch `fix/hb-lv9-ci-cwd-contamination` (commits `a99be52` fix, `be6e40d` plan+review) for PR (`land-policy: pr`). The bead's original cwd-contamination hypothesis was falsified during diagnosis (no `os.chdir` exists in the suites; error is a stdin-handle `WinError 6`, not a cwd error) — recorded so the fix doesn't get "corrected" back to the wrong root cause. Tracker: **hb-lv9**. One out-of-scope follow-up (`plugins/git/tests/test_init.py`) filed as a bead.
+
 ## Verification
 
 Positive evidence required (fresh command output + exit code, not a clean terminal state):
