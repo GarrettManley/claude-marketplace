@@ -134,6 +134,7 @@ def test_main_python_hook_main_sysexit(tmp_path, monkeypatch, clean_env):
 
 def test_main_python_hook_import_exception_returns_0(tmp_path, monkeypatch, clean_env, capsys):
     monkeypatch.setenv("STEWARDSHIP_HOOK_PROFILE", "standard")
+    monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "ldr"))  # isolate hook-error log
     hook = _make_py_hook(tmp_path, "broken.py", "raise ValueError('oops')\n")
     monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
     rc = main(["run_with_flags.py", str(hook), "stewardship:drift", "minimal,standard"])
@@ -144,6 +145,7 @@ def test_main_python_hook_import_exception_returns_0(tmp_path, monkeypatch, clea
 
 def test_main_python_hook_runtime_exception_returns_0(tmp_path, monkeypatch, clean_env, capsys):
     monkeypatch.setenv("STEWARDSHIP_HOOK_PROFILE", "standard")
+    monkeypatch.setenv("LEARNING_DATA_ROOT", str(tmp_path / "ldr"))  # isolate hook-error log
     hook = _make_py_hook(tmp_path, "runtime_err.py", "def main():\n    raise RuntimeError('boom')\n")
     monkeypatch.setattr("sys.stdin", io.StringIO("{}"))
     rc = main(["run_with_flags.py", str(hook), "stewardship:drift", "minimal,standard"])
