@@ -67,6 +67,7 @@ def _append_hook_error(hook_name: str, error: str) -> None:
     the file without bound. A lost record under concurrent appends is acceptable
     for telemetry; the tempfile + os.replace makes each write corruption-free.
     """
+    tmp = None
     try:
         root = _learning_data_root()
         root.mkdir(parents=True, exist_ok=True)
@@ -78,8 +79,21 @@ def _append_hook_error(hook_name: str, error: str) -> None:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             f.write("\n".join(lines) + "\n")
         os.replace(tmp, log)
-    except Exception:  # noqa: BLE001 -- best-effort telemetry, never break the chain
-        pass
+        tmp = None  # consumed by os.replace
+    except Exception as e:  # noqa: BLE001 -- never break the chain; report, don't vanish
+        # A persistently-unwritable log is itself a problem worth seeing, not
+        # another silent failure -- surface it on the same stderr channel the
+        # swallow points already use.
+        try:
+            print(f"run_with_flags: could not persist hook error: {e}", file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            pass
+    finally:
+        if tmp is not None:  # write/replace failed -- don't leak the mkstemp file
+            try:
+                os.unlink(tmp)
+            except OSError:
+                pass
 
 
 def _read_stdin() -> str:
