@@ -48,27 +48,36 @@ class _StaleStdin:
     def __enter__(self):
         import msvcrt
 
-        self._k = ctypes.windll.kernel32
+        self._k = ctypes.WinDLL("kernel32", use_last_error=True)
         self._k.GetStdHandle.restype = ctypes.c_void_p
         self._k.SetStdHandle.argtypes = [ctypes.c_ulong, ctypes.c_void_p]
         self._saved = self._k.GetStdHandle(STD_INPUT_HANDLE)
         fd = os.open(os.devnull, os.O_RDONLY)
         stale = msvcrt.get_osfhandle(fd)
         os.close(fd)  # 'stale' is now non-null but refers to a closed handle
-        self._k.SetStdHandle(STD_INPUT_HANDLE, ctypes.c_void_p(stale))
+        self._set(stale)
         return self
 
     def __exit__(self, *exc):
-        self._k.SetStdHandle(STD_INPUT_HANDLE, ctypes.c_void_p(self._saved))
+        self._set(self._saved)  # always restore, even when the body raised
         return False
+
+    def _set(self, handle):
+        # Check the BOOL return: a failed restore would silently leave every later
+        # test in this process with a broken stdin handle -- fail loud instead.
+        if not self._k.SetStdHandle(STD_INPUT_HANDLE, ctypes.c_void_p(handle)):
+            raise ctypes.WinError(ctypes.get_last_error())
 
 
 def test_stale_stdin_handle_is_actually_broken():
     """Control: with a stale STD_INPUT_HANDLE, an inherited-stdin capture_output call
     really raises WinError 6 -- so the two assertions below can't pass vacuously."""
     with _StaleStdin():
-        with pytest.raises(OSError):
+        with pytest.raises(OSError) as excinfo:
             subprocess.run(["git", "--version"], capture_output=True, text=True)
+    # Assert the specific WinError: a bare OSError could be FileNotFoundError (git
+    # absent), which would let this control pass without the stale-handle firing.
+    assert excinfo.value.winerror == 6
 
 
 def test_check_notice_survives_stale_stdin_handle():
