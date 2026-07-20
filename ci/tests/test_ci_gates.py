@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -162,3 +163,16 @@ def test_check_notice_no_trigger_is_clean(tmp_path, monkeypatch):
     subprocess.run(["git", "-C", str(tmp_path), "add", "plain.py"], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     _patch_cn(monkeypatch, tmp_path)
     assert cn.main() == 0  # no attribution → NOTICE not required
+
+
+def test_check_notice_raises_on_git_error(tmp_path, monkeypatch):
+    # tmp_path is not a git repo. The dev host home dir is itself git-tracked and
+    # %TEMP% sits inside it, so without a ceiling `git grep` would ascend into that
+    # ambient repo and exit 0/1. GIT_CEILING_DIRECTORIES=tmp_path.parent stops the
+    # upward walk so the "not a git repository" error (exit 128) fires
+    # deterministically - the same guard plugins/git/tests/test_init.py uses. The
+    # gate must fail loud on that error, not treat it as "no attribution -> pass".
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
+    _patch_cn(monkeypatch, tmp_path)
+    with pytest.raises(RuntimeError, match="git grep failed"):
+        cn.triggering_files()
