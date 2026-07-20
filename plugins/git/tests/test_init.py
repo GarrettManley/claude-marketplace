@@ -15,7 +15,7 @@ _TARGET = ".claude/commit-message-rules.yaml"
 
 def _git_init_repo(path: Path) -> None:
     """Initialize a git repo with an initial empty commit."""
-    subprocess.run(["git", "init", str(path)], capture_output=True, check=True)
+    subprocess.run(["git", "init", str(path)], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     git_env = {
         **os.environ,
         "GIT_AUTHOR_NAME": "test",
@@ -27,6 +27,7 @@ def _git_init_repo(path: Path) -> None:
         ["git", "-C", str(path), "commit", "--allow-empty", "-m", "init"],
         capture_output=True,
         env=git_env,
+        stdin=subprocess.DEVNULL,
     )
 
 
@@ -41,6 +42,7 @@ def _run(cwd: Path, *args) -> subprocess.CompletedProcess:
         text=True,
         env=env,
         cwd=str(cwd),
+        stdin=subprocess.DEVNULL,
     )
 
 
