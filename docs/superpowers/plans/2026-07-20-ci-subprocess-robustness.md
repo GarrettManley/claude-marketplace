@@ -34,7 +34,7 @@
 - Consumes: `cn` module (`test_ci_gates.py:31`), `cn.triggering_files()`, `_patch_cn` (`test_ci_gates.py:129`).
 - Produces: `triggering_files()` raises `RuntimeError` when `git grep` exits ≥2; unchanged `list[str]` return on exit 0/1. `main()`'s contract widens from "always returns int" to "may propagate RuntimeError" — an uncaught traceback on a git error is the intended fail-loud behavior (review MINOR, accepted).
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `ci/tests/test_ci_gates.py` (check-notice section; `os`/`pytest`/`cn`/`_patch_cn` — note: add `import os` to the imports block if not already present, it is not currently imported):
 
@@ -52,12 +52,12 @@ def test_check_notice_raises_on_git_error(tmp_path, monkeypatch):
         cn.triggering_files()
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `python3 -m pytest ci/tests/test_ci_gates.py::test_check_notice_raises_on_git_error -v`
 Expected: FAIL — current code ignores the return code, so `triggering_files()` returns `[]` and raises nothing.
 
-- [ ] **Step 3: Write minimal implementation**
+- [x] **Step 3: Write minimal implementation**
 
 In `ci/check-notice.py`, replace the body of `triggering_files` (lines 24-35) with:
 
@@ -83,17 +83,17 @@ def triggering_files() -> list[str]:
     return [line for line in out.stdout.splitlines() if line.strip()]
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `python3 -m pytest ci/tests/test_ci_gates.py::test_check_notice_raises_on_git_error -v`
 Expected: PASS.
 
-- [ ] **Step 5: Run the full CI-gates suite to confirm no regression**
+- [x] **Step 5: Run the full CI-gates suite to confirm no regression**
 
 Run: `python3 -m pytest ci/tests/test_ci_gates.py -v`
 Expected: all PASS — the four existing `test_check_notice_*` still green (real repo + synthetic-repo cases exit 0/1, unaffected; the happy-path `test_check_notice_real_repo_is_clean` runs git in the real marketplace repo → exit 0/1, no raise).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add ci/check-notice.py ci/tests/test_ci_gates.py
@@ -111,7 +111,7 @@ git commit -m "fix(ci): check-notice fails loud on git grep error instead of fal
 - Consumes: nothing new.
 - Produces: all three git/bash subprocess calls in the test helpers pass `stdin=subprocess.DEVNULL`, so a subprocess can never block reading the parent's stdin. Signatures unchanged.
 
-- [ ] **Step 1: Apply the hardening edit**
+- [x] **Step 1: Apply the hardening edit**
 
 Note: hb-4d1 is a hygiene hardening — a faithful behavioral test (simulating a git credential/editor prompt that reads stdin) is contrived and platform-fragile, so this task is verified by the existing 11 `TestGitInit` tests staying green PLUS the structural grep in Step 2. The grep is the real acceptance gate for the stdin change; the 11 green tests only prove no regression (review MINOR, accepted).
 
@@ -120,7 +120,7 @@ In `plugins/git/tests/test_init.py`:
 - `_git_init_repo` lines 26-30 (the commit call): add `stdin=subprocess.DEVNULL,` to the kwargs.
 - `_run` lines 38-44 (the bash init.sh call): add `stdin=subprocess.DEVNULL,` to the kwargs.
 
-- [ ] **Step 2: Structural check — every git/bash subprocess closes stdin**
+- [x] **Step 2: Structural check — every git/bash subprocess closes stdin**
 
 The `stdin=` kwarg lands on a different line than `subprocess.run(` for the two multi-line calls, so a bare line-grep can't confirm them (review finding). Count occurrences instead:
 
@@ -128,12 +128,12 @@ Run: `grep -c 'stdin=subprocess.DEVNULL' plugins/git/tests/test_init.py`
 Expected: `3`.
 Cross-check: `grep -c 'subprocess.run(' plugins/git/tests/test_init.py` also returns `3` (one DEVNULL per call site).
 
-- [ ] **Step 3: Run the git-plugin init suite to confirm no regression**
+- [x] **Step 3: Run the git-plugin init suite to confirm no regression**
 
 Run: `python3 -m pytest plugins/git/tests/test_init.py -v`
 Expected: all 11 PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add plugins/git/tests/test_init.py
@@ -144,9 +144,13 @@ git commit -m "test(git): close stdin on init.sh subprocess helpers to prevent i
 
 ## Verification
 
-Completion-gate criteria (fill each with the actual command + output + exit code before ticking):
+Completion-gate criteria (Iron Law: command + output + exit code recorded inline):
 
-- [ ] Task 1: `python3 -m pytest ci/tests/test_ci_gates.py -v` — all pass incl. `test_check_notice_raises_on_git_error`; RED→GREEN captured (RED before the return-code check, GREEN after).
-- [ ] Task 2: `grep -c 'stdin=subprocess.DEVNULL' plugins/git/tests/test_init.py` returns `3`; `python3 -m pytest plugins/git/tests/test_init.py -v` — 11 pass.
-- [ ] Whole gate: `bash scripts/verify.sh` — green.
-- [ ] No version bump introduced (`git diff --stat main` shows no `plugin.json`/`marketplace.json` changes).
+- [x] Task 1 RED→GREEN: `python3 -m pytest ci/tests/test_ci_gates.py::test_check_notice_raises_on_git_error -v` → RED pre-fix (`Failed: DID NOT RAISE <class 'RuntimeError'>`), GREEN post-fix (`1 passed`). Full `python3 -m pytest ci/tests/ -q` → all pass, exit 0.
+- [x] Task 2: `grep -c 'stdin=subprocess.DEVNULL' plugins/git/tests/test_init.py` → `3`; `grep -c 'subprocess.run(' …` → `3`. `python3 -m pytest plugins/git/tests/test_init.py -q` → 9 passed, exit 0. (Plan originally said 11 tests; actual count is 9 — harmless miscount, all green.)
+- [x] Whole gate: `bash scripts/verify.sh` → `check-notice: clean (14 attributed file(s); NOTICE present)`, `check-doc-links: clean (175 …)`, `[verify] OK`, exit 0. Confirms the hb-duz fix leaves the real-repo happy path intact (git grep exits 0, no raise).
+- [x] No version bump: `git diff --stat main` shows only `ci/check-notice.py`, `ci/tests/test_ci_gates.py`, `plugins/git/tests/test_init.py`, and the two plan docs — no `plugin.json`/`marketplace.json` changes.
+
+## Completion
+
+Delivered hb-duz and hb-4d1 on branch `fix/ci-subprocess-robustness` (commits `1066040`, `c3174aa`). hb-duz: `check-notice.py` now raises on `git grep` exit ≥2 instead of silently passing the NOTICE gate on a git error; regression `test_check_notice_raises_on_git_error` uses `GIT_CEILING_DIRECTORIES` isolation and went RED→GREEN cross-platform. hb-4d1: `stdin=subprocess.DEVNULL` on all three subprocess calls in `test_init.py`. Full gate green (`ci/tests/` + git-init suite + `verify.sh`, all exit 0); no version bump. **hb-lv9 de-scoped** — empirically unreproducible as diagnosed (see the scope note above and the bead comment). Whole-branch adversarial code review and PR landing follow.
