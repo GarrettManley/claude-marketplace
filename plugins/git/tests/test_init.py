@@ -26,6 +26,7 @@ def _git_init_repo(path: Path) -> None:
     subprocess.run(
         ["git", "-C", str(path), "commit", "--allow-empty", "-m", "init"],
         capture_output=True,
+        check=True,
         env=git_env,
         stdin=subprocess.DEVNULL,
     )
