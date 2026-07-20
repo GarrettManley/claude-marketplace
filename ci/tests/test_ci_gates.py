@@ -120,10 +120,10 @@ GOOD_NOTICE = "Some product\n\nMIT License\nCopyright (c) 2026 Affaan Mustafa\n"
 
 
 def _git_repo_with_trigger(tmp_path: Path) -> Path:
-    subprocess.run(["git", "init", str(tmp_path)], capture_output=True, check=True)
+    subprocess.run(["git", "init", str(tmp_path)], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     f = tmp_path / "ported.py"
     f.write_text(f"# {cn.TRIGGER}/everything-claude-code @ 4774946d\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(tmp_path), "add", "ported.py"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "add", "ported.py"], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     return tmp_path
 
 
@@ -157,10 +157,10 @@ def test_check_notice_passes_with_good_notice(tmp_path, monkeypatch):
 
 
 def test_check_notice_no_trigger_is_clean(tmp_path, monkeypatch):
-    subprocess.run(["git", "init", str(tmp_path)], capture_output=True, check=True)
+    subprocess.run(["git", "init", str(tmp_path)], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     f = tmp_path / "plain.py"
     f.write_text("# nothing to attribute here\n", encoding="utf-8")
-    subprocess.run(["git", "-C", str(tmp_path), "add", "plain.py"], capture_output=True, check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "add", "plain.py"], capture_output=True, check=True, stdin=subprocess.DEVNULL)
     _patch_cn(monkeypatch, tmp_path)
     assert cn.main() == 0  # no attribution → NOTICE not required
 

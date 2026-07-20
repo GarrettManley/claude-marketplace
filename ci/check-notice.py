@@ -32,13 +32,15 @@ def triggering_files() -> list[str]:
         capture_output=True,
         text=True,
     )
-    if out.returncode >= 2:
-        # git grep exit 1 means no matches; exit >=2 means an actual error (e.g.
-        # not a repo, bad pathspec). Treating an error as "no matches" would let
-        # the NOTICE gate silently pass on a git failure (hb-duz), so fail loud.
+    if out.returncode not in (0, 1):
+        # git grep exit 0 = matches, 1 = no matches; anything else is a failure —
+        # exit >=2 (not a repo, bad pathspec) or a negative signal code from a
+        # killed process (e.g. -9 SIGKILL on OOM/timeout). Treating any of these
+        # as "no matches" would let the NOTICE gate silently pass on a git failure
+        # (hb-duz), so fail loud.
         raise RuntimeError(
-            f"git grep failed (exit {out.returncode}) while scanning for "
-            f"upstream attribution: {out.stderr.strip()}"
+            f"git grep failed (exit {out.returncode}) while scanning "
+            f"{ROOT} for upstream attribution: {out.stderr.strip()}"
         )
     return [line for line in out.stdout.splitlines() if line.strip()]
 
