@@ -84,11 +84,15 @@ Reduces permission prompt noise without granting blanket shell access.
 
 ## llama-server (local LLM)
 
+Use the `-m` flag and `<path-to>`/`<path-to-models>` placeholders — matches the blessed launch
+command in the orchestration plugin's `local-orchestrator` skill (`HANDOFF_GUIDE.md`). Never
+hardcode a machine-specific path (e.g. `C:\llama\`, `C:\models\`) into a tracked allowlist entry.
+
 ```json
-"Bash(C:\\llama\\llama-server.exe --model C:\\models\\* --ctx-size *)",
+"Bash(<path-to>/llama-server.exe -m <path-to-models>/* --ctx-size *)",
 "Bash(curl -s http://localhost:8080/health)",
 "Bash(curl -s http://localhost:8080/v1/models)",
-"PowerShell(& 'C:\\llama\\llama-server.exe' --model 'C:\\models\\*' --ctx-size *)",
+"PowerShell(& '<path-to>\\llama-server.exe' -m '<path-to-models>\\*' --ctx-size *)",
 "PowerShell(Invoke-RestMethod -Uri http://localhost:8080/health)",
 "PowerShell(Invoke-RestMethod -Uri http://localhost:8080/v1/models)"
 ```
