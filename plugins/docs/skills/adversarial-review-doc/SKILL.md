@@ -74,6 +74,8 @@ Launch one agent per active dimension (built-in dimensions, minus any overridden
 
 Run all dimension agents concurrently. Do not wait for one before starting the next.
 
+Instruct each dispatched agent: Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage.
+
 ### Step 3 — Consolidation
 
 After all agents complete:
