@@ -105,7 +105,7 @@ scopes the agent's tool access. Additional optional fields:
   mechanism for giving a subagent access to a skill — do not list `Skill` in `tools` and expect
   skills to become reachable that way.
 
-Agent `name` values must not contain `:` — Claude Code ≥2.1.214 rejects it (the character is
+Agent `name` values must not contain `:` — Claude Code ≥2.1.218 rejects it (the character is
 reserved for plugin namespacing, e.g. `plugin-name:agent-name`).
 
 Deliberately not documented here: `memory:`, `background:`, `context: fork` — no component in this
