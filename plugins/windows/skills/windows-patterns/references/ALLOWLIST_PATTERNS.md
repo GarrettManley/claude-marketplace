@@ -31,8 +31,8 @@ Reduces permission prompt noise without granting blanket shell access.
 
 ```json
 // Allow specific processes only:
-"Bash(taskkill /IM ollama.exe /F)",
-"Bash(Stop-Process -Name ollama -Force)"
+"Bash(taskkill /IM llama-server.exe /F)",
+"Bash(Stop-Process -Name llama-server -Force)"
 // NOT: "Bash(taskkill *)"
 ```
 
@@ -82,16 +82,15 @@ Reduces permission prompt noise without granting blanket shell access.
 "PowerShell($env:PROGRAMFILES)"
 ```
 
-## Ollama (local LLM)
+## llama-server (local LLM)
 
 ```json
-"Bash(ollama list)",
-"Bash(ollama ps)",
-"Bash(ollama show *)",
-"Bash(curl -s http://localhost:11434/api/tags)",
-"Bash(curl -s http://localhost:11434/api/ps)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:11434/api/tags)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:11434/api/ps)"
+"Bash(C:\\llama\\llama-server.exe *)",
+"Bash(curl -s http://localhost:8000/api/tags)",
+"Bash(curl -s http://localhost:8000/api/ps)",
+"PowerShell(& 'C:\\llama\\llama-server.exe' *)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8000/api/tags)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8000/api/ps)"
 ```
 
 ## What NOT to allowlist
