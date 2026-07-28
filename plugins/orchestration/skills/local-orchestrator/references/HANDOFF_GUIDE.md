@@ -39,7 +39,8 @@ The blessed launch arguments are load-bearing for stable behavior on this VRAM c
 GGUFs live at your configured `model_dir` from `configs/tiers.json` (Q4_K_M unless suffixed otherwise) — there is no `pull`; download the
 GGUF once and point `-m` at it. Current slate: `deepseek-r1-7b`, `qwen2.5-coder-7b`, `llama3.1-8b`,
 `gemma-4-E4B-it`, `phi4-mini`, `mistral-7b-instruct` (plus any project-specific GGUFs you have downloaded). Note: the
-older `gemma3-4b-Q4_K_M.gguf` may fail to load on some llama-server builds — prefer `gemma-4-E4B-it`.
+older `gemma3-4b-Q4_K_M.gguf` fails to load on llama-server build 9596 — not a live general-tier option;
+the general tier keeps `llama3.1-8b` / `gemma-4-E4B-it`.
 
 ## Health check
 

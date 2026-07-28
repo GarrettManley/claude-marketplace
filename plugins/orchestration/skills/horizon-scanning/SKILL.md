@@ -31,7 +31,8 @@ If a candidate model consistently outperforms the current Reasoning or Tooling t
 Tier 1 (treat as authoritative):
 
 - **[Hugging Face Open LLM Leaderboard](https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard)** — comprehensive but watch the eval freshness date.
-- **[Ollama Library](https://ollama.com/library)** — new model availability + popularity metrics.
+- **[Hugging Face GGUF models — trending](https://huggingface.co/models?library=gguf&sort=trending)** — new GGUF model availability + popularity metrics.
+- **llama.cpp release notes** — runtime compatibility and new quantization/format support that affects which local models will load.
 - **Anthropic / OpenAI / Google developer blogs** — for general-purpose breakthroughs that often cascade to local models within 2-3 months.
 
 Tier 2 (corroborate before acting):

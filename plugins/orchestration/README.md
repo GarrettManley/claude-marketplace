@@ -154,7 +154,7 @@ Created by init. The `always: true` frontmatter causes supporting `inject_contex
 | `local-orchestrator` skill references `<placeholder>` values in tier output | Run init (`scripts/init.ps1` or `init.sh`), then edit `~/.claude/context/tiers.local.json` with your real binary path, model directory, and VRAM ceiling |
 | llama-server does not start or `health` returns unhealthy | Confirm the binary path in `tiers.local.json` is correct; check that no other process is on port 8080 (`--port` to change it); verify the GGUF path exists |
 | Tier swap is slow (40+ s) | Expected — cold model load on llama-server takes ~40 s. Batch all calls within one tier before stopping the server and starting the next |
-| `gemma3-4b-Q4_K_M.gguf` fails to load | Known issue on some llama-server builds (missing hyperparameter key). Use `gemma-4-E4B-it-Q4_K_M.gguf` instead; update `configs/tiers.json` or `tiers.local.json` accordingly |
+| `gemma3-4b-Q4_K_M.gguf` fails to load | Fails to load on llama-server build 9596 (missing hyperparameter key) — not a live general-tier option. The general tier keeps `llama3.1-8b-Q4_K_M.gguf` / `gemma-4-E4B-it-Q4_K_M.gguf`; update `configs/tiers.json` or `tiers.local.json` if you're still pointing at `gemma3-4b` |
 
 ## Cross-platform
 
