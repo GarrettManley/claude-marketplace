@@ -46,7 +46,7 @@ Match model tier to agent role via the Agent tool's `model` param / Workflow `ag
 |------|------------|
 | `haiku` | Mechanical sweeps: file inventories, grep-and-summarize, frontmatter/convention checks, bulk verification votes, log triage. Pair with `effort: low` in the agent's frontmatter when the agent file is yours to edit. |
 | `sonnet` | Specified, well-scoped work: precise descriptions, mechanical edits, in-context review, test-writing in defined areas |
-| `opus` | ambiguous work: unclear requirements, cross-cutting refactors, work that stretches sonnet-class |
+| `opus` | Ambiguous work: unclear requirements, cross-cutting refactors, work that stretches sonnet-class |
 | omit (inherit session model) | Synthesis, judging/scoring, architecture, security-sensitive review, final verification. Ceiling cases may name `fable`. |
 
 Rule of thumb: **route down only when the task is mechanical and the output is cheaply
