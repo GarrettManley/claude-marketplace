@@ -120,7 +120,7 @@ LLAMACPP_CLASSIFIER_MODEL=qwen2.5:7b /aether:eval-run
 | Symptom | Fix |
 |---|---|
 | Hooks fire in an unrelated repo that happens to have a `core/` directory | The Rust-rebuild and classifier/harness reminders require `core/Cargo.toml` to exist, not just a `core/` dir. The `cd_core_guard` is intentionally broader (it catches the same cwd-leak anti-pattern in any Rust project). No false-positive for non-Rust repos. |
-| eval suite reports fewer tests than expected | stale checkout; pull latest |
+| Eval suite reports fewer tests than expected or aborts mid-run | llama-server dropped mid-run after a passing preflight — check the server process is still up (`/health`) and VRAM headroom, then re-run |
 | `ledger_truncation_hook.py` fires on a `--body` string that mentions `history.jsonl` | The hook strips `--body`, `--message`, and `--comment` flag arguments before pattern-matching, so mentions inside flag values should not trigger. If it does fire, the command likely contains an unquoted path token that the strip regex missed — wrap the argument in quotes. |
 | `plan_issue_check.py` rejects a plan's Value Justification block | The regex requires `**Field** (label): N`, not `**Field: N**`. Use `/value-justify` to emit a guaranteed-passing block, or check that asterisks close before the colon on each line. |
 
