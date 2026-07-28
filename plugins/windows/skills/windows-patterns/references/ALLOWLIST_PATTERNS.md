@@ -85,12 +85,12 @@ Reduces permission prompt noise without granting blanket shell access.
 ## llama-server (local LLM)
 
 ```json
-"Bash(C:\\llama\\llama-server.exe *)",
-"Bash(curl -s http://localhost:8000/api/tags)",
-"Bash(curl -s http://localhost:8000/api/ps)",
-"PowerShell(& 'C:\\llama\\llama-server.exe' *)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:8000/api/tags)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:8000/api/ps)"
+"Bash(C:\\llama\\llama-server.exe --model C:\\models\\* --ctx-size *)",
+"Bash(curl -s http://localhost:8080/health)",
+"Bash(curl -s http://localhost:8080/v1/models)",
+"PowerShell(& 'C:\\llama\\llama-server.exe' --model 'C:\\models\\*' --ctx-size *)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8080/health)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8080/v1/models)"
 ```
 
 ## What NOT to allowlist
