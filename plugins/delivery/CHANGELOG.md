@@ -4,6 +4,11 @@ All notable changes to the **delivery** plugin are documented here. The format i
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.3.2
+
+### Fixes
+- inline-work delegation cap for Claude 5 over-delegation
+
 ## 0.3.1
 
 ### Fixes

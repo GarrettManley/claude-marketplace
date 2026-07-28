@@ -4,6 +4,12 @@ All notable changes to the **windows** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.1.1
+
+### Fixes
+- correct llama-server port and API surface in allowlist examples
+- replace retired Ollama allowlist section with llama-server
+
 ## 1.1.0 — 2026-06-24
 
 - Relocated the reference docs (`WINDOWS_ISMS.md`, `PS_VERSION_ROUTING.md`, `ALLOWLIST_PATTERNS.md`) into the skill directory at `skills/windows-patterns/references/` so the skill loads them on demand; README paths updated to match.

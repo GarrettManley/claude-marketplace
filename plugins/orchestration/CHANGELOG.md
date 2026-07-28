@@ -4,6 +4,11 @@ All notable changes to the **orchestration** plugin are documented here. The for
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.0
+
+### Features
+- ambiguity-based Claude 5 routing, delegation cap, HF GGUF scan source, drop unloadable gemma3-4b
+
 ## 1.1.0 — 2026-06-24
 
 - Documented the `uv` prerequisite: the SessionStart hook runs via `uv run --no-project`, which bootstraps its own Python, so `uv` on PATH replaces the prior bare-`python3` requirement (README install + cross-platform notes corrected).

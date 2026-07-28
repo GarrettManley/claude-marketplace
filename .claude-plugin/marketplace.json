@@ -52,7 +52,7 @@
       "name": "orchestration",
       "source": "./plugins/orchestration",
       "description": "Local LLM tier handoff: Reasoning + Tooling tier model defs (llama-server), local-orchestrator skill (when to hand off to local), horizon-scanning skill (track SOTA <=14B models), hardware-profile awareness via ~/.claude/context/hardware-profile.md.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "ai",
       "author": {
         "name": "Garrett Manley"
@@ -71,7 +71,7 @@
       "name": "windows",
       "source": "./plugins/windows",
       "description": "Windows + PowerShell helpers: copy-pasteable allowlist patterns for .claude/settings.local.json, PS5.1 vs PS7 routing decision tree, common Windows-isms (CRLF, BOM, $env:, path separators).",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "category": "tooling",
       "author": {
         "name": "Garrett Manley"
@@ -106,7 +106,7 @@
       "name": "agentic",
       "source": "./plugins/agentic",
       "description": "Opinionated meta-overlay for AI app development. Wires existing claude-api / agent-sdk-dev / mcp-server-dev plugins into a coherent starting point with opinionated defaults: latest model IDs, prompt-caching on by default, eval discipline, repo structure conventions.",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "category": "ai",
       "author": {
         "name": "Garrett Manley"
@@ -125,7 +125,7 @@
       "name": "aether",
       "source": "./plugins/aether",
       "description": "Aether Engine TTRPG/narrative framework support: domain-specific hooks (cd_core_guard, ledger truncation, classifier/harness/Rust-rebuild reminders), 6 skills (doc-cluster, edit-checklist, plan-writer, ledger-doctor, eval-run, value-justify), classifier-regression-checker agent. Hooks no-op outside Aether-shaped repos; safe to enable globally.",
-      "version": "1.1.1",
+      "version": "1.1.2",
       "category": "narrative",
       "author": {
         "name": "Garrett Manley"
@@ -145,7 +145,7 @@
       "name": "docs",
       "source": "./plugins/docs",
       "description": "Documentation craft: tech-writing (universal prose rules from Google Tech Writing), mermaid-diagram (Mermaid authoring with a configurable brand palette and renderer-agnostic fencing), design-document (structured design-doc creation with a pluggable template).",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "category": "documentation",
       "author": {
         "name": "Garrett Manley"
@@ -164,7 +164,7 @@
       "name": "review",
       "source": "./plugins/review",
       "description": "Multi-lens review: the reviewer-personas skill maps an artifact (design docs, PRs, work items, wiki pages, or skill files) to a set of 16 archetype agents and dispatches them as sub-agents (security-auditor, observability-champion, data-architect, incident-commander, ecosystem-context-reviewer, new-engineer, skill-craft-reviewer, architect, contract-surface, performance-scalability, test-strategy, migration-safety, compliance, api-contract, error-handling, accessibility); each agent definition is the persona. SessionStart hook nags about review-triggering artifacts that completed without a review token. Includes persona-stub template for adopters to add their own archetype agents.",
-      "version": "1.3.3",
+      "version": "1.3.4",
       "category": "review",
       "author": {
         "name": "Garrett Manley"
@@ -236,7 +236,7 @@
       "name": "delivery",
       "source": "./plugins/delivery",
       "description": "End-to-end value-delivery lifecycle: a /deliver command + skill that drives one body of work through plan -> adversarial plan review -> subagent execution -> completion gate -> adversarial code review -> land -> retrospective, composing superpowers + docs + retrospective skills. Project-specific plan/doc/checklist steps bind per-repo via .claude/delivery.local.md; no project-internal names are committed.",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "category": "workflow",
       "author": {
         "name": "Garrett Manley"
