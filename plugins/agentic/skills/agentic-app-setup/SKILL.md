@@ -37,14 +37,15 @@ Default to the latest stable models. **The `claude-api` skill is the source of t
 
 - **Reasoning / complex + ambiguous work**: latest Opus (at time of writing, `claude-opus-5`; 1M context)
 - **Highest-capability ceiling tier**: `claude-fable-5` (1M context) — reach for it when Opus isn't enough
-- **Daily driver**: latest Sonnet (`claude-sonnet-5`) — ~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs; rejects non-default `temperature`/`top_p`/`top_k` (400 error)
+- **Daily driver**: latest Sonnet (`claude-sonnet-5`; 1M context) — ~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs; rejects non-default `temperature`/`top_p`/`top_k` (400 error)
 - **Latency-sensitive / cost-sensitive**: latest Haiku (`claude-haiku-4-5`, unchanged, still current)
 
 ### 1a. Effort (`output_config.effort`)
 
 The primary cost/latency dial, independent of model choice — affects text, thinking, and tool calls:
 
-- `low` — subagents and mechanical/scoped work (the documented subagent level).
+- `low` — subagents and mechanical/scoped work (Anthropic's recommended level for subagents).
+- `medium` — lighter-weight agentic work than the default.
 - `high` (default) — standard agentic work.
 - `xhigh` / `max` — hardest agentic tasks, deepest reasoning.
 

@@ -79,7 +79,7 @@ directly (`claude-api`, `agent-sdk-dev:new-sdk-app`, `mcp-server-dev:build-mcp-s
 |---------|-------|
 | Reasoning / complex + ambiguous work | latest Opus — at time of writing `claude-opus-5` (1M context) |
 | Highest-capability ceiling tier | `claude-fable-5` (1M context) — reach for it when Opus isn't enough |
-| Daily driver | latest Sonnet — `claude-sonnet-5` (~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs) |
+| Daily driver | latest Sonnet — `claude-sonnet-5` (1M context; ~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs) |
 | Latency / cost-sensitive | latest Haiku — `claude-haiku-4-5` (unchanged, still current) |
 | Prompt caching | ON for any reused content ≥ 512 tokens |
 | Minimum golden test cases before v1 | 20 |
