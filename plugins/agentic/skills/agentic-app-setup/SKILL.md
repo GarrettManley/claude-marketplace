@@ -33,11 +33,22 @@ Before writing the first SDK call, set these conventions:
 
 ### 1. Model IDs
 
-Default to the latest stable models. **The `claude-api` skill is the source of truth for current model IDs — always check it before committing one to code.** Model IDs cycle quarterly, so treat the values below as a starting point, not a pin:
+Default to the latest stable models. **The `claude-api` skill is the source of truth for current model IDs — always check it before committing one to code.** Model IDs cycle quarterly, so treat the values below as a starting point, not a pin. Dateless IDs (all of the below) are pinned snapshots, not evergreen pointers.
 
-- **Reasoning + complex tasks**: latest Opus (at time of writing, `claude-opus-4-8`; 1M context variant `claude-opus-4-8[1m]`)
-- **Daily driver**: latest Sonnet (`claude-sonnet-4-6`)
-- **Latency-sensitive / cost-sensitive**: latest Haiku (`claude-haiku-4-5`)
+- **Reasoning / complex + ambiguous work**: latest Opus (at time of writing, `claude-opus-5`; 1M context)
+- **Highest-capability ceiling tier**: `claude-fable-5` (1M context) — reach for it when Opus isn't enough
+- **Daily driver**: latest Sonnet (`claude-sonnet-5`) — ~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs; rejects non-default `temperature`/`top_p`/`top_k` (400 error)
+- **Latency-sensitive / cost-sensitive**: latest Haiku (`claude-haiku-4-5`, unchanged, still current)
+
+### 1a. Effort (`output_config.effort`)
+
+The primary cost/latency dial, independent of model choice — affects text, thinking, and tool calls:
+
+- `low` — subagents and mechanical/scoped work (the documented subagent level).
+- `high` (default) — standard agentic work.
+- `xhigh` / `max` — hardest agentic tasks, deepest reasoning.
+
+Hold effort constant within a cached conversation — changing it mid-conversation invalidates the prefix cache.
 
 ### 2. Prompt caching
 
@@ -46,7 +57,7 @@ Default to the latest stable models. **The `claude-api` skill is the source of t
 ```python
 # Python SDK example
 client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     system=[{
         "type": "text",
         "text": "You are a helpful assistant.",

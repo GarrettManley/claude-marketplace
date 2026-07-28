@@ -77,10 +77,11 @@ directly (`claude-api`, `agent-sdk-dev:new-sdk-app`, `mcp-server-dev:build-mcp-s
 
 | Default | Value |
 |---------|-------|
-| Reasoning / complex tasks | latest Opus — at time of writing `claude-opus-4-8` (1M context: `claude-opus-4-8[1m]`) |
-| Daily driver | latest Sonnet — `claude-sonnet-4-6` |
-| Latency / cost-sensitive | latest Haiku — `claude-haiku-4-5` |
-| Prompt caching | ON for any reused content ≥ 1024 tokens |
+| Reasoning / complex + ambiguous work | latest Opus — at time of writing `claude-opus-5` (1M context) |
+| Highest-capability ceiling tier | `claude-fable-5` (1M context) — reach for it when Opus isn't enough |
+| Daily driver | latest Sonnet — `claude-sonnet-5` (~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs) |
+| Latency / cost-sensitive | latest Haiku — `claude-haiku-4-5` (unchanged, still current) |
+| Prompt caching | ON for any reused content ≥ 512 tokens |
 | Minimum golden test cases before v1 | 20 |
 | CI eval gate | Hard block on > 5% score regression from main |
 | LLM-judge usage | Supplementary only; never the sole regression gate |
@@ -88,7 +89,8 @@ directly (`claude-api`, `agent-sdk-dev:new-sdk-app`, `mcp-server-dev:build-mcp-s
 | Observability | Log model, input tokens, output tokens, cache read/write tokens, cost per call |
 
 Model IDs cycle quarterly. Always check the `claude-api` skill for the current latest before
-committing a model ID to code.
+committing a model ID to code. Dateless IDs (like the ones above) are pinned snapshots, not
+evergreen pointers — they won't silently move to a newer model.
 
 ### Canonical repo layout
 
@@ -127,7 +129,7 @@ defaults.
 | Symptom | Fix |
 |---------|-----|
 | Skill fires but the routing target ("use `agent-sdk-dev:new-sdk-app`") does nothing | The target plugin is not enabled. These are official Anthropic plugins, not part of this marketplace — add the plugin from its own source, then run `/plugin enable agent-sdk-dev` (or the relevant plugin) and retry. |
-| Model IDs in the skill output look stale | Model IDs in `SKILL.md` reflect the knowledge cutoff. Run the `claude-api` skill directly to get the current latest before writing code. |
+| Model IDs in the skill output look stale | Model IDs in `SKILL.md` reflect the knowledge cutoff. Run the `claude-api` skill directly to get the current latest before writing code — remember dateless IDs are pinned snapshots, not evergreen pointers, so staleness only ever comes from the doc, never from the ID silently drifting. |
 | Prompt caching code example fails at runtime | Check that the SDK version in `pyproject.toml` / `package.json` supports `cache_control`. The 4-block pattern requires SDK ≥ the version that shipped `cache_control` on message blocks — see `references/PROMPT_CACHING.md` for the exact API shape. |
 | Eval runner template references `check_regression.py` but the file does not exist | The eval templates in `references/EVAL_DISCIPLINE.md` are starting-point scaffolds, not generated files. Copy the CI snippet and implement `check_regression.py` for your project's scoring shape. |
 

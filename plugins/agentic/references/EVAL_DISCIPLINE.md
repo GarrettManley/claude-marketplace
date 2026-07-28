@@ -63,7 +63,7 @@ Never use LLM-judge as the SOLE scorer for a regression gate — pair with at le
 Local development:
 
 ```bash
-python src/evals/runner.py --suite golden --model claude-sonnet-4-6
+python src/evals/runner.py --suite golden --model claude-sonnet-5
 # Output: pass-rate per category, regression vs last run, full per-case results
 ```
 
@@ -73,7 +73,7 @@ CI:
 # .github/workflows/eval.yml
 - name: Run golden evals
   run: |
-    python src/evals/runner.py --suite golden --model claude-sonnet-4-6 --json > eval-results.json
+    python src/evals/runner.py --suite golden --model claude-sonnet-5 --json > eval-results.json
     python src/evals/check_regression.py --baseline main --threshold 0.05
 ```
 

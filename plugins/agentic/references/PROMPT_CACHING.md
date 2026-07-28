@@ -7,7 +7,7 @@ When and how to use Anthropic's prompt cache. Defaults from this marketplace's h
 The cache pays for itself when:
 
 - The same content (system prompt, tool definitions, RAG context, examples) is reused across **multiple turns** within the 5-minute TTL window.
-- The cached content is **≥ 1024 tokens** (cache write has overhead; small prompts don't break even).
+- The cached content is **≥ 512 tokens** (cache write has overhead; small prompts don't break even).
 - The conversation **stays warm** — cold-start each turn means repeated writes, no reads.
 
 Skip the cache when:
@@ -21,7 +21,7 @@ For agents with tools + RAG + examples + dynamic input, structure system content
 
 ```python
 client.messages.create(
-    model="claude-sonnet-4-6",
+    model="claude-sonnet-5",
     system=[
         # Block 1: stable persona / instructions (rarely changes)
         {
