@@ -37,7 +37,7 @@ Default to the latest stable models. **The `claude-api` skill is the source of t
 
 - **Reasoning / complex + ambiguous work**: latest Opus (at time of writing, `claude-opus-5`; 1M context)
 - **Highest-capability ceiling tier**: `claude-fable-5` (1M context) — reach for it when Opus isn't enough
-- **Daily driver**: latest Sonnet (`claude-sonnet-5`; 1M context) — ~30% more tokens per text vs 4.6's tokenizer; no intro-pricing date in docs; rejects non-default `temperature`/`top_p`/`top_k` (400 error)
+- **Daily driver**: latest Sonnet (`claude-sonnet-5`; 1M context) — ~30% more tokens per text vs 4.6's tokenizer; base/standard pricing (promotional pricing may apply — check the pricing page or the `claude-api` skill for current rates); rejects non-default `temperature`/`top_p`/`top_k` (400 error)
 - **Latency-sensitive / cost-sensitive**: latest Haiku (`claude-haiku-4-5`, unchanged, still current)
 
 ### 1a. Effort (`output_config.effort`)

@@ -7,7 +7,7 @@ When and how to use Anthropic's prompt cache. Defaults from this marketplace's h
 The cache pays for itself when:
 
 - The same content (system prompt, tool definitions, RAG context, examples) is reused across **multiple turns** within the 5-minute TTL window.
-- The cached content is **≥ 512 tokens** (cache write has overhead; small prompts don't break even).
+- The cached content clears the model's minimum cacheable prefix (cache write has overhead; shorter prompts silently won't cache). The minimum is model-dependent, not universal: **512 tokens** on Opus 5 / Fable 5, **1024 tokens** on Sonnet 5 (the model used in the example below), **4096 tokens** on Haiku 4.5. Check the `claude-api` skill for other models.
 - The conversation **stays warm** — cold-start each turn means repeated writes, no reads.
 
 Skip the cache when:
