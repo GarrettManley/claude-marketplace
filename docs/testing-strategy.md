@@ -161,7 +161,7 @@ bash scripts/verify.sh
 
 `scripts/verify.sh` runs, in order: `lint-no-bare-python`, `ruff check`,
 `check-versions --check`, `validate-plugins`, `verify_hook_runtime_controls`,
-`check-vendored-sync`, `lint-frontmatter`, `gen-skill-index --check`, and
+`check-vendored-sync`, `lint-frontmatter`, `lint-model-ids`, `gen-skill-index --check`, and
 `check-notice`. It exits non-zero on the first failure.
 
 Run the tests and the coverage gate with the same per-directory loop CI uses:

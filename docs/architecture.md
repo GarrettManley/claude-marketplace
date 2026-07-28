@@ -276,7 +276,7 @@ bash scripts/verify.sh   # exit 0 = clean; exit non-zero = failures on stdout
 
 `verify.sh` runs, in order: `lint-no-bare-python`, `ruff`, `check-versions --check`,
 `validate-plugins`, `verify_hook_runtime_controls`, `check-vendored-sync`,
-`lint-frontmatter`, `gen-skill-index --check`, and `check-notice`. CI wraps that with
+`lint-frontmatter`, `lint-model-ids`, `gen-skill-index --check`, and `check-notice`. CI wraps that with
 the parts that need OS-specific tooling a committer may not have locally: a tri-OS matrix
 (Ubuntu + Windows required, macOS non-blocking) on Python 3.12 and 3.13, the per-plugin
 pytest suites behind a **≥90% line-coverage gate**, and the OS-specific linters

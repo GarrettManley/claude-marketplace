@@ -39,6 +39,10 @@ echo "[verify] lint-frontmatter"
 python3 "$ROOT/ci/lint-frontmatter.py"
 echo "[verify] OK"
 
+echo "[verify] lint-model-ids"
+python3 "$ROOT/ci/lint-model-ids.py"
+echo "[verify] OK"
+
 echo "[verify] lint-changelog"
 python3 "$ROOT/ci/lint-changelog.py"
 echo "[verify] OK"

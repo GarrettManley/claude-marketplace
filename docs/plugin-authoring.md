@@ -266,7 +266,7 @@ bash scripts/verify.sh
 ```
 
 It runs, in order: `lint-no-bare-python`, `ruff`, `check-versions --check`, `validate-plugins`,
-hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `gen-skill-index --check`, and
-the `NOTICE` attribution gate. Exit 0 means clean. The pytest suites and cross-OS shell linters
+hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `lint-model-ids`,
+`gen-skill-index --check`, and the `NOTICE` attribution gate. Exit 0 means clean. The pytest suites and cross-OS shell linters
 run in CI (they need OS-specific tools a committer may not have locally); see `CONTRIBUTING.md`
 for the dev-toolchain setup and the maintainer pre-merge gate.
