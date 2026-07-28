@@ -74,6 +74,8 @@ ARTIFACT: <absolute path | gh pr diff <n> | wiki URL>
 
 Review the artifact through your archetype's lens. Stay silent on items outside your NOT-covered boundary.
 
+Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage. Use `nit`/`signal` for low-severity or uncertain items.
+
 OUTPUT: YAML only. No prose outside the YAML block.
 
 persona: <your archetype name>

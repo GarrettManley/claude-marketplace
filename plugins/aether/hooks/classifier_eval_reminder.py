@@ -2,12 +2,12 @@
 
 Spec 029 §5.2 mandates running `tests/eval/classifier.eval.ts` after any
 classifier prompt change, because the eval is the only coverage for
-live-Ollama (gemma3:4b) regressions — unit tests can't catch model-specific
+live llama-server (gemma4:e4b) regressions — unit tests can't catch model-specific
 output drift.
 
 Triggered after Edit/Write/MultiEdit to:
   - src/llm/classifier_prompt.ts
-  - src/llm/ollama.ts
+  - src/llm/llamacpp.ts
   - src/llm/gemini.ts
   - src/llm/schemas.ts
 
@@ -29,7 +29,7 @@ from aether_repo import edited_file_path, load_payload, repo_relative  # noqa: E
 
 TRIGGER_FILES = {
     "src/llm/classifier_prompt.ts",
-    "src/llm/ollama.ts",
+    "src/llm/llamacpp.ts",
     "src/llm/gemini.ts",
     "src/llm/schemas.ts",
 }
@@ -47,7 +47,7 @@ def main() -> int:
 
     print(
         f"[classifier-eval-reminder] {rel} changed — run `npm run eval:classifier` "
-        "against live Ollama before declaring the edit complete. "
+        "against live llama-server before declaring the edit complete. "
         "(Spec 029 §5.2; issue #14.)"
     )
     return 0

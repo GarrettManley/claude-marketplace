@@ -105,6 +105,12 @@ name/description on every SKILL.md and agent file) and `ci/gen-skill-index.py --
 (docs/skill-index.md must match frontmatter) both run in `verify.sh`. After adding or
 renaming a skill/agent: `python3 ci/gen-skill-index.py --write` and stage the index.
 
+**Model-ID gate.** `ci/lint-model-ids.py` denylists this generation's retired Claude
+model IDs (dated gen-4 Opus/Sonnet, pre-4.5 Haiku) and Ollama-era runtime references
+(`src/llm/ollama.ts`, `OLLAMA_*`, `gemma3:4b`) across `plugins/`, `docs/`, `templates/`,
+`README.md`, and `marketplace.json` — skipping `CHANGELOG.md` and `docs/adr/`, where
+historical references are legitimate. Runs in `verify.sh`.
+
 **Repo-marker detection.** aether's hooks resolve their target repo by content
 markers (not hardcoded paths), the same style as stewardship's `language_detect.py`.
 Prefer that pattern for any new repo-aware hook.

@@ -32,6 +32,10 @@ conversational turns never get a workflow.
 - Independent work items fan out as **parallel Agent calls in a single message** — never
   serially when there's no dependency.
 - Once a search is delegated, don't duplicate it inline.
+- Cap: do not delegate work you can finish yourself in a handful of tool calls, and —
+  **outside the pre-authorized workflow categories and mandated review gates above** — do
+  not spawn subagents to verify or double-check your own work. Claude 5–era models
+  over-delegate by default; the floor above is a cap, not a target.
 
 ## Model routing for delegated agents
 
@@ -40,12 +44,15 @@ Match model tier to agent role via the Agent tool's `model` param / Workflow `ag
 
 | Tier | Route here |
 |------|------------|
-| `haiku` | Mechanical sweeps: file inventories, grep-and-summarize, frontmatter/convention checks, bulk verification votes, log triage |
-| `sonnet` | Standard exploration, well-scoped implementation inside known patterns, test-writing in defined areas |
-| omit (inherit session model) | Synthesis, judging/scoring, architecture, security-sensitive review, final verification, anything ambiguous |
+| `haiku` | Mechanical sweeps: file inventories, grep-and-summarize, frontmatter/convention checks, bulk verification votes, log triage. Pair with `effort: low` in the agent's frontmatter when the agent file is yours to edit. |
+| `sonnet` | Specified, well-scoped work: precise descriptions, mechanical edits, in-context review, test-writing in defined areas |
+| `opus` | Ambiguous work: unclear requirements, cross-cutting refactors, work that stretches sonnet-class |
+| omit (inherit session model) | Synthesis, judging/scoring, architecture, security-sensitive review, final verification. Ceiling cases may name `fable`. |
 
 Rule of thumb: **route down only when the task is mechanical and the output is cheaply
 verifiable**; a down-routed agent doing judgment work fails silently. When unsure, inherit.
+A larger model finishing multi-step work in one pass is often cheaper per task than a
+smaller model grinding at its ceiling.
 
 ## Model-independence
 

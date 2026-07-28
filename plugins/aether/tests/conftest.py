@@ -33,7 +33,7 @@ def aether_checkout(tmp_path: Path) -> Path:
     (root / "src" / "roll-proposal.ts").write_text("// roll\n", encoding="utf-8")
     (root / "src" / "state-sync.ts").write_text("// sync\n", encoding="utf-8")
     (root / "src" / "llm" / "classifier_prompt.ts").write_text("// clf\n", encoding="utf-8")
-    (root / "src" / "llm" / "ollama.ts").write_text("// ollama\n", encoding="utf-8")
+    (root / "src" / "llm" / "llamacpp.ts").write_text("// llamacpp\n", encoding="utf-8")
     (root / "src" / "llm" / "gemini.ts").write_text("// gemini\n", encoding="utf-8")
     (root / "src" / "llm" / "schemas.ts").write_text("// schemas\n", encoding="utf-8")
     (root / "src" / "llm" / "provider.ts").write_text("// provider\n", encoding="utf-8")

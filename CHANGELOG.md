@@ -24,6 +24,12 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Added
 
+- `ci/lint-model-ids.py`: new pre-merge gate denylisting this generation's retired
+  Claude model IDs (dated gen-4 Opus/Sonnet, pre-4.5 Haiku) and Ollama-era runtime
+  references (`src/llm/ollama.ts`, `OLLAMA_*`, `gemma3:4b`) across `plugins/`,
+  `docs/`, `templates/`, `README.md`, and `marketplace.json` — deliberately excluding
+  `CHANGELOG.md` files and `docs/adr/`, where historical references are legitimate.
+  Wired into `scripts/verify.sh` and CI's portable gate set. Refs #61.
 - `review` plugin: `/review-evolve` command automating the post-cycle update
   protocol — derives per-persona Caught/Missed/Hallucinated catches from the
   in-context review report and turns the notable signals into validated,

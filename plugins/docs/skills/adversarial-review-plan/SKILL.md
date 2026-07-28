@@ -79,6 +79,8 @@ Launch all of the following concurrently. Do not wait for one before starting th
 
 The agent definition **is** the persona — its system prompt carries the full pushback triggers, NOT-covered boundary, and severity rubric. Do not paste any persona text into the prompt. Pass each archetype the plan path (by reference) and instruct it to emit findings in the Standard Findings Format below, written to its own scratch path `<output-dir>/<agent-name>.raw.md`. The archetypes' native severity vocabulary (`blocker` / `must_fix` / `nit` / `signal` / `praise`) maps to the consolidated buckets as: `blocker` to CRITICAL, `must_fix` to IMPORTANT, `nit` / `signal` to MINOR (`praise` is dropped from the findings file).
 
+Instruct each dispatched agent: Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage.
+
 ### Step 3 — Consolidation
 
 After all agents complete:

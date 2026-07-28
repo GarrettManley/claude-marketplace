@@ -314,6 +314,7 @@ enough that `writing-plans` would have nothing concrete to work from.
      gap — surface the failure and its partial progress rather than inferring or fabricating what the
      subagent would have found. (The per-task SDD reviews here are down-routed for cost; the
      whole-branch review at step 10 is not — see step 10.)
+   - **Delegation cap.** For incidental work encountered mid-run that you can finish in a handful of tool calls, do it inline — do not spawn a subagent for it, and never spawn subagents to re-verify your own completed steps outside the review gates this skill mandates.
 8. **Edit checklist** — if the `edit-checklist` slot is bound, run it against the diff before
    declaring the work done. Skip cleanly if unbound.
 

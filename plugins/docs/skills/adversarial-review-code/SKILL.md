@@ -64,6 +64,8 @@ Launch all applicable agents concurrently. Do not wait for one before starting t
 | `pr-review-toolkit:silent-failure-hunter` | Error handling, catch blocks, silent fallback behavior |
 | `pr-review-toolkit:type-design-analyzer` | Type design quality (TypeScript or C# files only) |
 
+Instruct each dispatched agent: Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage.
+
 ### Step 3 — Consolidation
 
 After all agents complete:

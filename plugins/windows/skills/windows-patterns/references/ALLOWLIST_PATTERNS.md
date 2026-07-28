@@ -31,8 +31,8 @@ Reduces permission prompt noise without granting blanket shell access.
 
 ```json
 // Allow specific processes only:
-"Bash(taskkill /IM ollama.exe /F)",
-"Bash(Stop-Process -Name ollama -Force)"
+"Bash(taskkill /IM llama-server.exe /F)",
+"Bash(Stop-Process -Name llama-server -Force)"
 // NOT: "Bash(taskkill *)"
 ```
 
@@ -82,16 +82,19 @@ Reduces permission prompt noise without granting blanket shell access.
 "PowerShell($env:PROGRAMFILES)"
 ```
 
-## Ollama (local LLM)
+## llama-server (local LLM)
+
+Use the `-m` flag and `<path-to>`/`<path-to-models>` placeholders — matches the blessed launch
+command in the orchestration plugin's `local-orchestrator` skill (`HANDOFF_GUIDE.md`). Never
+hardcode a machine-specific path (e.g. `C:\llama\`, `C:\models\`) into a tracked allowlist entry.
 
 ```json
-"Bash(ollama list)",
-"Bash(ollama ps)",
-"Bash(ollama show *)",
-"Bash(curl -s http://localhost:11434/api/tags)",
-"Bash(curl -s http://localhost:11434/api/ps)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:11434/api/tags)",
-"PowerShell(Invoke-RestMethod -Uri http://localhost:11434/api/ps)"
+"Bash(<path-to>/llama-server.exe -m <path-to-models>/* --ctx-size *)",
+"Bash(curl -s http://localhost:8080/health)",
+"Bash(curl -s http://localhost:8080/v1/models)",
+"PowerShell(& '<path-to>\\llama-server.exe' -m '<path-to-models>\\*' --ctx-size *)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8080/health)",
+"PowerShell(Invoke-RestMethod -Uri http://localhost:8080/v1/models)"
 ```
 
 ## What NOT to allowlist

@@ -136,10 +136,10 @@ class TestRepoRelative:
         assert "\\" not in rel, "relative path must use forward slashes"
 
     def test_llm_file_relative(self, aether_checkout: Path):
-        target = aether_checkout / "src" / "llm" / "ollama.ts"
+        target = aether_checkout / "src" / "llm" / "llamacpp.ts"
         root, rel = repo_relative(str(target))
         assert root == aether_checkout.resolve()
-        assert rel == "src/llm/ollama.ts"
+        assert rel == "src/llm/llamacpp.ts"
 
     def test_none_outside_repo(self, tmp_path: Path):
         loose = tmp_path / "nowhere" / "file.ts"

@@ -4,6 +4,14 @@ All notable changes to the **agentic** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.0
+
+### Features
+- Claude 5 model defaults, effort guidance, 512-token cache floor
+
+### Fixes
+- complete effort-level enum and 1M-context annotations
+
 ## 1.1.0 — 2026-06-24
 
 - Clarified that the routing targets (`claude-api`, `agent-sdk-dev`, `mcp-server-dev`, `plugin-dev`) are official Anthropic plugins not shipped in this marketplace — add them from their own source before they resolve.

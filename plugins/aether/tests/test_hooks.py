@@ -143,8 +143,8 @@ class TestClassifierEvalReminder:
         out = capsys.readouterr().out
         assert "[classifier-eval-reminder]" in out
 
-    def test_fires_for_ollama(self, monkeypatch, capsys, aether_checkout: Path):
-        target = str(aether_checkout / "src" / "llm" / "ollama.ts")
+    def test_fires_for_llamacpp(self, monkeypatch, capsys, aether_checkout: Path):
+        target = str(aether_checkout / "src" / "llm" / "llamacpp.ts")
         rc = _run_main(classifier_eval_reminder, monkeypatch, self._payload(target))
         assert rc == 0
         assert "[classifier-eval-reminder]" in capsys.readouterr().out
@@ -193,10 +193,10 @@ class TestClassifierEvalReminder:
         assert capsys.readouterr().out.strip() == ""
 
     def test_message_contains_file_name(self, monkeypatch, capsys, aether_checkout: Path):
-        target = str(aether_checkout / "src" / "llm" / "ollama.ts")
+        target = str(aether_checkout / "src" / "llm" / "llamacpp.ts")
         _run_main(classifier_eval_reminder, monkeypatch, self._payload(target))
         out = capsys.readouterr().out
-        assert "ollama.ts" in out or "src/llm/ollama.ts" in out
+        assert "llamacpp.ts" in out or "src/llm/llamacpp.ts" in out
 
     def test_uses_tool_response_file_path(self, monkeypatch, capsys, aether_checkout: Path):
         target = str(aether_checkout / "src" / "llm" / "gemini.ts")
@@ -222,7 +222,7 @@ class TestGameplayHarnessReminder:
         "src/roll-proposal.ts",
         "src/state-sync.ts",
         "src/llm/classifier_prompt.ts",
-        "src/llm/ollama.ts",
+        "src/llm/llamacpp.ts",
         "src/llm/gemini.ts",
         "src/llm/schemas.ts",
         "src/llm/provider.ts",

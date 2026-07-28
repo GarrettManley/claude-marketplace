@@ -59,6 +59,8 @@ Fetch all inputs before dispatching dimensions. Do not run dimension checks agai
 
 Run all four dimensions concurrently. Each dimension operates on the data fetched in Step 1.
 
+Instruct each dispatched agent: Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage.
+
 ### Step 3 — Consolidation
 
 After all dimension checks complete:

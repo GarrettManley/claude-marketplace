@@ -95,7 +95,25 @@ You are a specialist reviewer. Your job is narrow and precise: ...
 ```
 
 `name` and `description` are required (see the frontmatter gate below); `tools` is optional and
-scopes the agent's tool access.
+scopes the agent's tool access. Additional optional fields:
+
+- `model` — `sonnet` / `opus` / `haiku` / `fable` / `inherit` / a full model ID. Omit for judgment
+  work so the agent inherits the session's model (see "Model tiering" below).
+- `effort` — `low` / `medium` / `high` / `xhigh` / `max`. Overrides the session's effort level for
+  this agent; pair with `model: haiku` for genuinely mechanical agents.
+- `skills` — a list of skill names to preload into the agent's context. This is the correct
+  mechanism for giving a subagent access to a skill — do not list `Skill` in `tools` and expect
+  skills to become reachable that way.
+
+Agent `name` values must not contain `:` — Claude Code ≥2.1.218 rejects it (the character is
+reserved for plugin namespacing, e.g. `plugin-name:agent-name`).
+
+Deliberately not documented here: `memory:`, `background:`, `context: fork` — no component in this
+repo uses them yet. Add guidance here when one does. This is about the `background:` **frontmatter
+field** specifically (an explicit opt-in/opt-out an agent file could set) — it is distinct from the
+**background-by-default runtime behavior** subagents already run under (every subagent, regardless
+of frontmatter), which the "Background-subagent tool filter" subsection below documents because it
+affects tool access today.
 
 ## Skills (`SKILL.md` frontmatter)
 
@@ -115,6 +133,10 @@ dependencies: []
 (skill body)
 ```
 
+Two more optional fields carry through from the Claude 5 harness: `effort` (`low` / `medium` /
+`high` / `xhigh` / `max`, applies while the skill is active) and `model` (same values as `/model`,
+plus `inherit`; scoped to the rest of the turn).
+
 `ci/lint-frontmatter.py` enforces only **presence and parseability** of `name` and `description`
 across every `plugins/*/skills/*/SKILL.md` and `plugins/*/agents/*.md`. It checks the frontmatter
 block opens and terminates with `---`, both keys exist, and neither is empty (description is also
@@ -133,15 +155,31 @@ rather than "AI-slop" noise — follow them for every new skill, agent, and comm
   when to use it*, leading with a concrete trigger: `Use when …` / `Use PROACTIVELY when …`. Name
   the specific artifacts, file types, or situations that should fire it. Vague descriptions
   ("helps with documentation") don't get invoked at the right time.
-- **Model tiering (agents).** Subagent frontmatter accepts an optional `model` field. **Omit it**
-  for judgment work — reviewers, analysers, design/architecture agents — so they inherit the
-  session's (strong) model; pinning a judgment agent to a weaker model silently degrades it. Only
-  set `model: haiku` for genuinely mechanical agents (file inventories, grep-and-summarize, bulk
-  frontmatter/convention checks) whose output is cheaply verifiable. When unsure, omit.
+- **Model tiering (agents).** Subagent frontmatter accepts an optional `model` field (`sonnet`,
+  `opus`, `haiku`, `fable`, `inherit`, or a full model ID). **Omit it** for judgment work —
+  reviewers, analysers, design/architecture agents — so they inherit the session's (strong) model;
+  pinning a judgment agent to a weaker model silently degrades it. The routing heuristic: specified,
+  well-scoped work → `sonnet`; genuinely ambiguous work (unclear requirements, cross-cutting
+  refactors, work that stretches sonnet-class) → `opus`; ceiling cases may name `fable`. For
+  genuinely mechanical agents (file inventories, grep-and-summarize, bulk frontmatter/convention
+  checks) whose output is cheaply verifiable, set `model: haiku` and prefer pairing it with
+  `effort: low` in the agent's frontmatter. When unsure, omit.
 - **Progressive disclosure (skills).** Keep `SKILL.md` itself a navigable decision tree: when to
   use it, the steps/interface, and links. Push deep material (large tables, long examples, full
   reference text) into sibling files (`references/…`, `dimensions/…`) the skill points at, so the
   always-loaded body stays small and the detail loads on demand.
+- **Background-subagent tool filter.** Subagents run in the background by default. A background
+  subagent keeps every MCP tool, but only these built-ins survive: `Read`, `Grep`, `Glob`, `Bash`,
+  `PowerShell`, `Edit`, `Write`, `NotebookEdit`, `WebFetch`, `WebSearch`, `TodoWrite`, `Skill`,
+  `ToolSearch`, `EnterWorktree`, `ExitWorktree`, `Monitor`, `TaskStop`, `SendMessage`, `Artifact` —
+  everything else is silently stripped. Check any `tools:` allowlist you write against this list
+  before assuming a background agent can reach a tool (see the
+  [sub-agents docs](https://code.claude.com/docs/en/sub-agents)).
+- **Review-language rule.** Never write confidence/severity pre-filters into reviewer prompts —
+  "only flag high-confidence issues" trains the reviewer to suppress true positives. Report
+  everything and triage at consolidation instead; it's the house pattern, per
+  `plugins/discipline/agents/spec-code-drift-checker.agent.md`: "When in doubt, flag and let the
+  human decide. False positives cost less than missed drift."
 
 ## Wiring into `marketplace.json`
 
@@ -232,7 +270,7 @@ bash scripts/verify.sh
 ```
 
 It runs, in order: `lint-no-bare-python`, `ruff`, `check-versions --check`, `validate-plugins`,
-hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `gen-skill-index --check`, and
-the `NOTICE` attribution gate. Exit 0 means clean. The pytest suites and cross-OS shell linters
+hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `lint-model-ids`, `lint-changelog`,
+`gen-skill-index --check`, and the `NOTICE` attribution gate. Exit 0 means clean. The pytest suites and cross-OS shell linters
 run in CI (they need OS-specific tools a committer may not have locally); see `CONTRIBUTING.md`
 for the dev-toolchain setup and the maintainer pre-merge gate.
