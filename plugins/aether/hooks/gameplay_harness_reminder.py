@@ -1,7 +1,7 @@
 """PostToolUse hook: remind to run the gameplay harness after edits to gameplay code.
 
 The gameplay harness (`scripts/run-gameplay-tests.mjs`, backed by
-`scripts/gameplay-harness.ts`) is the only coverage for live-Ollama behavior
+`scripts/gameplay-harness.ts`) is the only coverage for live llama-server behavior
 that unit tests cannot catch: stochastic stage-directions combat initiation,
 classifier skill-proficiency bias under real models, cross-pass prompt
 regressions. See `docs/engineering/plans/2026-04-23-gameplay-harness-findings.md`
@@ -36,7 +36,7 @@ TRIGGER_FILES = {
     "src/roll-proposal.ts",
     "src/state-sync.ts",
     "src/llm/classifier_prompt.ts",
-    "src/llm/ollama.ts",
+    "src/llm/llamacpp.ts",
     "src/llm/gemini.ts",
     "src/llm/schemas.ts",
     "src/llm/provider.ts",
@@ -55,7 +55,7 @@ def main() -> int:
 
     print(
         f"[gameplay-harness-reminder] {rel} changed — run "
-        "`node scripts/run-gameplay-tests.mjs` against live Ollama "
+        "`node scripts/run-gameplay-tests.mjs` against live llama-server "
         "(scenarios 01-03 baseline, plus any scenario covering the touched "
         "area) before declaring the edit complete. "
         "See docs/engineering/plans/2026-04-23-gameplay-harness-findings.md."

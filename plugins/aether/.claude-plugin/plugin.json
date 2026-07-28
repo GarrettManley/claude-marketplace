@@ -17,7 +17,7 @@
     "narrative",
     "ledger",
     "classifier",
-    "ollama",
+    "llama-server",
     "rust",
     "typescript"
   ]
