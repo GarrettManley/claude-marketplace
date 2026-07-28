@@ -109,7 +109,11 @@ Agent `name` values must not contain `:` — Claude Code ≥2.1.218 rejects it (
 reserved for plugin namespacing, e.g. `plugin-name:agent-name`).
 
 Deliberately not documented here: `memory:`, `background:`, `context: fork` — no component in this
-repo uses them yet. Add guidance here when one does.
+repo uses them yet. Add guidance here when one does. This is about the `background:` **frontmatter
+field** specifically (an explicit opt-in/opt-out an agent file could set) — it is distinct from the
+**background-by-default runtime behavior** subagents already run under (every subagent, regardless
+of frontmatter), which the "Background-subagent tool filter" subsection below documents because it
+affects tool access today.
 
 ## Skills (`SKILL.md` frontmatter)
 
@@ -266,7 +270,7 @@ bash scripts/verify.sh
 ```
 
 It runs, in order: `lint-no-bare-python`, `ruff`, `check-versions --check`, `validate-plugins`,
-hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `lint-model-ids`,
+hook-runtime-controls, `check-vendored-sync`, `lint-frontmatter`, `lint-model-ids`, `lint-changelog`,
 `gen-skill-index --check`, and the `NOTICE` attribution gate. Exit 0 means clean. The pytest suites and cross-OS shell linters
 run in CI (they need OS-specific tools a committer may not have locally); see `CONTRIBUTING.md`
 for the dev-toolchain setup and the maintainer pre-merge gate.
