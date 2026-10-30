@@ -340,7 +340,7 @@ enough that `writing-plans` would have nothing concrete to work from.
     **wider scope and without a down-routed model** (omit any `model` override so the review inherits
     the session's capability tier) — this is the whole-branch review, distinct from the down-routed
     per-task SDD reviews at step 7. When `constitution` is bound (see Configuration), treat it as
-    binding context the diff is measured against, in addition to the standard review. Apply the same
+    binding context the diff is measured against, in addition to the standard review, and pass its path as `--constitution` so `review:architecture-conformance` reads it. Apply the same
     no-fabrication rule as step 7: a failed or incomplete reviewer subagent is a surfaced failure,
     never a synthesized result. **Only proceed when this gate passes:**
     - all CRITICAL/IMPORTANT findings fixed or explicitly deferred with a stated reason;
