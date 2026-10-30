@@ -1,6 +1,6 @@
 ---
 name: adversarial-review-code
-description: Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems. Dispatches pr-review-toolkit agents in parallel, consolidates findings into CRITICAL / IMPORTANT / MINOR severity buckets, and optionally auto-dispatches a single fixer. Complements /adversarial-review-doc, which checks document integrity rather than code.
+description: Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems, and architecture conformance (dependency direction, earned abstraction). Dispatches pr-review-toolkit agents in parallel, consolidates findings into CRITICAL / IMPORTANT / MINOR severity buckets, and optionally auto-dispatches a single fixer. Complements /adversarial-review-doc, which checks document integrity rather than code.
 version: 0.1.0
 dependencies: ["pr-review-toolkit"]
 ---
@@ -28,6 +28,7 @@ This skill requires `pr-review-toolkit` from `claude-plugins-official`. Install 
 /adversarial-review-code <diff-path-or-pr-ref>
   [--fix]             # auto-dispatch a single fixer agent after consolidation
   [--output <path>]   # where to write consolidated findings; defaults to <diff-path>.review.md
+  [--constitution <path>]  # governance doc forwarded to agents that accept one
 ```
 
 **Arguments:**
@@ -37,6 +38,7 @@ This skill requires `pr-review-toolkit` from `claude-plugins-official`. Install 
 | `<diff-path-or-pr-ref>` | required | Path to a diff file, or a PR reference (`PR #123`, `gh pr view 123`) |
 | `--fix` | off | After consolidation, dispatch a single fixer agent with the complete consolidated findings list |
 | `--output` | `<diff-path>.review.md` | Path where the consolidated findings file is written |
+| `--constitution` | unset | Path to a governance document; forwarded to `review:architecture-conformance`, which cites its section numbers |
 
 ---
 
@@ -47,6 +49,7 @@ This skill requires `pr-review-toolkit` from `claude-plugins-official`. Install 
 Before dispatching agents, read the diff to determine which file types are present:
 
 - If any `.ts`, `.tsx`, `.cs`, or `.d.ts` files appear in the diff, include `type-design-analyzer` in the dispatch.
+- If any `.py`, `.rs`, `.ts`, `.tsx`, `.cs`, `.ps1`, `.psm1`, `.mjs` or `.js` file appears in the diff and the `review` plugin is installed, include `review:architecture-conformance`; if the plugin is absent, print `architecture-conformance: review plugin not installed — skipped` and continue.
 - Always include `code-reviewer` and `silent-failure-hunter`.
 
 This check is intentionally lightweight — scan file extensions only, do not parse the diff content.
@@ -63,6 +66,7 @@ Launch all applicable agents concurrently. Do not wait for one before starting t
 | `pr-review-toolkit:code-reviewer` | Code quality, project guidelines, style adherence |
 | `pr-review-toolkit:silent-failure-hunter` | Error handling, catch blocks, silent fallback behavior |
 | `pr-review-toolkit:type-design-analyzer` | Type design quality (TypeScript or C# files only) |
+| `review:architecture-conformance` | Dependency direction, earned abstraction, test placement, shared-library duplication (source files only; receives `--constitution` when given) |
 
 Instruct each dispatched agent: Report every issue you find, including ones you are uncertain about or consider low-severity. Do not filter for importance or confidence at this stage; consolidation is the triage stage.
 
@@ -119,6 +123,7 @@ Agents must not output prose summaries, only the structured finding lines. Each 
 ## Cross-references
 
 - **Prerequisite:** `pr-review-toolkit` (`claude-plugins-official`) must be installed. This skill dispatches its agents directly.
+- **Soft prerequisite:** `review` (`garrettmanley`) for the architecture-conformance dispatch; skipped with a printed note when absent.
 - **Complementary:** `/adversarial-review-pr` (`docs@garrettmanley`) — structural PR review: description accuracy, work item consistency, scope completeness. Use after code review to layer structural checks onto the same PR.
 - **Complementary:** `/adversarial-review-doc` (`docs@garrettmanley`) — document integrity review: structural problems, broken cross-references, stale claims, terminology drift. Use for markdown documents rather than code diffs.
 - **Complementary:** `/reviewer-personas` (`review@garrettmanley`) — persona-perspective review: how named or archetype team members would react. Use after this skill to layer human perspective onto mechanical findings.

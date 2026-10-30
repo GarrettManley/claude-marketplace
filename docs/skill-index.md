@@ -20,7 +20,7 @@
 | discipline | `council` | Convene a four-voice council for ambiguous decisions, tradeoffs, and go/no-go calls. Use when multiple valid paths exist and you need structured disagreement… |
 | discipline | `finish-and-push` | Close out a feature branch using the standard rebase-onto-main + FF-merge + push routine. User-invocable only (disable-model-invocation true) because pushing… |
 | discipline | `session-handoff` | Write a thorough end-of-session handoff document using a structured 8-section schema (What We're Building / What WORKED / What Did NOT Work / What Has NOT… |
-| docs | `adversarial-review-code` | Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems. Dispatches pr-review-toolkit… |
+| docs | `adversarial-review-code` | Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems, and architecture conformance… |
 | docs | `adversarial-review-doc` | Use when you need to adversarially review any markdown document for structural problems, broken cross-references, stale claims, terminology drift, or… |
 | docs | `adversarial-review-plan` | Use when you need to adversarially review an implementation or work plan BEFORE executing it — to challenge its premise, test feasibility, and cut scope.… |
 | docs | `adversarial-review-pr` | Use when you need to adversarially review a pull request for description accuracy, work item consistency, commit message alignment, and cross-document sync… |
