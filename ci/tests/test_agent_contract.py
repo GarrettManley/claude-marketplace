@@ -40,9 +40,9 @@ AGENT_IDS = [ac.agent_stem(p) for p in AGENTS]
 
 
 def test_agents_discovered():
-    # 16 review archetypes + 4 plugin agents (aether/discipline/orchestration/
+    # 17 review archetypes + 4 plugin agents (aether/discipline/orchestration/
     # stewardship). The floor guards against a glob that silently finds nothing.
-    assert len(AGENTS) >= 20
+    assert len(AGENTS) >= 21
 
 
 @pytest.mark.parametrize("path", AGENTS, ids=AGENT_IDS)

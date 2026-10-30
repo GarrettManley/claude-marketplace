@@ -41,7 +41,7 @@
 | stewardship | `stewardship-overview` | Use when the user wants to set up automated maintenance — nightly drift checks against context files, auto-memory housekeeping, scheduled briefings. Walks… |
 | windows | `windows-patterns` | Use whenever working in a Windows + PowerShell environment and you need to make a tooling decision (which shell, what allowlist pattern, how to handle a… |
 
-## Agents (23)
+## Agents (24)
 
 | Plugin | Agent | Description |
 |---|---|---|
@@ -54,6 +54,7 @@
 | review | `accessibility` | Use when reviewing UI design documents, ADO Features, or user stories that describe interactive components, screen layouts, color choices, or dynamic content… |
 | review | `api-contract` | Use when reviewing designs or features that introduce or modify API endpoints, route definitions, request/response schemas, or client-facing behavior. Catches… |
 | review | `architect` | Use when reviewing design documents, ADO Features, or wiki pages for progressive disclosure, mental-model completeness, and claim integrity. Catches undefined… |
+| review | `architecture-conformance` | Use when reviewing a code diff or PR for dependency direction, earned abstraction, test placement, and duplication of shared-library utilities. Catches… |
 | review | `compliance` | Use when reviewing designs that describe regulated data flows, audit trails, certificate lifecycles, or cross-tenant data access. Catches missing evidence of… |
 | review | `contract-surface` | Use when reviewing design documents or features that define configuration defaults, identity/access patterns, external contract surfaces, or SLA claims.… |
 | review | `data-architect` | Use when reviewing design documents, ADO Features, or wiki pages that introduce or modify data models, schema ownership, ingestion pipelines, or multi-tenant… |

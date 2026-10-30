@@ -19,7 +19,7 @@ MIT licensed; portions adapted from [`affaan-m/everything-claude-code`](https://
 | `agentic` | AI apps | Meta-overlay over claude-api / agent-sdk-dev / mcp-server-dev with opinionated defaults: latest model IDs, prompt-caching, eval discipline |
 | `aether` | Narrative | TTRPG framework hooks + 6 skills + classifier-regression agent; hooks no-op outside framework-shaped repos, safe to enable globally |
 | `docs` | Documentation | tech-writing (Google Tech Writing rules), mermaid-diagram (brand palette, renderer-agnostic fencing), design-document |
-| `review` | Review | Dispatch sub-agent reviewers against docs/PRs/work items using sixteen archetype agents; SessionStart nag for un-reviewed artifacts |
+| `review` | Review | Dispatch sub-agent reviewers against docs/PRs/work items using seventeen archetype agents; SessionStart nag for un-reviewed artifacts |
 | `retrospective` | Discipline | Plan-retrospective cycle — ExitPlanMode marker drop, SessionStart nag, retro-authoring skill |
 | `git` | Workflow | Conventional Commits formatting (resists common CI-guard failures) + PR creation that detects remote host (GitHub / Azure DevOps / GitLab) |
 | `learning` | Learning | Atomic instinct storage, project-scoped observation hooks (default-off), `/analyze-observations` review report |

@@ -13,7 +13,7 @@ A library of reviewer archetypes for sub-agent-based document and PR review. Eac
 
 Reach for this skill when an artifact warrants multi-lens scrutiny before it lands: a design document, a PR, an operational runbook, a work item, a wiki page, or a Claude Code skill file. Match the artifact to the selection table below, then dispatch the named archetype agents as sub-agents and consolidate their findings into one report.
 
-The shipped library has 16 archetype agents. To add a real teammate persona (with its own pushback triggers grounded in feedback they actually gave), create a new `agents/<name>.agent.md` using `templates/persona-stub.md` as the shape — keep those additions in your project-local `.claude/agents/` rather than upstreaming.
+The shipped library has 17 archetype agents. To add a real teammate persona (with its own pushback triggers grounded in feedback they actually gave), create a new `agents/<name>.agent.md` using `templates/persona-stub.md` as the shape — keep those additions in your project-local `.claude/agents/` rather than upstreaming.
 
 ---
 
@@ -41,6 +41,7 @@ Each cell names the plugin-scoped `subagent_type` — pass it verbatim. The bare
 | Services with diagnosability gaps (limited logging/metrics) | Add `review:observability-champion` |
 | Skill files (SKILL.md, REGRESSION.md, agent/persona files) | `review:skill-craft-reviewer` |
 | Onboarding / first-time-reader docs | `review:new-engineer` |
+| Code diffs / PRs touching source files | Add `review:architecture-conformance` |
 
 To bias the selection for your team or domain, fork this skill into `.claude/skills/reviewer-personas/` and edit the table, and add project-local archetypes under `.claude/agents/`. Archetypes are starting points — they get sharper as you record real review-catches against them.
 
