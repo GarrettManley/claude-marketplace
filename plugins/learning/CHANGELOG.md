@@ -4,6 +4,11 @@ All notable changes to the **learning** plugin are documented here. The format i
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.6.2
+
+### Fixes
+- run observe hooks async
+
 ## 1.6.1
 
 ### Fixes
