@@ -1,5 +1,7 @@
 ---
 land-policy: pr
+# Constitution: the parent workspace architecture standard, relative to this repo root (unresolvable on other clones; deliver warns and treats it as unset).
+constitution: ../docs/standards/solid-clean-architecture.md
 ---
 
 # Delivery config — claude-marketplace

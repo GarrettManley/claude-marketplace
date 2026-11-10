@@ -20,7 +20,7 @@
 | discipline | `council` | Convene a four-voice council for ambiguous decisions, tradeoffs, and go/no-go calls. Use when multiple valid paths exist and you need structured disagreement… |
 | discipline | `finish-and-push` | Close out a feature branch using the standard rebase-onto-main + FF-merge + push routine. User-invocable only (disable-model-invocation true) because pushing… |
 | discipline | `session-handoff` | Write a thorough end-of-session handoff document using a structured 8-section schema (What We're Building / What WORKED / What Did NOT Work / What Has NOT… |
-| docs | `adversarial-review-code` | Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems. Dispatches pr-review-toolkit… |
+| docs | `adversarial-review-code` | Use when you need to adversarially review a code diff or PR for correctness bugs, silent failures, and type design problems, and architecture conformance… |
 | docs | `adversarial-review-doc` | Use when you need to adversarially review any markdown document for structural problems, broken cross-references, stale claims, terminology drift, or… |
 | docs | `adversarial-review-plan` | Use when you need to adversarially review an implementation or work plan BEFORE executing it — to challenge its premise, test feasibility, and cut scope.… |
 | docs | `adversarial-review-pr` | Use when you need to adversarially review a pull request for description accuracy, work item consistency, commit message alignment, and cross-document sync… |
@@ -41,7 +41,7 @@
 | stewardship | `stewardship-overview` | Use when the user wants to set up automated maintenance — nightly drift checks against context files, auto-memory housekeeping, scheduled briefings. Walks… |
 | windows | `windows-patterns` | Use whenever working in a Windows + PowerShell environment and you need to make a tooling decision (which shell, what allowlist pattern, how to handle a… |
 
-## Agents (23)
+## Agents (24)
 
 | Plugin | Agent | Description |
 |---|---|---|
@@ -54,6 +54,7 @@
 | review | `accessibility` | Use when reviewing UI design documents, ADO Features, or user stories that describe interactive components, screen layouts, color choices, or dynamic content… |
 | review | `api-contract` | Use when reviewing designs or features that introduce or modify API endpoints, route definitions, request/response schemas, or client-facing behavior. Catches… |
 | review | `architect` | Use when reviewing design documents, ADO Features, or wiki pages for progressive disclosure, mental-model completeness, and claim integrity. Catches undefined… |
+| review | `architecture-conformance` | Use when reviewing a code diff or PR for dependency direction, earned abstraction, test placement, and duplication of shared-library utilities. Catches… |
 | review | `compliance` | Use when reviewing designs that describe regulated data flows, audit trails, certificate lifecycles, or cross-tenant data access. Catches missing evidence of… |
 | review | `contract-surface` | Use when reviewing design documents or features that define configuration defaults, identity/access patterns, external contract surfaces, or SLA claims.… |
 | review | `data-architect` | Use when reviewing design documents, ADO Features, or wiki pages that introduce or modify data models, schema ownership, ingestion pipelines, or multi-tenant… |

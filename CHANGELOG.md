@@ -24,6 +24,12 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Added
 
+- `review` plugin: `architecture-conformance` code-diff persona (17th archetype)
+  that measures a source diff against a project constitution (SOLID + Clean
+  Architecture standard). `docs:adversarial-review-code` dispatches it on source
+  diffs and takes a `--constitution <path>` arg; `delivery`'s `/deliver` forwards
+  its bound `constitution` path to that review. This repo binds the parent
+  workspace standard as its constitution (hb-w4h.1).
 - `ci/lint-model-ids.py`: new pre-merge gate denylisting this generation's retired
   Claude model IDs (dated gen-4 Opus/Sonnet, pre-4.5 Haiku) and Ollama-era runtime
   references (`src/llm/ollama.ts`, `OLLAMA_*`, `gemma3:4b`) across `plugins/`,

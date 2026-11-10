@@ -15,17 +15,18 @@ Multi-lens artifact review using a library of sub-agent reviewer archetypes. Han
 
 | Skill | Description |
 |-------|-------------|
-| `reviewer-personas` | Archetype selection table that maps artifacts to the 16 archetype agents, sub-agent dispatch protocol (`subagent_type: review:<name>`), consolidated report format, and post-cycle update protocol for incremental archetype improvement |
+| `reviewer-personas` | Archetype selection table that maps artifacts to the 17 archetype agents, sub-agent dispatch protocol (`subagent_type: review:<name>`), consolidated report format, and post-cycle update protocol for incremental archetype improvement |
 
 ### Agents
 
-Sixteen reviewer archetypes ship as `.agent.md` files under `agents/`. Each agent definition **is** the persona — its system prompt carries the pushback triggers, NOT-covered boundary, and severity rubric. The `reviewer-personas` skill selects the right archetypes for an artifact and dispatches them as sub-agents via the plugin-scoped `subagent_type: review:<name>` (e.g. `review:security-auditor`). The bare `<name>` also resolves when unambiguous, but the scoped form is collision-safe and recommended.
+Seventeen reviewer archetypes ship as `.agent.md` files under `agents/`. Each agent definition **is** the persona — its system prompt carries the pushback triggers, NOT-covered boundary, and severity rubric. The `reviewer-personas` skill selects the right archetypes for an artifact and dispatches them as sub-agents via the plugin-scoped `subagent_type: review:<name>` (e.g. `review:security-auditor`). The bare `<name>` also resolves when unambiguous, but the scoped form is collision-safe and recommended.
 
 | Agent | Scope |
 |-------|-------|
 | `accessibility` | WCAG compliance, ARIA semantics, keyboard navigation, and color contrast for browser-rendered UI surfaces |
 | `api-contract` | Idempotency guarantees, versioning discipline, breaking-change detection, and error response consistency for API surfaces |
 | `architect` | Progressive disclosure, mental-model completeness, undefined concepts, and unverified quantitative claims in design documents |
+| `architecture-conformance` | Dependency direction, earned abstraction, test placement, and shared-library duplication for code diffs and PRs |
 | `compliance` | Auditable evidence of controls, data residency boundaries, and audit trail integrity for regulated data flows |
 | `contract-surface` | Operational invariants, fail-closed defaults, and contract precision for configuration and external integration surfaces |
 | `data-architect` | Schema design, referential integrity, multi-tenant isolation, and data lifecycle for features that introduce or modify data models |
