@@ -69,7 +69,7 @@ def test_group_files_collapses_same_project(ts_layout):
 
 
 def test_build_commands_ts():
-    cmds = build_commands_for("typescript", Path("/proj"), [Path("/proj/src/a.ts")])
+    cmds = build_commands_for("typescript", Path("/proj"), [Path("/proj/src/a.ts")], typecheck=True)
     # Expect both prettier and tsc invocations
     assert any("prettier" in " ".join(c["args"]) for c in cmds)
     assert any("tsc" in " ".join(c["args"]) for c in cmds)

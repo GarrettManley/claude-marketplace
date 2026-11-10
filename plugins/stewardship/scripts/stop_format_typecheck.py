@@ -2,9 +2,15 @@
 
 Reads the accumulator written by post_edit_accumulator.py, groups files
 by language and project root, and dispatches:
-  - typescript: npx prettier --write, then npx tsc --noEmit
+  - typescript: npx prettier --write  (+ npx tsc --noEmit when typecheck is on)
   - python:     ruff format, then ruff check
-  - rust:       cargo fmt, then cargo check
+  - rust:       cargo fmt             (+ cargo check when typecheck is on)
+
+Whole-project typechecks (tsc, cargo check) are opt-in via
+STEWARDSHIP_STOP_TYPECHECK=1. They cost 8-35s per edit-bearing turn (worse in
+multi-agent runs, where every subagent edit lands in the accumulator), and their
+output is invisible: a Stop hook that exits 0 never surfaces stderr to the model,
+so the wait bought nothing. ruff check stays on because it costs milliseconds.
 
 Non-blocking: tool failures go to stderr; the hook always exits 0.
 Per-batch timeout is proportional to batch count so total < 270s.
@@ -32,6 +38,11 @@ DEFAULT_TIMEOUT_S = int(os.environ.get("STEWARDSHIP_FORMAT_TIMEOUT_S", "90"))
 TOTAL_BUDGET_S = 270  # Stop hook ceiling is 300s; leave 30s headroom
 
 
+def typecheck_enabled() -> bool:
+    """Whole-project typecheck runs only when STEWARDSHIP_STOP_TYPECHECK is exactly "1"."""
+    return os.environ.get("STEWARDSHIP_STOP_TYPECHECK") == "1"
+
+
 def group_files(paths: list[str]) -> list[dict[str, Any]]:
     """Group by (language, project_root). Files with no detected project root
     are skipped (silent — most language tools need a project root anyway).
@@ -55,8 +66,12 @@ def group_files(paths: list[str]) -> list[dict[str, Any]]:
     ]
 
 
-def build_commands_for(language: str, root: Path, files: list[Path]) -> list[dict[str, Any]]:
+def build_commands_for(
+    language: str, root: Path, files: list[Path], *, typecheck: bool = False
+) -> list[dict[str, Any]]:
     """Build the subprocess commands for a single (language, root, files) group.
+
+    `typecheck` adds the whole-project checkers (tsc / cargo check); see module docstring.
 
     Each command dict has: {"bin": str, "args": list[str], "cwd": Path,
     "shell": bool, "label": str}. shell=True is needed on Windows for .cmd shims.
@@ -76,7 +91,7 @@ def build_commands_for(language: str, root: Path, files: list[Path]) -> list[dic
         })
         # Only typecheck .ts/.tsx/.mts/.cts (not .js/.jsx)
         ts_files = [f for f in files if f.suffix.lower() in {".ts", ".tsx", ".mts", ".cts"}]
-        if ts_files:
+        if typecheck and ts_files:
             cmds.append({
                 "bin": npx_bin,
                 "args": [npx_bin, "tsc", "--noEmit"],
@@ -108,13 +123,14 @@ def build_commands_for(language: str, root: Path, files: list[Path]) -> list[dic
             "shell": False,
             "label": "cargo fmt",
         })
-        cmds.append({
-            "bin": "cargo",
-            "args": ["cargo", "check"],
-            "cwd": root,
-            "shell": False,
-            "label": "cargo check",
-        })
+        if typecheck:
+            cmds.append({
+                "bin": "cargo",
+                "args": ["cargo", "check"],
+                "cwd": root,
+                "shell": False,
+                "label": "cargo check",
+            })
     return cmds
 
 
@@ -162,9 +178,10 @@ def main(argv: list[str] | None = None) -> int:
     if not groups:
         return 0
 
+    typecheck = typecheck_enabled()
     # Total batches across all language groups
     total_cmds = sum(
-        len(build_commands_for(g["language"], g["root"], g["files"]))
+        len(build_commands_for(g["language"], g["root"], g["files"], typecheck=typecheck))
         for g in groups
     )
     per_cmd_timeout = (
@@ -176,7 +193,7 @@ def main(argv: list[str] | None = None) -> int:
     test_skip = os.environ.get("STEWARDSHIP_TEST_NO_INVOKE") == "1"
 
     for g in groups:
-        for cmd in build_commands_for(g["language"], g["root"], g["files"]):
+        for cmd in build_commands_for(g["language"], g["root"], g["files"], typecheck=typecheck):
             if test_skip:
                 continue
             _run_command(cmd, per_cmd_timeout)

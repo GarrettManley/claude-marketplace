@@ -20,6 +20,7 @@ sys.path.insert(0, str(SCRIPTS_DIR))
 from stop_format_typecheck import (
     _run_command,
     build_commands_for,
+    typecheck_enabled,
     group_files,
     main,
 )
@@ -152,10 +153,44 @@ class TestBuildCommandsForEdgeCases:
         assert "prettier" in labels
         assert "tsc" not in labels
 
-    def test_ts_with_ts_files_includes_tsc(self):
-        cmds = build_commands_for("typescript", Path("/proj"), [Path("/proj/src/a.ts")])
+    def test_ts_with_ts_files_includes_tsc_when_typecheck_enabled(self):
+        cmds = build_commands_for("typescript", Path("/proj"), [Path("/proj/src/a.ts")], typecheck=True)
         labels = [c["label"] for c in cmds]
         assert "tsc" in labels
+
+    def test_ts_omits_tsc_by_default(self):
+        cmds = build_commands_for("typescript", Path("/proj"), [Path("/proj/src/a.ts")])
+        labels = [c["label"] for c in cmds]
+        assert labels == ["prettier"]
+
+    def test_rust_omits_cargo_check_by_default(self):
+        cmds = build_commands_for("rust", Path("/proj"), [Path("/proj/src/main.rs")])
+        labels = [c["label"] for c in cmds]
+        assert labels == ["cargo fmt"]
+
+    def test_rust_includes_cargo_check_when_typecheck_enabled(self):
+        cmds = build_commands_for("rust", Path("/proj"), [Path("/proj/src/main.rs")], typecheck=True)
+        labels = [c["label"] for c in cmds]
+        assert "cargo check" in labels
+
+    def test_python_keeps_ruff_check_by_default(self):
+        # ruff check is millisecond-cheap, so it is not gated behind typecheck.
+        cmds = build_commands_for("python", Path("/proj"), [Path("/proj/mod.py")])
+        labels = [c["label"] for c in cmds]
+        assert labels == ["ruff format", "ruff check"]
+
+
+class TestTypecheckEnabled:
+    def test_off_when_env_unset(self, clean_env):
+        assert typecheck_enabled() is False
+
+    def test_on_when_env_is_1(self, clean_env):
+        clean_env.setenv("STEWARDSHIP_STOP_TYPECHECK", "1")
+        assert typecheck_enabled() is True
+
+    def test_off_for_other_values(self, clean_env):
+        clean_env.setenv("STEWARDSHIP_STOP_TYPECHECK", "true")
+        assert typecheck_enabled() is False
 
     def test_unknown_language_returns_empty(self):
         cmds = build_commands_for("cobol", Path("/proj"), [Path("/proj/main.cbl")])
