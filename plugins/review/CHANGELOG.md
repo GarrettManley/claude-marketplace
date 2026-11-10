@@ -4,6 +4,14 @@ All notable changes to the **review** plugin are documented here. The format is
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.4.0
+
+### Features
+- add architecture-conformance code-diff persona (hb-w4h.1)
+
+### Fixes
+- make the architecture-conformance rubric decidable for inline tests and adapter construction (hb-w4h.1)
+
 ## 1.3.4
 
 ### Fixes

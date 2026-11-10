@@ -4,6 +4,11 @@ All notable changes to the **delivery** plugin are documented here. The format i
 [Keep a Changelog](https://keepachangelog.com/), and this project adheres to
 [Semantic Versioning](https://semver.org/).
 
+## 0.4.0
+
+### Features
+- forward the constitution path to adversarial-review-code (hb-w4h.1)
+
 ## 0.3.2
 
 ### Fixes
