@@ -167,7 +167,7 @@ State lives at `~/.claude/stewardship/horizon-scan-state.json` (a `last_scan` ti
 
 ### Generate the morning briefing on demand
 
-`render_briefing.py` fills `templates/morning-briefing.md` from live data: it invokes the three source scripts with `--json`, derives the status line + rule-based suggested actions, and substitutes the seven `{{TOKEN}}` placeholders. The same subprocess `--json` contract is each script's single source of truth for its structured output — the renderer is a thin composer (see `docs/adr/0011-morning-briefing-renderer.md`). A source whose subprocess fails degrades to an `_(… unavailable)_` section rather than crashing the briefing.
+`render_briefing.py` fills `templates/morning-briefing.md` from live data: it invokes the three source scripts with `--json`, derives the status line + rule-based suggested actions, and substitutes the eight `{{TOKEN}}` placeholders. The same subprocess `--json` contract is each script's single source of truth for its structured output — the renderer is a thin composer (see `docs/adr/0011-morning-briefing-renderer.md`). A source whose subprocess fails degrades to an `_(… unavailable)_` section rather than crashing the briefing.
 
 ```bash
 # Render today's briefing to ~/.claude/stewardship/briefing/<date>.md and print it
