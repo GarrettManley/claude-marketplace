@@ -4,6 +4,11 @@ All notable changes to the **stewardship** plugin are documented here. The forma
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.5.0
+
+### Features
+- show external health-check results in the morning briefing
+
 ## 1.4.3
 
 ### Fixes

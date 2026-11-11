@@ -71,9 +71,9 @@ def test_actions_derives_each_rule():
 def test_render_substitutes_all_tokens():
     template = ("date: {{DATE}}\n# {{DATE}}\n{{AUDIT_STATUS}}\n{{DRIFT_SECTION}}\n"
                 "{{HOUSEKEEPING_SECTION}}\n{{HORIZON_SCAN_SECTION}}\n{{HOOK_ERRORS_SECTION}}\n"
-                "{{INSTINCT_SECTION}}\n{{ACTIONS_SECTION}}")
+                "{{HEALTHCHECKS_SECTION}}\n{{INSTINCT_SECTION}}\n{{ACTIONS_SECTION}}")
     sections = {"audit_status": "OK", "drift": "D", "housekeeping": "H", "horizon": "Z",
-                "hook_errors": "HE", "instinct": "I", "actions": "A"}
+                "hook_errors": "HE", "healthchecks": "HC", "instinct": "I", "actions": "A"}
     out = rb.render(template, sections, "2026-06-25")
     assert "{{" not in out and "2026-06-25" in out and "OK" in out
 
@@ -261,3 +261,95 @@ def test_read_hook_errors_unreadable_returns_none(tmp_path):
 
 def test_render_hook_errors_section_unreadable():
     assert "unreadable" in rb.render_hook_errors_section(None).lower()
+
+
+# --- Health checks section (external producers write JSON records) ---
+
+import json as _json  # noqa: E402
+from datetime import datetime, timedelta, timezone  # noqa: E402
+
+_NOW = datetime(2026, 11, 10, 12, 0, tzinfo=timezone.utc)
+
+
+def _hc(name="mail-probe", ok=True, days_ago=3, summary="all delivered"):
+    return {"name": name, "ok": ok, "summary": summary,
+            "checked_at": (_NOW - timedelta(days=days_ago)).isoformat()}
+
+
+def _write_hc(d, rec, fname="mail-probe.json"):
+    (d / fname).write_text(_json.dumps(rec), encoding="utf-8")
+
+
+def test_read_healthchecks_absent_dir_returns_empty(tmp_path):
+    assert rb.read_healthchecks(tmp_path / "nope") == []
+
+
+def test_read_healthchecks_reads_record(tmp_path):
+    _write_hc(tmp_path, _hc())
+    assert rb.read_healthchecks(tmp_path)[0]["name"] == "mail-probe"
+
+
+def test_read_healthchecks_undecodable_file_is_flagged(tmp_path):
+    (tmp_path / "broken.json").write_bytes(b"\xff\xfe not json \x80")
+    assert rb.read_healthchecks(tmp_path) == [{"name": "broken", "unreadable": True}]
+
+
+def test_read_healthchecks_malformed_json_is_flagged(tmp_path):
+    (tmp_path / "bad.json").write_text("{not json", encoding="utf-8")
+    assert rb.read_healthchecks(tmp_path)[0]["unreadable"] is True
+
+
+def test_render_healthchecks_empty():
+    assert rb.render_healthchecks_section([], _NOW) == "No health checks registered."
+
+
+def test_render_healthchecks_ok_record_shows_name_age_summary():
+    out = rb.render_healthchecks_section([_hc()], _NOW)
+    assert "mail-probe" in out and "OK" in out and "3d ago" in out and "all delivered" in out
+
+
+def test_render_healthchecks_fail_record():
+    assert "FAIL" in rb.render_healthchecks_section([_hc(ok=False)], _NOW)
+
+
+def test_render_healthchecks_record_older_than_8_days_is_stale():
+    assert "STALE" in rb.render_healthchecks_section([_hc(days_ago=9)], _NOW)
+
+
+def test_render_healthchecks_record_at_8_days_is_not_stale():
+    assert "STALE" not in rb.render_healthchecks_section([_hc(days_ago=8)], _NOW)
+
+
+def test_render_healthchecks_unreadable_record():
+    out = rb.render_healthchecks_section([{"name": "broken", "unreadable": True}], _NOW)
+    assert "broken" in out and "UNREADABLE" in out
+
+
+def test_actions_ok_healthcheck_adds_no_action():
+    a = rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK, healthchecks=[_hc()], now=_NOW)
+    assert "No action needed" in a
+
+
+def test_actions_fail_healthcheck_adds_action():
+    a = rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK, healthchecks=[_hc(ok=False)], now=_NOW)
+    assert "mail-probe" in a and "FAIL" in a
+
+
+def test_actions_stale_healthcheck_adds_action():
+    a = rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK, healthchecks=[_hc(days_ago=10)], now=_NOW)
+    assert "mail-probe" in a and "STALE" in a
+
+
+def test_actions_unreadable_healthcheck_adds_action():
+    a = rb.derive_actions(_DRIFT_OK, _HOUSE_EMPTY, _HZ_OK,
+                          healthchecks=[{"name": "broken", "unreadable": True}], now=_NOW)
+    assert "broken" in a and "UNREADABLE" in a
+
+
+def test_main_renders_healthchecks_from_dir(tmp_path):
+    hc = tmp_path / "hc"
+    hc.mkdir()
+    _write_hc(hc, {**_hc(), "checked_at": datetime.now(timezone.utc).isoformat()})
+    out = tmp_path / "b.md"
+    rb.main(["--output", str(out), "--healthchecks-dir", str(hc)])
+    assert "mail-probe" in out.read_text(encoding="utf-8")
