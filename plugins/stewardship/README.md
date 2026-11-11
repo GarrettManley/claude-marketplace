@@ -250,6 +250,7 @@ STEWARDSHIP_DISABLED_HOOKS=stewardship:stop:format-typecheck claude
 | Env var | Default | Effect |
 |---------|---------|--------|
 | `STEWARDSHIP_FORMAT_TIMEOUT_S` | `90` | Per-batch timeout cap in seconds |
+| `STEWARDSHIP_STOP_TYPECHECK` | unset | Set to `1` to also run the whole-project typecheckers (`npx tsc --noEmit`, `cargo check`). Off by default: they cost 8-35 s per edit-bearing turn and a Stop hook exiting 0 never shows their output to the model. `ruff check` always runs. |
 
 Total budget across all batches is capped at 270 s (under the 300 s Stop hook ceiling).
 Missing tools (e.g., no `cargo` on PATH) are silently skipped — the hook always exits 0.

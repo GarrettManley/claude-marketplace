@@ -4,6 +4,11 @@ All notable changes to the **stewardship** plugin are documented here. The forma
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.4.3
+
+### Fixes
+- make whole-project typecheck on Stop opt-in
+
 ## 1.4.2
 
 ### Fixes

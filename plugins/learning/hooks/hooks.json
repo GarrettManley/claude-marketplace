@@ -19,7 +19,8 @@
           {
             "type": "command",
             "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/observe.py\" learning:pre-tool:observe strict",
-            "timeout": 5
+            "timeout": 5,
+            "async": true
           }
         ]
       }
@@ -31,7 +32,8 @@
           {
             "type": "command",
             "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/scripts/observe.py\" learning:post-tool:observe strict",
-            "timeout": 5
+            "timeout": 5,
+            "async": true
           }
         ]
       }
