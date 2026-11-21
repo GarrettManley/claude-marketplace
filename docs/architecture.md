@@ -169,7 +169,9 @@ the disable list for itself; CI rejection on first review is the cheapest fix. T
 also cross-checks `GATED_PLUGINS` against the on-disk set of plugins shipping
 `scripts/run_with_flags.py`: a plugin that ships the wrapper without a matching
 `GATED_PLUGINS` entry (or is listed without shipping the wrapper) is itself a CI failure,
-so the two stay in sync.
+so the two stay in sync. The same gate reads every plugin's `hooks.json` and fails a hook
+whose shell-form `command` starts with `uv run`: such a hook must use exec form
+(`"command": "uv"` plus an `"args"` array) so it starts without a shell.
 
 ## Runtime-control env vars
 
