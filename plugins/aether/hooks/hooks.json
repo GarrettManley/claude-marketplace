@@ -7,12 +7,22 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/cd_core_guard.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/cd_core_guard.py"
+            ],
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/ledger_truncation_hook.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/ledger_truncation_hook.py"
+            ],
             "timeout": 5
           }
         ]
@@ -24,17 +34,32 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/classifier_eval_reminder.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/classifier_eval_reminder.py"
+            ],
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/gameplay_harness_reminder.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/gameplay_harness_reminder.py"
+            ],
             "timeout": 5
           },
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/rust_rebuild_reminder.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/rust_rebuild_reminder.py"
+            ],
             "timeout": 5
           }
         ]
