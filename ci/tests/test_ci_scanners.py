@@ -96,6 +96,24 @@ class TestLintNoBareP:
         hits = lint_bare.scan_file(p)
         assert hits == []
 
+    def test_scan_file_json_exec_form_bare_python_command(self, tmp_path):
+        content = json.dumps({"command": "python", "args": ["script.py"]}, indent=2)
+        p = self._write(tmp_path, "hooks.json", content)
+        hits = lint_bare.scan_file(p)
+        assert len(hits) == 1
+
+    def test_scan_file_json_exec_form_bare_python_arg(self, tmp_path):
+        content = json.dumps({"command": "uv", "args": ["run", "python", "script.py"]}, indent=2)
+        p = self._write(tmp_path, "hooks.json", content)
+        hits = lint_bare.scan_file(p)
+        assert len(hits) == 1
+
+    def test_scan_file_json_exec_form_uv_clean(self, tmp_path):
+        content = json.dumps({"command": "uv", "args": ["run", "--no-project", "script.py"]}, indent=2)
+        p = self._write(tmp_path, "hooks.json", content)
+        hits = lint_bare.scan_file(p)
+        assert hits == []
+
     # --- should_scan -----------------------------------------------------------
     # should_scan calls is_exempt, which calls path.relative_to(REPO_ROOT).
     # For tmp_path files we must monkeypatch REPO_ROOT to tmp_path so the
@@ -1001,6 +1019,157 @@ class TestVerifyHookRuntimeControls:
         assert rc == 1
         err = capsys.readouterr().err
         assert "scripts/naked.py" in err
+
+    def test_non_dict_hook_entry_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = {
+            "hooks": {
+                "PreToolUse": [{"matcher": "Edit", "hooks": ["not-a-hook-object"]}]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "malformed hooks.json structure" in err
+
+    # --- exec form ("command" + "args", started without a shell) --------------
+
+    def _exec_form(self, args) -> dict:
+        return {
+            "hooks": {
+                "PreToolUse": [
+                    {
+                        "matcher": "Edit",
+                        "hooks": [{"type": "command", "command": "uv", "args": args}],
+                    }
+                ]
+            }
+        }
+
+    def test_exec_form_wrapper_in_args_is_clean(self, tmp_path, monkeypatch):
+        data = self._exec_form(
+            ["run", "--no-project", f"${{CLAUDE_PLUGIN_ROOT}}/{self._WRAPPER}", "hook.py"]
+        )
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 0
+
+    def test_exec_form_without_wrapper_names_the_script(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = self._exec_form(["run", "--no-project", "scripts/exec_naked.py"])
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "scripts/exec_naked.py" in err
+
+    def test_exec_form_non_list_args_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = self._exec_form(f"run --no-project {self._WRAPPER} hook.py")
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "args" in err
+
+    def test_exec_form_non_string_arg_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = self._exec_form(["run", self._WRAPPER, None])
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "args" in err
+
+    # --- shell-form `uv run` is rejected in every plugin ------------------------
+
+    def _shell_form(self, command: str) -> dict:
+        return {
+            "hooks": {
+                "PreToolUse": [
+                    {"matcher": "Edit", "hooks": [{"type": "command", "command": command}]}
+                ]
+            }
+        }
+
+    def test_shell_form_uv_run_in_gated_plugin_is_violation(self, tmp_path, monkeypatch):
+        data = self._shell_form(f"uv run --no-project {self._WRAPPER} hook.py")
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+
+    def test_shell_form_uv_run_message_says_command_uv_plus_args(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = self._shell_form(f"uv run --no-project {self._WRAPPER} hook.py")
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        verify_hooks.main(root=tmp_path)
+        err = capsys.readouterr().err
+        assert '"command": "uv"' in err and '"args"' in err
+
+    def test_shell_form_uv_run_in_ungated_plugin_names_the_plugin(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = self._shell_form("uv run --no-project hooks/reminder.py")
+        self._make_plugin(tmp_path, "aether", data, with_wrapper=False)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "aether" in err
+
+    def test_shell_form_bash_script_in_ungated_plugin_is_clean(self, tmp_path, monkeypatch):
+        data = self._shell_form('bash "${CLAUDE_PLUGIN_ROOT}/hooks/nag.sh"')
+        self._make_plugin(tmp_path, "review", data, with_wrapper=False)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 0
+
+    def test_shell_form_other_uv_subcommand_is_clean(self, tmp_path, monkeypatch):
+        data = self._shell_form("uv runner-like-tool hooks/reminder.py")
+        self._make_plugin(tmp_path, "aether", data, with_wrapper=False)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 0
+
+    def test_exec_form_uv_run_in_ungated_plugin_is_clean(self, tmp_path, monkeypatch):
+        data = self._exec_form(["run", "--no-project", "hooks/reminder.py"])
+        self._make_plugin(tmp_path, "aether", data, with_wrapper=False)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 0
+
+    def test_invalid_json_in_ungated_plugin_is_violation(self, tmp_path, monkeypatch, capsys):
+        hooks_dir = tmp_path / "plugins" / "aether" / "hooks"
+        hooks_dir.mkdir(parents=True)
+        (hooks_dir / "hooks.json").write_text("{broken json", encoding="utf-8")
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ())
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "invalid JSON" in err
+
+    def test_invalid_json_in_gated_plugin_is_reported_once(self, tmp_path, monkeypatch, capsys):
+        self._make_plugin(tmp_path, "discipline", {})
+        (tmp_path / "plugins" / "discipline" / "hooks" / "hooks.json").write_text(
+            "{broken json", encoding="utf-8"
+        )
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        verify_hooks.main(root=tmp_path)
+        err = capsys.readouterr().err
+        assert err.count("invalid JSON") == 1
 
 
 # ===========================================================================

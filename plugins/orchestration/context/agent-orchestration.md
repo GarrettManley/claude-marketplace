@@ -37,6 +37,34 @@ conversational turns never get a workflow.
   not spawn subagents to verify or double-check your own work. Claude 5–era models
   over-delegate by default; the floor above is a cap, not a target.
 
+## Process-heavy agents: at most 6 at a time
+
+- Agents that run builds, test suites, headless browsers or other process-heavy shell work
+  run **at most 6 at a time**, whatever the workflow's own concurrency cap is. Read-only
+  agents (search, review, reading) are not limited by this rule.
+- Why: every tool call an agent makes starts several hook processes, so sixteen shell-heavy
+  agents starting together cause process-start bursts that stall a desktop machine.
+- In a Workflow script (plain JavaScript, no imports), wrap only the heavy `agent()` calls
+  in this limiter:
+
+```js
+const pool = (n) => {
+  let active = 0
+  const queue = []
+  const next = () => {
+    if (active >= n || !queue.length) return
+    active++
+    const { fn, resolve, reject } = queue.shift()
+    fn().then(resolve, reject).finally(() => { active--; next() })
+  }
+  return (fn) => new Promise((resolve, reject) => { queue.push({ fn, resolve, reject }); next() })
+}
+const heavy = pool(6)
+// heavy(() => agent(prompt, opts)) in place of agent(prompt, opts)
+```
+
+- Inside one agent, run one build or end-to-end suite at a time.
+
 ## Model routing for delegated agents
 
 Match model tier to agent role via the Agent tool's `model` param / Workflow `agent()`

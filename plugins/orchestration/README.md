@@ -22,7 +22,7 @@ Intended for developers running [llama-server (llama.cpp)](https://github.com/gg
 | `loop-operator` | Agent | Operates autonomous agent loops safely — required-checks gate, per-iteration checkpoints, stall detection, scope reduction on repeated failure, escalation protocol |
 | `inject_orchestration_context.py` | SessionStart hook | Injects `context/agent-orchestration.md` (the agent/Workflow orchestration policy) into every session via `additionalContext` |
 | `configs/tiers.json` | Config | Runtime block (binary path, endpoint, launch args) + Reasoning / Tooling / General tier definitions with GGUF names, VRAM footprints, capabilities, and `use_when` heuristics |
-| `context/agent-orchestration.md` | Policy | Standing Workflow authorization (code review, deep research, codebase maps, migrations, design panels), subagent model-routing table, and guardrails |
+| `context/agent-orchestration.md` | Policy | Standing Workflow authorization (code review, deep research, codebase maps, migrations, design panels), subagent model-routing table, the 6-at-a-time limit for process-heavy agents, and guardrails |
 
 ## Init / Setup
 

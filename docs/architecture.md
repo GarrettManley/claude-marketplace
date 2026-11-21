@@ -91,18 +91,29 @@ are auto-discovered from their directories, and declaring them errors at install
 enforces all of this pre-merge so a malformed manifest fails here rather than with a
 vague "Invalid input" at a consumer's install.
 
-Inside a hook command, `${CLAUDE_PLUGIN_ROOT}` resolves to the installed plugin's root,
-so hooks reference their own scripts by relative path:
+Inside a hook entry, `${CLAUDE_PLUGIN_ROOT}` resolves to the installed plugin's root,
+so hooks reference their own scripts by relative path. Python hooks are registered in
+exec form — `command` is the executable and `args` holds one element per argument — so
+Claude Code starts `uv` directly, without a shell (needs Claude Code 2.1.139 or later):
 
 ```json
 {
   "type": "command",
-  "command": "python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py\" \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_issues.sh\" discipline:session-start:inject-issues minimal,standard,strict"
+  "command": "uv",
+  "args": [
+    "run",
+    "--no-project",
+    "${CLAUDE_PLUGIN_ROOT}/scripts/run_with_flags.py",
+    "${CLAUDE_PLUGIN_ROOT}/hooks/inject_issues.sh",
+    "discipline:session-start:inject-issues",
+    "minimal,standard,strict"
+  ]
 }
 ```
 
-The three positional arguments after the wrapper are the hook script, the hook id, and
-the profile CSV — the inputs to the runtime-control system below.
+The three arguments after the wrapper are the hook script, the hook id, and the profile
+CSV — the inputs to the runtime-control system below. Hooks that need a shell (a
+`bash <script>.sh` command) stay in shell form, with `command` as one quoted string.
 
 ## Vendored hook runtime
 
@@ -169,7 +180,9 @@ the disable list for itself; CI rejection on first review is the cheapest fix. T
 also cross-checks `GATED_PLUGINS` against the on-disk set of plugins shipping
 `scripts/run_with_flags.py`: a plugin that ships the wrapper without a matching
 `GATED_PLUGINS` entry (or is listed without shipping the wrapper) is itself a CI failure,
-so the two stay in sync.
+so the two stay in sync. The same gate reads every plugin's `hooks.json` and fails a hook
+whose shell-form `command` starts with `uv run`: such a hook must use exec form
+(`"command": "uv"` plus an `"args"` array) so it starts without a shell.
 
 ## Runtime-control env vars
 

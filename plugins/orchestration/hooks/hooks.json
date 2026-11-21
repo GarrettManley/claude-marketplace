@@ -7,7 +7,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/inject_orchestration_context.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/inject_orchestration_context.py"
+            ],
             "timeout": 5
           }
         ]

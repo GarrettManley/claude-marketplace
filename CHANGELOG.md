@@ -12,6 +12,14 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Changed
 
+- Hooks start without a shell: the 26 `uv run` hook commands in `aether`,
+  `discipline`, `evidence`, `learning`, `orchestration`, `retrospective`, and
+  `stewardship` are now registered in exec form (`"command": "uv"` plus an `args`
+  array). On Windows this removes two Git Bash processes per hook command. Needs
+  **Claude Code 2.1.139 or later** (the version that added hook `args`). The three
+  `bash <script>.sh` hooks (`retrospective`, `review`) stay in shell form.
+  `ci/verify_hook_runtime_controls.py` understands exec form and now fails any
+  shell-form `uv run` hook in any plugin.
 - `/deliver` now lands via PR by default (`.claude/delivery.local.md`
   `land-policy: pr`), so the 5 required status checks gate the merge decision instead
   of running post-hoc on `main` after a direct push. See
@@ -24,6 +32,10 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Added
 
+- `orchestration` plugin: the injected policy now limits process-heavy agents
+  (builds, test suites, headless browsers) to 6 at a time, whatever a workflow's own
+  concurrency cap is, and gives a small limiter for Workflow scripts. Read-only agents
+  are not limited.
 - `review` plugin: `architecture-conformance` code-diff persona (17th archetype)
   that measures a source diff against a project constitution (SOLID + Clean
   Architecture standard). `docs:adversarial-review-code` dispatches it on source

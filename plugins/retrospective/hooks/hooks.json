@@ -24,7 +24,12 @@
           },
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/plan_completion_check.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/plan_completion_check.py"
+            ],
             "timeout": 15
           }
         ]

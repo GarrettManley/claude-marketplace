@@ -4,6 +4,14 @@ All notable changes to the **orchestration** plugin are documented here. The for
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.3.0
+
+### Features
+- limit process-heavy agents to 6 at a time
+
+### Fixes
+- start hooks without a shell
+
 ## 1.2.0
 
 ### Features
