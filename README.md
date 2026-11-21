@@ -53,6 +53,8 @@ This is a public marketplace — no authentication is required to add it or inst
 
 Most plugins ship Python hooks (PreToolUse / PostToolUse / SessionStart) and run them through [**uv**](https://docs.astral.sh/uv/) (`uv run`). uv is therefore the one prerequisite for the Python-backed hooks — and the `git` commit-message validator — to fire. It is the same `uv` command on Windows, macOS, and Linux (sidestepping the `python` vs `python3` vs `py` split) and resolves, or installs, a suitable Python automatically. Install it once: <https://docs.astral.sh/uv/getting-started/installation/>. Shell hooks additionally need `bash` on `PATH` (Git Bash on Windows). Plugins with no Python hooks work without uv.
 
+**Claude Code 2.1.139 or later** is required for the Python hooks. They are registered in exec form (`"command": "uv"` plus an `args` array), which Claude Code starts directly, without a shell; the hook `args` field arrived in 2.1.139.
+
 ### Optional dependency
 
 The `git` plugin's commit-message validator parses an optional rules file. If [PyYAML](https://pypi.org/project/PyYAML/) is installed it uses it; otherwise it falls back to a built-in stdlib parser (key/value pairs and single-level lists) and prints a one-line notice. Installing PyYAML (`pip install pyyaml`) is an accelerator, not a requirement — no plugin hard-depends on it.
