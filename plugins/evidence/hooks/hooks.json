@@ -7,7 +7,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/secret_scan.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/secret_scan.py"
+            ],
             "timeout": 5
           }
         ]
@@ -17,7 +22,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "uv run --no-project \"${CLAUDE_PLUGIN_ROOT}/hooks/scope_bind.py\"",
+            "command": "uv",
+            "args": [
+              "run",
+              "--no-project",
+              "${CLAUDE_PLUGIN_ROOT}/hooks/scope_bind.py"
+            ],
             "timeout": 5
           }
         ]

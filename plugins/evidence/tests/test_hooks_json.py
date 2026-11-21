@@ -9,10 +9,16 @@ from pathlib import Path
 HOOKS_JSON = Path(__file__).parent.parent / "hooks" / "hooks.json"
 
 
+def _launch_line(hook):
+    """The hook's executable and arguments as one string. The hooks are
+    registered in exec form, so the script path is an `args` element."""
+    return " ".join([hook["command"], *hook.get("args", [])])
+
+
 def _matchers():
     data = json.loads(HOOKS_JSON.read_text(encoding="utf-8"))
     return {
-        entry["hooks"][0]["command"]: set(entry["matcher"].split("|"))
+        _launch_line(entry["hooks"][0]): set(entry["matcher"].split("|"))
         for entry in data["hooks"]["PreToolUse"]
     }
 
