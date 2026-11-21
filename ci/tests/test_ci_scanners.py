@@ -1020,6 +1020,21 @@ class TestVerifyHookRuntimeControls:
         err = capsys.readouterr().err
         assert "scripts/naked.py" in err
 
+    def test_non_dict_hook_entry_reported_as_violation_not_crash(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        data = {
+            "hooks": {
+                "PreToolUse": [{"matcher": "Edit", "hooks": ["not-a-hook-object"]}]
+            }
+        }
+        self._make_plugin(tmp_path, "discipline", data)
+        monkeypatch.setattr(verify_hooks, "GATED_PLUGINS", ("discipline",))
+        rc = verify_hooks.main(root=tmp_path)
+        assert rc == 1
+        err = capsys.readouterr().err
+        assert "malformed hooks.json structure" in err
+
     # --- exec form ("command" + "args", started without a shell) --------------
 
     def _exec_form(self, args) -> dict:
