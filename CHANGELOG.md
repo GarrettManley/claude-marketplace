@@ -32,6 +32,10 @@ this file summarizes the program-level picture. See `docs/adr/0008-root-changelo
 
 ### Added
 
+- `orchestration` plugin: the injected policy now limits process-heavy agents
+  (builds, test suites, headless browsers) to 6 at a time, whatever a workflow's own
+  concurrency cap is, and gives a small limiter for Workflow scripts. Read-only agents
+  are not limited.
 - `review` plugin: `architecture-conformance` code-diff persona (17th archetype)
   that measures a source diff against a project constitution (SOLID + Clean
   Architecture standard). `docs:adversarial-review-code` dispatches it on source
