@@ -11,10 +11,10 @@ review is the cheapest fix.
 Accepted limitations (intentional, not bugs):
   (a) The all-commands-must-wrap rule has no per-hook opt-out. A bypassing
       hook must fail CI, not be quietly excused.
-  (b) The check is a substring match on the command string, so a wrapper
-      merely named in a comment or an unexecuted argument would pass. This
-      is a pre-existing false-negative vector, acceptable for a first-line
-      gate.
+  (b) The check is a substring match on the command string (shell form) or
+      on `command` and each `args` element (exec form), so a wrapper merely
+      named in a comment or an unexecuted argument would pass. This is a
+      pre-existing false-negative vector, acceptable for a first-line gate.
   (c) The match requires the literal forward-slash form
       "scripts/run_with_flags.py". Every hooks.json in this repo already
       uses that form via "${CLAUDE_PLUGIN_ROOT}/scripts/...".
@@ -42,6 +42,20 @@ def _plugins_with_wrapper(root: Path) -> set[str]:
         p.parent.parent.name
         for p in root.glob("plugins/*/scripts/run_with_flags.py")
     }
+
+
+def _launch_words(entry: dict) -> list[str] | None:
+    """What a hook entry launches: `command` alone in shell form, `command`
+    followed by each `args` element in exec form (Claude Code starts the
+    executable directly, without a shell, when `args` is present). None when
+    either field has the wrong type."""
+    cmd = entry.get("command")
+    args = entry.get("args", [])
+    if not isinstance(cmd, str) or not isinstance(args, list):
+        return None
+    if not all(isinstance(arg, str) for arg in args):
+        return None
+    return [cmd, *args]
 
 
 def scan(root: Path) -> list[str]:
@@ -84,17 +98,17 @@ def scan(root: Path) -> list[str]:
             for event, matchers in data.get("hooks", {}).items():
                 for matcher in matchers:
                     for entry in matcher.get("hooks", []):
-                        cmd = entry.get("command")
-                        if not isinstance(cmd, str):
+                        where = f"{name}: {event} / matcher {matcher.get('matcher')!r}"
+                        words = _launch_words(entry)
+                        if words is None:
                             violations.append(
-                                f"{name}: {event} / matcher {matcher.get('matcher')!r} "
-                                f":: non-string command: {cmd!r}"
+                                f"{where} :: command must be a string and args a list "
+                                f"of strings: command={entry.get('command')!r} "
+                                f"args={entry.get('args')!r}"
                             )
                             continue
-                        if WRAPPER_SUBSTR not in cmd:
-                            violations.append(
-                                f"{name}: {event} / matcher {matcher.get('matcher')!r} :: {cmd}"
-                            )
+                        if not any(WRAPPER_SUBSTR in word for word in words):
+                            violations.append(f"{where} :: {' '.join(words)}")
         except (TypeError, AttributeError) as e:
             violations.append(f"{name}: malformed hooks.json structure: {e}")
             continue
