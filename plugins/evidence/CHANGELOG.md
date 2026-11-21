@@ -4,6 +4,11 @@ All notable changes to the **evidence** plugin are documented here. The format i
 based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres
 to [Semantic Versioning](https://semver.org/).
 
+## 1.2.2
+
+### Fixes
+- start hooks without a shell
+
 ## 1.2.1
 
 ### Fixes
